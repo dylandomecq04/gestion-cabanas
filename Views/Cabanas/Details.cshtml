@@ -2,6 +2,7 @@
 @{
     var cabana = (Cabana)ViewBag.Cabana;
     var reservas = (List<Reserva>)ViewBag.Reservas;
+    var bloqueadas = (List<TarifaDia>)ViewBag.Bloqueadas;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
@@ -11,6 +12,7 @@
     ViewData["Title"] = cabana.Nombre;
 
     bool EstaOcupado(DateTime dia) => reservas.Any(r => r.FechaDesde <= dia && dia < r.FechaHasta);
+    bool EstaBloqueada(DateTime dia) => bloqueadas.Any(b => b.Fecha.Date == dia.Date);
 
     int offset = ((int)primerDia.DayOfWeek + 6) % 7;
     var celdas = new List<DateTime?>();
@@ -23,8 +25,7 @@
 @if (TempData["SolicitudEnviada"] != null)
 {
     var reservaConfirmada = ViewBag.ReservaConfirmada as Reserva;
-    int? noches = reservaConfirmada != null ? (reservaConfirmada.FechaHasta - reservaConfirmada.FechaDesde).Days : null;
-    decimal? valorTotal = reservaConfirmada != null && cabana.PrecioPorNoche.HasValue ? cabana.PrecioPorNoche.Value * noches!.Value : null;
+    decimal? valorTotal = ViewBag.ValorTotalReserva as decimal?;
 
     string mensajeWhatsApp;
     if (reservaConfirmada != null)
@@ -148,7 +149,7 @@
             </span>
             @if (cabana.PrecioPorNoche.HasValue)
             {
-                <span class="rounded-full bg-river-50 px-3 py-1 font-semibold text-river-700">$@cabana.PrecioPorNoche.Value.ToString("N0") / noche</span>
+                <span class="rounded-full bg-river-50 px-3 py-1 font-semibold text-river-700">Desde $@cabana.PrecioPorNoche.Value.ToString("N0") / noche</span>
             }
         </div>
         <p class="mt-4 whitespace-pre-line leading-relaxed text-ink-600">@cabana.Descripcion</p>
@@ -185,6 +186,10 @@
                     {
                         <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-rose-100 text-sm font-medium text-rose-600">@dia.Value.Day</div>
                     }
+                    else if (EstaBloqueada(dia.Value))
+                    {
+                        <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-ink-200 text-sm font-medium text-ink-500">@dia.Value.Day</div>
+                    }
                     else
                     {
                         <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-river-100 text-sm font-medium text-river-700">@dia.Value.Day</div>
@@ -194,6 +199,7 @@
             <div class="mt-4 flex items-center gap-4 text-xs text-ink-500">
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Libre</span>
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Ocupada</span>
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-200"></span> No disponible</span>
             </div>
             <a asp-action="Disponibilidad" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-river-700 hover:gap-2">
                 Ver disponibilidad general de las 5 cabañas

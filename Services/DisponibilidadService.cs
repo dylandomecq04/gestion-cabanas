@@ -26,7 +26,16 @@ namespace GestionCabanas.Services
                 query = query.Where(r => r.Id != reservaIdExcluir.Value);
             }
 
-            return await query.AnyAsync();
+            if (await query.AnyAsync())
+            {
+                return true;
+            }
+
+            return await _db.TarifasDias.AnyAsync(t =>
+                t.CabanaId == cabanaId &&
+                t.Bloqueada &&
+                t.Fecha >= desde &&
+                t.Fecha < hasta);
         }
 
         public async Task<List<Reserva>> ObtenerConfirmadasAsync(int cabanaId, DateTime? desde = null)
@@ -52,6 +61,46 @@ namespace GestionCabanas.Services
             }
 
             return await query.ToListAsync();
+        }
+
+        public async Task<List<TarifaDia>> ObtenerTarifasEnRangoAsync(int cabanaId, DateTime desde, DateTime hasta)
+        {
+            return await _db.TarifasDias
+                .Where(t => t.CabanaId == cabanaId && t.Fecha >= desde && t.Fecha <= hasta)
+                .ToListAsync();
+        }
+
+        public async Task<List<TarifaDia>> ObtenerBloqueadasEnRangoAsync(DateTime desde, DateTime hasta, int? cabanaId = null)
+        {
+            var query = _db.TarifasDias.Where(t => t.Bloqueada && t.Fecha >= desde && t.Fecha <= hasta);
+            if (cabanaId.HasValue)
+            {
+                query = query.Where(t => t.CabanaId == cabanaId.Value);
+            }
+            return await query.ToListAsync();
+        }
+
+        public async Task<decimal?> CalcularValorTotalAsync(int cabanaId, DateTime desde, DateTime hasta, decimal? precioBase)
+        {
+            if (hasta <= desde)
+            {
+                return null;
+            }
+
+            var tarifas = await ObtenerTarifasEnRangoAsync(cabanaId, desde, hasta.AddDays(-1));
+            decimal total = 0;
+
+            for (var dia = desde; dia < hasta; dia = dia.AddDays(1))
+            {
+                var precioDelDia = tarifas.FirstOrDefault(t => t.Fecha.Date == dia.Date)?.Precio ?? precioBase;
+                if (!precioDelDia.HasValue)
+                {
+                    return null;
+                }
+                total += precioDelDia.Value;
+            }
+
+            return total;
         }
     }
 }

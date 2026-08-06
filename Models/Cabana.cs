@@ -23,5 +23,6 @@ namespace GestionCabanas.Models
 
         public List<FotoCabana> Fotos { get; set; } = new();
         public List<Reserva> Reservas { get; set; } = new();
+        public List<TarifaDia> TarifasDias { get; set; } = new();
     }
 }

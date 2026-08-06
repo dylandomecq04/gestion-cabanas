@@ -2,6 +2,7 @@
     ViewData["Title"] = "Disponibilidad";
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
     var reservas = (List<Reserva>)ViewBag.Reservas;
+    var bloqueadas = (List<TarifaDia>)ViewBag.Bloqueadas;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
@@ -10,7 +11,9 @@
     var hoy = DateTime.Today;
 
     bool EstaOcupada(int cabanaId, DateTime dia) => reservas.Any(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
-    int CabanasLibres(DateTime dia) => cabanas.Count(c => !EstaOcupada(c.Id, dia));
+    bool EstaBloqueada(int cabanaId, DateTime dia) => bloqueadas.Any(b => b.CabanaId == cabanaId && b.Fecha.Date == dia.Date);
+    bool NoDisponible(int cabanaId, DateTime dia) => EstaOcupada(cabanaId, dia) || EstaBloqueada(cabanaId, dia);
+    int CabanasLibres(DateTime dia) => cabanas.Count(c => !NoDisponible(c.Id, dia));
 
     int offset = ((int)primerDia.DayOfWeek + 6) % 7;
     var celdas = new List<DateTime?>();
@@ -112,6 +115,10 @@
                 {
                     <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-rose-100 text-sm font-medium text-rose-600">@dia.Value.Day</div>
                 }
+                else if (EstaBloqueada(cabana.Id, dia.Value))
+                {
+                    <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-ink-200 text-sm font-medium text-ink-500">@dia.Value.Day</div>
+                }
                 else
                 {
                     <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-river-100 text-sm font-medium text-river-700">@dia.Value.Day</div>
@@ -122,6 +129,7 @@
             <div class="flex items-center gap-4 text-xs text-ink-500">
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Libre</span>
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Ocupada</span>
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-200"></span> No disponible</span>
             </div>
             <a asp-action="Details" asp-route-id="@cabana.Id" class="rounded-full bg-river-700 px-5 py-2 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
                 Ver @cabana.Nombre y reservar

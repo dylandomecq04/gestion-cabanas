@@ -13,6 +13,7 @@ namespace GestionCabanas.Data
         public DbSet<FotoCabana> Fotos => Set<FotoCabana>();
         public DbSet<Reserva> Reservas => Set<Reserva>();
         public DbSet<AdminUsuario> AdminUsuarios => Set<AdminUsuario>();
+        public DbSet<TarifaDia> TarifasDias => Set<TarifaDia>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -30,6 +31,16 @@ namespace GestionCabanas.Data
 
             modelBuilder.Entity<AdminUsuario>()
                 .HasIndex(u => u.NombreUsuario)
+                .IsUnique();
+
+            modelBuilder.Entity<Cabana>()
+                .HasMany(c => c.TarifasDias)
+                .WithOne(t => t.Cabana)
+                .HasForeignKey(t => t.CabanaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TarifaDia>()
+                .HasIndex(t => new { t.CabanaId, t.Fecha })
                 .IsUnique();
         }
     }

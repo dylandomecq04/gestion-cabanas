@@ -50,6 +50,7 @@
                     </td>
                     <td class="px-5 py-3 text-right">
                         <div class="flex justify-end gap-2">
+                            <a asp-action="Tarifas" asp-route-id="@cabana.Id" class="rounded-full border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-600 transition hover:border-river-300 hover:text-river-700">Precios y disponibilidad</a>
                             <a asp-action="Edit" asp-route-id="@cabana.Id" class="rounded-full border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-600 transition hover:border-river-300 hover:text-river-700">Editar</a>
                             <form asp-action="Delete" asp-route-id="@cabana.Id" method="post" onsubmit="return confirm('¿Eliminar esta cabaña?');">
                                 <button type="submit" class="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Eliminar</button>

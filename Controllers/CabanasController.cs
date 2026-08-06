@@ -37,7 +37,13 @@ namespace GestionCabanas.Controllers
 
             if (TempData["ReservaId"] is int reservaId)
             {
-                ViewBag.ReservaConfirmada = await _db.Reservas.FindAsync(reservaId);
+                var reservaConfirmada = await _db.Reservas.FindAsync(reservaId);
+                ViewBag.ReservaConfirmada = reservaConfirmada;
+                if (reservaConfirmada is not null)
+                {
+                    ViewBag.ValorTotalReserva = await _disponibilidad.CalcularValorTotalAsync(
+                        id, reservaConfirmada.FechaDesde, reservaConfirmada.FechaHasta, cabana.PrecioPorNoche);
+                }
             }
 
             return View(new SolicitarReservaViewModel
@@ -114,9 +120,11 @@ namespace GestionCabanas.Controllers
 
             var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
             var reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia);
+            var bloqueadas = await _disponibilidad.ObtenerBloqueadasEnRangoAsync(primerDia, ultimoDia);
 
             ViewBag.Cabanas = cabanas;
             ViewBag.Reservas = reservas;
+            ViewBag.Bloqueadas = bloqueadas;
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
@@ -133,6 +141,7 @@ namespace GestionCabanas.Controllers
             var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
 
             ViewBag.Reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
+            ViewBag.Bloqueadas = await _disponibilidad.ObtenerBloqueadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);

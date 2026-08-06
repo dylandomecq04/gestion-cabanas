@@ -110,6 +110,97 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return RedirectToAction(nameof(Edit), new { id = cabanaId });
         }
 
+        public async Task<IActionResult> Tarifas(int id, int? anio, int? mes)
+        {
+            var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == id);
+            if (cabana is null)
+            {
+                return NotFound();
+            }
+
+            var hoy = DateTime.Today;
+            var primerDia = new DateTime(anio ?? hoy.Year, mes ?? hoy.Month, 1);
+            var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
+
+            var reservas = await _db.Reservas
+                .Where(r => r.CabanaId == id && r.Estado == EstadoReserva.Confirmada && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
+                .ToListAsync();
+
+            var tarifas = await _db.TarifasDias
+                .Where(t => t.CabanaId == id && t.Fecha >= primerDia && t.Fecha <= ultimoDia)
+                .ToListAsync();
+
+            var dias = new List<DiaTarifaVista>();
+            for (var fecha = primerDia; fecha <= ultimoDia; fecha = fecha.AddDays(1))
+            {
+                var tarifa = tarifas.FirstOrDefault(t => t.Fecha.Date == fecha.Date);
+                dias.Add(new DiaTarifaVista
+                {
+                    Fecha = fecha,
+                    Reservada = reservas.Any(r => r.FechaDesde <= fecha && fecha < r.FechaHasta),
+                    Pasada = fecha < hoy,
+                    Precio = tarifa?.Precio,
+                    Bloqueada = tarifa?.Bloqueada ?? false
+                });
+            }
+
+            ViewBag.Cabana = cabana;
+            ViewBag.Dias = dias;
+            ViewBag.PrimerDia = primerDia;
+            ViewBag.MesAnterior = primerDia.AddMonths(-1);
+            ViewBag.MesSiguiente = primerDia.AddMonths(1);
+            ViewBag.PermitirMesAnterior = primerDia > new DateTime(hoy.Year, hoy.Month, 1);
+
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GuardarTarifas(int id, int anio, int mes, List<TarifaDiaInput> dias)
+        {
+            var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == id);
+            if (cabana is null)
+            {
+                return NotFound();
+            }
+
+            foreach (var dia in dias ?? new List<TarifaDiaInput>())
+            {
+                var existente = await _db.TarifasDias.FirstOrDefaultAsync(t => t.CabanaId == id && t.Fecha.Date == dia.Fecha.Date);
+                var necesitaFila = dia.Bloqueada || dia.Precio.HasValue;
+
+                if (!necesitaFila)
+                {
+                    if (existente is not null)
+                    {
+                        _db.TarifasDias.Remove(existente);
+                    }
+                    continue;
+                }
+
+                if (existente is null)
+                {
+                    _db.TarifasDias.Add(new TarifaDia
+                    {
+                        CabanaId = id,
+                        Fecha = dia.Fecha.Date,
+                        Precio = dia.Precio,
+                        Bloqueada = dia.Bloqueada
+                    });
+                }
+                else
+                {
+                    existente.Precio = dia.Precio;
+                    existente.Bloqueada = dia.Bloqueada;
+                }
+            }
+
+            await _db.SaveChangesAsync();
+
+            TempData["Mensaje"] = $"Precios y disponibilidad de \"{cabana.Nombre}\" actualizados.";
+            return RedirectToAction(nameof(Tarifas), new { id, anio, mes });
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)

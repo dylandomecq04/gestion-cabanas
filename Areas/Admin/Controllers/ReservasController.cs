@@ -172,9 +172,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
             var reservas = await _db.Reservas
                 .Where(r => r.Estado != EstadoReserva.Cancelada && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
                 .ToListAsync();
+            var bloqueadas = await _disponibilidad.ObtenerBloqueadasEnRangoAsync(primerDia, ultimoDia);
 
             ViewBag.Cabanas = cabanas;
             ViewBag.Reservas = reservas;
+            ViewBag.Bloqueadas = bloqueadas;
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);

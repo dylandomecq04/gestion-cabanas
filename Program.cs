@@ -1,8 +1,12 @@
+using System.Globalization;
 using GestionCabanas.Data;
 using GestionCabanas.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+
+var culturaArgentina = new CultureInfo("es-AR");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +31,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 var app = builder.Build();
+
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(culturaArgentina),
+    SupportedCultures = new[] { culturaArgentina },
+    SupportedUICultures = new[] { culturaArgentina }
+});
 
 using (var scope = app.Services.CreateScope())
 {
