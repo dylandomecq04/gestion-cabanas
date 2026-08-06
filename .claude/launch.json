@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gestion-cabanas",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--urls", "http://localhost:5221"],
+      "port": 5221
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+@{
+    ViewData["Title"] = "Disponibilidad";
+    var cabanas = (List<Cabana>)ViewBag.Cabanas;
+    var reservas = (List<Reserva>)ViewBag.Reservas;
+    DateTime primerDia = ViewBag.PrimerDia;
+    DateTime ultimoDia = ViewBag.UltimoDia;
+    DateTime mesAnterior = ViewBag.MesAnterior;
+    DateTime mesSiguiente = ViewBag.MesSiguiente;
+    bool permitirMesAnterior = ViewBag.PermitirMesAnterior;
+    var hoy = DateTime.Today;
+
+    bool EstaOcupada(int cabanaId, DateTime dia) => reservas.Any(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
+    int CabanasLibres(DateTime dia) => cabanas.Count(c => !EstaOcupada(c.Id, dia));
+
+    int offset = ((int)primerDia.DayOfWeek + 6) % 7;
+    var celdas = new List<DateTime?>();
+    for (int i = 0; i < offset; i++) celdas.Add(null);
+    for (int d = 1; d <= ultimoDia.Day; d++) celdas.Add(primerDia.AddDays(d - 1));
+    while (celdas.Count % 7 != 0) celdas.Add(null);
+}
+
+<a asp-controller="Home" asp-action="Index" class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition hover:text-river-700">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+    </svg>
+    Volver a todas las cabañas
+</a>
+
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">Disponibilidad &middot; @primerDia.ToString("MMMM yyyy")</h1>
+    <div class="flex gap-2">
+        @if (permitirMesAnterior)
+        {
+            <a asp-action="Disponibilidad" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month"
+               class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">&larr; Mes anterior</a>
+        }
+        <a asp-action="Disponibilidad" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month"
+           class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">Mes siguiente &rarr;</a>
+    </div>
+</div>
+
+<div class="mb-6 flex flex-wrap gap-2" id="tabs-disponibilidad">
+    <button type="button" onclick="mostrarTabDisponibilidad('general')" data-tab="general"
+            class="tab-btn-disp rounded-full bg-river-700 px-4 py-2 text-sm font-semibold text-white shadow-soft transition">
+        General (@cabanas.Count cabañas)
+    </button>
+    @foreach (var cabana in cabanas)
+    {
+        <button type="button" onclick="mostrarTabDisponibilidad('cabana-@cabana.Id')" data-tab="cabana-@cabana.Id"
+                class="tab-btn-disp rounded-full border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">
+            @cabana.Nombre
+        </button>
+    }
+</div>
+
+<div id="tab-general" class="tab-panel-disp rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+    <p class="mb-4 text-sm text-ink-500">Cantidad de cabañas libres cada día, sobre un total de @cabanas.Count.</p>
+    <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
+        <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+    </div>
+    <div class="mt-1.5 grid grid-cols-7 gap-1.5">
+        @foreach (var dia in celdas)
+        {
+            if (dia is null)
+            {
+                <div></div>
+            }
+            else if (dia.Value < hoy)
+            {
+                <div class="day-cell flex aspect-square flex-col items-center justify-center rounded-lg bg-ink-50 text-sm text-ink-300">@dia.Value.Day</div>
+            }
+            else
+            {
+                var libres = CabanasLibres(dia.Value);
+                var clases = libres == cabanas.Count
+                    ? "bg-river-100 text-river-700"
+                    : libres == 0
+                        ? "bg-rose-100 text-rose-600"
+                        : "bg-amber-100 text-amber-700";
+                <div class="day-cell flex aspect-square flex-col items-center justify-center rounded-lg text-sm font-medium @clases">
+                    <span>@dia.Value.Day</span>
+                    <span class="text-[10px] font-semibold opacity-80">@libres/@cabanas.Count</span>
+                </div>
+            }
+        }
+    </div>
+    <div class="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink-500">
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Todas libres</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Algunas libres</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Todas ocupadas</span>
+    </div>
+</div>
+
+@foreach (var cabana in cabanas)
+{
+    <div id="tab-cabana-@cabana.Id" class="tab-panel-disp hidden rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+        <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+        </div>
+        <div class="mt-1.5 grid grid-cols-7 gap-1.5">
+            @foreach (var dia in celdas)
+            {
+                if (dia is null)
+                {
+                    <div></div>
+                }
+                else if (dia.Value < hoy)
+                {
+                    <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-ink-50 text-sm text-ink-300">@dia.Value.Day</div>
+                }
+                else if (EstaOcupada(cabana.Id, dia.Value))
+                {
+                    <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-rose-100 text-sm font-medium text-rose-600">@dia.Value.Day</div>
+                }
+                else
+                {
+                    <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-river-100 text-sm font-medium text-river-700">@dia.Value.Day</div>
+                }
+            }
+        </div>
+        <div class="mt-5 flex items-center justify-between">
+            <div class="flex items-center gap-4 text-xs text-ink-500">
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Libre</span>
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Ocupada</span>
+            </div>
+            <a asp-action="Details" asp-route-id="@cabana.Id" class="rounded-full bg-river-700 px-5 py-2 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+                Ver @cabana.Nombre y reservar
+            </a>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function mostrarTabDisponibilidad(tab) {
+            document.querySelectorAll('.tab-panel-disp').forEach(p => p.classList.toggle('hidden', p.id !== 'tab-' + tab));
+            document.querySelectorAll('.tab-btn-disp').forEach(b => {
+                const activo = b.dataset.tab === tab;
+                b.classList.toggle('bg-river-700', activo);
+                b.classList.toggle('text-white', activo);
+                b.classList.toggle('shadow-soft', activo);
+                b.classList.toggle('border', !activo);
+                b.classList.toggle('border-ink-200', !activo);
+                b.classList.toggle('bg-white', !activo);
+                b.classList.toggle('text-ink-600', !activo);
+            });
+        }
+    </script>
+}

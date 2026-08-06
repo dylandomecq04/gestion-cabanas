@@ -1,0 +1,291 @@
+@model SolicitarReservaViewModel
+@{
+    var cabana = (Cabana)ViewBag.Cabana;
+    var reservas = (List<Reserva>)ViewBag.Reservas;
+    DateTime primerDia = ViewBag.PrimerDia;
+    DateTime ultimoDia = ViewBag.UltimoDia;
+    DateTime mesAnterior = ViewBag.MesAnterior;
+    DateTime mesSiguiente = ViewBag.MesSiguiente;
+    bool permitirMesAnterior = ViewBag.PermitirMesAnterior;
+    var hoy = DateTime.Today;
+    ViewData["Title"] = cabana.Nombre;
+
+    bool EstaOcupado(DateTime dia) => reservas.Any(r => r.FechaDesde <= dia && dia < r.FechaHasta);
+
+    int offset = ((int)primerDia.DayOfWeek + 6) % 7;
+    var celdas = new List<DateTime?>();
+    for (int i = 0; i < offset; i++) celdas.Add(null);
+    for (int d = 1; d <= ultimoDia.Day; d++) celdas.Add(primerDia.AddDays(d - 1));
+    while (celdas.Count % 7 != 0) celdas.Add(null);
+    var fotos = cabana.Fotos.OrderBy(f => f.Orden).ToList();
+}
+
+@if (TempData["SolicitudEnviada"] != null)
+{
+    var reservaConfirmada = ViewBag.ReservaConfirmada as Reserva;
+    int? noches = reservaConfirmada != null ? (reservaConfirmada.FechaHasta - reservaConfirmada.FechaDesde).Days : null;
+    decimal? valorTotal = reservaConfirmada != null && cabana.PrecioPorNoche.HasValue ? cabana.PrecioPorNoche.Value * noches!.Value : null;
+
+    string mensajeWhatsApp;
+    if (reservaConfirmada != null)
+    {
+        var textoValor = valorTotal.HasValue ? $" Valor total aproximado: ${valorTotal.Value:N0}." : "";
+        mensajeWhatsApp = Uri.EscapeDataString(
+            $"Hola! Soy {reservaConfirmada.NombreHuesped}. Quiero coordinar mi solicitud de reserva en {cabana.Nombre} " +
+            $"del {reservaConfirmada.FechaDesde:dd/MM/yyyy} al {reservaConfirmada.FechaHasta:dd/MM/yyyy} para {reservaConfirmada.CantidadPersonas} personas." + textoValor);
+    }
+    else
+    {
+        mensajeWhatsApp = Uri.EscapeDataString($"Hola! Quiero coordinar el pago de mi solicitud de reserva en {cabana.Nombre}.");
+    }
+
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-lg rounded-2.5xl bg-white p-7 text-center shadow-lift">
+            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-river-100 text-3xl">✅</div>
+            <h3 class="font-display text-xl font-semibold text-ink-900">¡Solicitud enviada!</h3>
+            <p class="mt-2 text-sm text-ink-600">@TempData["SolicitudEnviada"]</p>
+
+            @if (reservaConfirmada != null)
+            {
+                <dl class="mt-5 space-y-1.5 rounded-xl bg-sand-50 p-4 text-left text-sm text-ink-600">
+                    <div class="flex justify-between gap-3">
+                        <dt class="text-ink-500">Huésped</dt>
+                        <dd class="font-medium text-ink-900">@reservaConfirmada.NombreHuesped</dd>
+                    </div>
+                    <div class="flex justify-between gap-3">
+                        <dt class="text-ink-500">Fechas</dt>
+                        <dd class="font-medium text-ink-900">@reservaConfirmada.FechaDesde.ToString("dd/MM/yyyy") – @reservaConfirmada.FechaHasta.ToString("dd/MM/yyyy")</dd>
+                    </div>
+                    <div class="flex justify-between gap-3">
+                        <dt class="text-ink-500">Personas</dt>
+                        <dd class="font-medium text-ink-900">@reservaConfirmada.CantidadPersonas</dd>
+                    </div>
+                    @if (valorTotal.HasValue)
+                    {
+                        <div class="flex justify-between gap-3">
+                            <dt class="text-ink-500">Valor total aprox.</dt>
+                            <dd class="font-medium text-ink-900">$@valorTotal.Value.ToString("N0")</dd>
+                        </div>
+                    }
+                </dl>
+            }
+
+            <div class="mt-4 rounded-xl bg-river-50 p-4 text-sm font-medium text-river-800">
+                ¡Ya casi! Escribinos ahora por WhatsApp para coordinar el pago y confirmar tu reserva cuanto antes.
+            </div>
+
+            <a href="https://wa.me/5491126452644?text=@mensajeWhatsApp" target="_blank" rel="noopener"
+               class="mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                    <path d="M12.004 2C6.478 2 2.003 6.475 2.003 12c0 1.85.499 3.583 1.368 5.076L2 22l5.06-1.327A9.953 9.953 0 0012.004 22C17.53 22 22 17.525 22 12S17.53 2 12.004 2zm0 18.062a8.038 8.038 0 01-4.099-1.12l-.294-.175-3.005.788.803-2.93-.192-.302a8.03 8.03 0 01-1.24-4.323c0-4.44 3.613-8.052 8.031-8.052 4.417 0 8.03 3.612 8.03 8.052 0 4.44-3.613 8.062-8.034 8.062z" />
+                </svg>
+                Escribinos por WhatsApp al 11 2645-2644
+            </a>
+
+            <p class="mt-3 text-xs text-ink-400">
+                ¿Preferís esperar? Igual vamos a contactarte a la brevedad, aunque escribirnos ahora acelera todo el proceso.
+            </p>
+
+            <button type="button" onclick="this.closest('.fixed').remove()"
+                    class="mt-3 text-sm font-medium text-ink-400 transition hover:text-ink-600">
+                Cerrar
+            </button>
+        </div>
+    </div>
+}
+
+<a asp-controller="Home" asp-action="Index" class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition hover:text-river-700">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+    </svg>
+    Volver a todas las cabañas
+</a>
+
+<div class="grid grid-cols-1 gap-10 lg:grid-cols-12">
+    <div class="lg:col-span-7">
+        @if (fotos.Any())
+        {
+            <div class="relative mb-6 aspect-[4/3] w-full overflow-hidden rounded-2.5xl bg-sand-100 shadow-soft sm:aspect-[16/10]" id="galeria-imgs">
+                @for (int i = 0; i < fotos.Count; i++)
+                {
+                    <img src="~/@fotos[i].RutaArchivo" alt="@cabana.Nombre"
+                         class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 @(i == 0 ? "opacity-100" : "pointer-events-none opacity-0")" />
+                }
+
+                @if (fotos.Count > 1)
+                {
+                    <button type="button" onclick="cambiarFotoCabana(-1)" aria-label="Anterior"
+                            class="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-700 shadow-soft transition hover:bg-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <button type="button" onclick="cambiarFotoCabana(1)" aria-label="Siguiente"
+                            class="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-700 shadow-soft transition hover:bg-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                    <div id="galeria-dots" class="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+                        @for (int i = 0; i < fotos.Count; i++)
+                        {
+                            <button type="button" onclick="mostrarFotoCabana(@i)" aria-label="Foto @(i + 1)"
+                                    class="h-2 w-2 rounded-full transition @(i == 0 ? "bg-white" : "bg-white/40")"></button>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="mb-6 flex aspect-[4/3] w-full items-center justify-center rounded-2.5xl bg-sand-100 text-5xl shadow-soft sm:aspect-[16/10]">🏡</div>
+        }
+
+        <h1 class="font-display text-3xl font-semibold text-ink-900">@cabana.Nombre</h1>
+        <div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-ink-500">
+            <span class="flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m5-4.13a4 4 0 100-8 4 4 0 000 8zm6 4a4 4 0 00-3-3.87" />
+                </svg>
+                Hasta @cabana.Capacidad personas
+            </span>
+            @if (cabana.PrecioPorNoche.HasValue)
+            {
+                <span class="rounded-full bg-river-50 px-3 py-1 font-semibold text-river-700">$@cabana.PrecioPorNoche.Value.ToString("N0") / noche</span>
+            }
+        </div>
+        <p class="mt-4 whitespace-pre-line leading-relaxed text-ink-600">@cabana.Descripcion</p>
+
+        <div class="mt-10">
+            <div class="mb-3 flex items-center justify-between">
+                <h2 class="font-display text-xl font-semibold text-ink-900">Disponibilidad &middot; @primerDia.ToString("MMMM yyyy")</h2>
+                <div class="flex gap-1.5">
+                    @if (permitirMesAnterior)
+                    {
+                        <a asp-action="Details" asp-route-id="@cabana.Id" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month"
+                           class="flex h-8 w-8 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition hover:border-river-300 hover:text-river-700">&larr;</a>
+                    }
+                    <a asp-action="Details" asp-route-id="@cabana.Id" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month"
+                       class="flex h-8 w-8 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition hover:border-river-300 hover:text-river-700">&rarr;</a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
+                <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+            </div>
+            <div class="mt-1.5 grid grid-cols-7 gap-1.5">
+                @foreach (var dia in celdas)
+                {
+                    if (dia is null)
+                    {
+                        <div></div>
+                    }
+                    else if (dia.Value < hoy)
+                    {
+                        <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-ink-50 text-sm text-ink-300">@dia.Value.Day</div>
+                    }
+                    else if (EstaOcupado(dia.Value))
+                    {
+                        <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-rose-100 text-sm font-medium text-rose-600">@dia.Value.Day</div>
+                    }
+                    else
+                    {
+                        <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-river-100 text-sm font-medium text-river-700">@dia.Value.Day</div>
+                    }
+                }
+            </div>
+            <div class="mt-4 flex items-center gap-4 text-xs text-ink-500">
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Libre</span>
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Ocupada</span>
+            </div>
+            <a asp-action="Disponibilidad" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-river-700 hover:gap-2">
+                Ver disponibilidad general de las 5 cabañas
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+            </a>
+        </div>
+    </div>
+
+    <div class="lg:col-span-5">
+        <div class="sticky top-24 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+            <h2 class="font-display text-xl font-semibold text-ink-900">Solicitar reserva</h2>
+            <p class="mt-1 text-sm text-ink-500">Al enviar la solicitud nos contactamos con vos para coordinar el pago y confirmarla.</p>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="mt-4 space-y-1 rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+                    <div asp-validation-summary="All"></div>
+                </div>
+            }
+
+            <form asp-controller="Cabanas" asp-action="Solicitar" method="post" class="mt-5 space-y-4">
+                <input type="hidden" asp-for="CabanaId" />
+
+                <div>
+                    <label asp-for="NombreHuesped" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                    <input asp-for="NombreHuesped" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                    <span asp-validation-for="NombreHuesped" class="mt-1 block text-xs font-medium text-rose-600"></span>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label asp-for="Telefono" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                        <input asp-for="Telefono" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                    </div>
+                    <div>
+                        <label asp-for="Email" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                        <input asp-for="Email" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                        <span asp-validation-for="Email" class="mt-1 block text-xs font-medium text-rose-600"></span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label asp-for="FechaDesde" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                        <input asp-for="FechaDesde" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                        <span asp-validation-for="FechaDesde" class="mt-1 block text-xs font-medium text-rose-600"></span>
+                    </div>
+                    <div>
+                        <label asp-for="FechaHasta" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                        <input asp-for="FechaHasta" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                        <span asp-validation-for="FechaHasta" class="mt-1 block text-xs font-medium text-rose-600"></span>
+                    </div>
+                </div>
+                <div>
+                    <label asp-for="CantidadPersonas" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                    <input asp-for="CantidadPersonas" type="number" min="1" max="@cabana.Capacidad" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                    <p class="mt-1 text-xs text-ink-400">Capacidad máxima: @cabana.Capacidad personas.</p>
+                    <span asp-validation-for="CantidadPersonas" class="mt-1 block text-xs font-medium text-rose-600"></span>
+                </div>
+                <div>
+                    <label asp-for="Notas" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                    <textarea asp-for="Notas" rows="2" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+                </div>
+                <button type="submit" class="w-full rounded-full bg-river-700 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 hover:shadow-lift">
+                    Enviar solicitud
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let __galeriaIndex = 0;
+        function mostrarFotoCabana(idx) {
+            const imgs = document.querySelectorAll('#galeria-imgs img');
+            if (!imgs.length) return;
+            imgs.forEach((img, i) => {
+                img.classList.toggle('opacity-100', i === idx);
+                img.classList.toggle('opacity-0', i !== idx);
+                img.classList.toggle('pointer-events-none', i !== idx);
+            });
+            document.querySelectorAll('#galeria-dots button').forEach((d, i) => {
+                d.classList.toggle('bg-white', i === idx);
+                d.classList.toggle('bg-white/40', i !== idx);
+            });
+            __galeriaIndex = idx;
+        }
+        function cambiarFotoCabana(delta) {
+            const imgs = document.querySelectorAll('#galeria-imgs img');
+            if (!imgs.length) return;
+            const idx = (__galeriaIndex + delta + imgs.length) % imgs.length;
+            mostrarFotoCabana(idx);
+        }
+    </script>
+}

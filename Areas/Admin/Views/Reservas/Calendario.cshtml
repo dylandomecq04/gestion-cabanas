@@ -1,0 +1,63 @@
+@{
+    ViewData["Title"] = "Calendario de disponibilidad";
+    var cabanas = (List<Cabana>)ViewBag.Cabanas;
+    var reservas = (List<Reserva>)ViewBag.Reservas;
+    DateTime primerDia = ViewBag.PrimerDia;
+    DateTime ultimoDia = ViewBag.UltimoDia;
+    DateTime mesAnterior = ViewBag.MesAnterior;
+    DateTime mesSiguiente = ViewBag.MesSiguiente;
+    var dias = Enumerable.Range(0, (ultimoDia - primerDia).Days + 1).Select(i => primerDia.AddDays(i)).ToList();
+
+    Reserva? ReservaDeLaCabanaEnElDia(int cabanaId, DateTime dia)
+        => reservas.FirstOrDefault(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
+}
+
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="font-display text-2xl font-semibold text-ink-900">Calendario &middot; @primerDia.ToString("MMMM yyyy")</h1>
+    <div class="flex gap-2">
+        <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
+           asp-action="Calendario" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month">&larr; Mes anterior</a>
+        <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
+           asp-action="Calendario" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month">Mes siguiente &rarr;</a>
+    </div>
+</div>
+
+<div class="mb-4 flex items-center gap-4 text-xs font-medium text-ink-500">
+    <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-300"></span> Pendiente</span>
+    <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-500"></span> Confirmada</span>
+</div>
+
+<div class="overflow-x-auto rounded-2.5xl bg-white p-2 shadow-soft ring-1 ring-ink-100">
+    <table class="w-full border-separate text-xs" style="border-spacing: 3px;">
+        <thead>
+            <tr>
+                <th class="sticky left-0 z-10 min-w-[130px] bg-white px-3 py-2 text-left font-semibold text-ink-600">Cabaña</th>
+                @foreach (var dia in dias)
+                {
+                    <th class="min-w-[30px] rounded-md px-1 py-2 text-center font-semibold @(dia.Date == DateTime.Today ? "bg-river-50 text-river-700" : "text-ink-400")">@dia.Day</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cabana in cabanas)
+            {
+                <tr>
+                    <td class="sticky left-0 z-10 bg-white px-3 py-2 font-medium text-ink-800">@cabana.Nombre</td>
+                    @foreach (var dia in dias)
+                    {
+                        var reserva = ReservaDeLaCabanaEnElDia(cabana.Id, dia);
+                        if (reserva is null)
+                        {
+                            <td class="rounded-md bg-ink-50"></td>
+                        }
+                        else
+                        {
+                            var clase = reserva.Estado == EstadoReserva.Confirmada ? "bg-river-500" : "bg-amber-300";
+                            <td class="day-cell rounded-md @clase" title="@reserva.NombreHuesped (@reserva.FechaDesde.ToString("dd/MM") - @reserva.FechaHasta.ToString("dd/MM"))"></td>
+                        }
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,71 @@
+@model Reserva
+@{
+    ViewData["Title"] = "Cargar reserva";
+    var cabanas = (List<Cabana>)ViewBag.Cabanas;
+}
+
+<h1 class="mb-6 font-display text-2xl font-semibold text-ink-900">Cargar reserva</h1>
+
+<form asp-action="Create" method="post" class="max-w-2xl space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+    <div asp-validation-summary="All" class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 empty:hidden"></div>
+
+    <div>
+        <label class="mb-1 block text-sm font-medium text-ink-700">Cabaña</label>
+        <select asp-for="CabanaId" asp-items="@(new SelectList(cabanas, "Id", "Nombre"))"
+                class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></select>
+    </div>
+    <div>
+        <label asp-for="NombreHuesped" class="mb-1 block text-sm font-medium text-ink-700"></label>
+        <input asp-for="NombreHuesped" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        <span asp-validation-for="NombreHuesped" class="mt-1 block text-xs font-medium text-rose-600"></span>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label asp-for="Telefono" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="Telefono" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        </div>
+        <div>
+            <label asp-for="Email" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="Email" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label asp-for="FechaDesde" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="FechaDesde" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        </div>
+        <div>
+            <label asp-for="FechaHasta" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="FechaHasta" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <span asp-validation-for="FechaHasta" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+    </div>
+    <div>
+        <label asp-for="CantidadPersonas" class="mb-1 block text-sm font-medium text-ink-700"></label>
+        <input asp-for="CantidadPersonas" class="w-full max-w-[10rem] rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        <span asp-validation-for="CantidadPersonas" class="mt-1 block text-xs font-medium text-rose-600"></span>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label class="mb-1 block text-sm font-medium text-ink-700">Estado</label>
+            <select asp-for="Estado" asp-items="Html.GetEnumSelectList<EstadoReserva>()"
+                    class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></select>
+        </div>
+        <div>
+            <label asp-for="Valor" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="Valor" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        </div>
+    </div>
+    <div>
+        <label asp-for="Notas" class="mb-1 block text-sm font-medium text-ink-700"></label>
+        <textarea asp-for="Notas" rows="2" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+    </div>
+    <div class="flex items-center gap-3 pt-2">
+        <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">Guardar</button>
+        <a asp-action="Index" class="text-sm font-medium text-ink-500 hover:text-ink-700">Cancelar</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

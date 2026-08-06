@@ -1,0 +1,69 @@
+<link rel="icon" type="image/png" href="~/images/logo-sidharta.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          display: ['Fraunces', 'ui-serif', 'serif'],
+        },
+        colors: {
+          river: {
+            50: '#eefbf6',
+            100: '#d5f4e8',
+            200: '#ade8d3',
+            300: '#78d5b8',
+            400: '#46bd9c',
+            500: '#26a184',
+            600: '#18806a',
+            700: '#156656',
+            800: '#145146',
+            900: '#12433b',
+            950: '#062621',
+          },
+          sand: {
+            50: '#fbf9f4',
+            100: '#f6f1e6',
+            200: '#ebe0c9',
+            300: '#dcc9a3',
+            400: '#c9ab77',
+            500: '#b8925a',
+            600: '#a37a4a',
+            700: '#87613e',
+            800: '#6d4e37',
+            900: '#5a4130',
+          },
+          ink: {
+            50: '#f4f6f6',
+            100: '#e3e8e8',
+            200: '#c7d1d1',
+            300: '#9fb0b0',
+            400: '#708585',
+            500: '#546a6a',
+            600: '#455858',
+            700: '#3a4949',
+            800: '#2c3737',
+            900: '#1c2424',
+            950: '#0f1414',
+          },
+        },
+        boxShadow: {
+          soft: '0 1px 2px rgba(15, 20, 20, 0.04), 0 8px 24px -8px rgba(15, 20, 20, 0.12)',
+          lift: '0 12px 32px -12px rgba(15, 20, 20, 0.28)',
+        },
+        borderRadius: {
+          '2.5xl': '1.375rem',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+  .font-display { font-family: 'Fraunces', ui-serif, serif; }
+  ::selection { background-color: #ade8d3; color: #12433b; }
+</style>

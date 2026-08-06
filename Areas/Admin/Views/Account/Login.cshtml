@@ -1,0 +1,44 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Ingresar";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ingresar - Panel de administración</title>
+    <partial name="_TailwindConfig" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body class="relative flex min-h-screen items-center justify-center overflow-hidden bg-ink-950 px-4 antialiased">
+    <div class="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-river-600/30 blur-3xl"></div>
+    <div class="pointer-events-none absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-sand-400/10 blur-3xl"></div>
+
+    <div class="relative w-full max-w-sm rounded-2.5xl bg-white p-8 shadow-lift">
+        <div class="mb-6 text-center">
+            <img src="~/images/logo-sidharta.png" alt="Cabañas Sidharta" class="mx-auto mb-3 h-16 w-16 rounded-2xl shadow-soft" />
+            <h1 class="font-display text-xl font-semibold text-ink-900">Cabañas Sidharta</h1>
+            <p class="mt-1 text-sm text-ink-500">Panel de administración</p>
+        </div>
+
+        <form asp-area="Admin" asp-controller="Account" asp-action="Login" method="post" class="space-y-4">
+            <input type="hidden" asp-for="ReturnUrl" />
+            <div asp-validation-summary="All" class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 empty:hidden"></div>
+
+            <div>
+                <label asp-for="NombreUsuario" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                <input asp-for="NombreUsuario" autofocus class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label asp-for="Password" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                <input asp-for="Password" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <button type="submit" class="w-full rounded-full bg-river-700 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 hover:shadow-lift">
+                Ingresar
+            </button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+@model List<Cabana>
+@{
+    ViewData["Title"] = "Cabañas";
+}
+
+<div class="mb-6 flex items-center justify-between">
+    <h1 class="font-display text-2xl font-semibold text-ink-900">Cabañas</h1>
+    <a asp-action="Create" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">+ Nueva cabaña</a>
+</div>
+
+<div class="overflow-hidden rounded-2.5xl bg-white shadow-soft ring-1 ring-ink-100">
+    <table class="w-full text-left text-sm">
+        <thead class="border-b border-ink-100 bg-ink-50/60 text-xs font-semibold uppercase tracking-wide text-ink-500">
+            <tr>
+                <th class="px-5 py-3"></th>
+                <th class="px-3 py-3">Nombre</th>
+                <th class="px-3 py-3">Capacidad</th>
+                <th class="px-3 py-3">Precio/noche</th>
+                <th class="px-3 py-3">Estado</th>
+                <th class="px-5 py-3 text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-100">
+            @foreach (var cabana in Model)
+            {
+                var portada = cabana.Fotos.OrderBy(f => f.Orden).FirstOrDefault();
+                <tr class="transition hover:bg-sand-50/60">
+                    <td class="px-5 py-3">
+                        @if (portada != null)
+                        {
+                            <img src="~/@portada.RutaArchivo" class="h-12 w-16 rounded-lg object-cover" />
+                        }
+                        else
+                        {
+                            <div class="flex h-12 w-16 items-center justify-center rounded-lg bg-sand-100 text-lg">🏡</div>
+                        }
+                    </td>
+                    <td class="px-3 py-3 font-medium text-ink-900">@cabana.Nombre</td>
+                    <td class="px-3 py-3 text-ink-600">@cabana.Capacidad</td>
+                    <td class="px-3 py-3 text-ink-600">@(cabana.PrecioPorNoche.HasValue ? "$" + cabana.PrecioPorNoche.Value.ToString("N0") : "-")</td>
+                    <td class="px-3 py-3">
+                        @if (cabana.Activa)
+                        {
+                            <span class="rounded-full bg-river-100 px-2.5 py-1 text-xs font-semibold text-river-700">Activa</span>
+                        }
+                        else
+                        {
+                            <span class="rounded-full bg-ink-100 px-2.5 py-1 text-xs font-semibold text-ink-500">Inactiva</span>
+                        }
+                    </td>
+                    <td class="px-5 py-3 text-right">
+                        <div class="flex justify-end gap-2">
+                            <a asp-action="Edit" asp-route-id="@cabana.Id" class="rounded-full border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-600 transition hover:border-river-300 hover:text-river-700">Editar</a>
+                            <form asp-action="Delete" asp-route-id="@cabana.Id" method="post" onsubmit="return confirm('¿Eliminar esta cabaña?');">
+                                <button type="submit" class="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Eliminar</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

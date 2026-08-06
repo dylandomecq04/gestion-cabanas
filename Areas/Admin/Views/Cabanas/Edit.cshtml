@@ -1,0 +1,72 @@
+@model Cabana
+@{
+    ViewData["Title"] = "Editar cabaña";
+}
+
+<h1 class="mb-6 font-display text-2xl font-semibold text-ink-900">Editar cabaña</h1>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data"
+          class="space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="All" class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 empty:hidden"></div>
+
+        <div>
+            <label asp-for="Nombre" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="Nombre" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <span asp-validation-for="Nombre" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+        <div>
+            <label asp-for="Descripcion" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <textarea asp-for="Descripcion" rows="4" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label asp-for="Capacidad" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                <input asp-for="Capacidad" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                <span asp-validation-for="Capacidad" class="mt-1 block text-xs font-medium text-rose-600"></span>
+            </div>
+            <div>
+                <label asp-for="PrecioPorNoche" class="mb-1 block text-sm font-medium text-ink-700">Precio por noche</label>
+                <input asp-for="PrecioPorNoche" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+        </div>
+        <label class="flex items-center gap-2 text-sm font-medium text-ink-700">
+            <input asp-for="Activa" class="h-4 w-4 rounded border-ink-300 text-river-600 focus:ring-river-400" />
+            Visible en el sitio público
+        </label>
+        <div>
+            <label class="mb-1 block text-sm font-medium text-ink-700">Agregar fotos</label>
+            <input type="file" name="fotos" multiple accept=".jpg,.jpeg,.png,.webp"
+                   class="block w-full text-sm text-ink-600 file:mr-4 file:rounded-full file:border-0 file:bg-river-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-river-700 hover:file:bg-river-100" />
+        </div>
+        <div class="flex items-center gap-3 pt-2">
+            <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">Guardar</button>
+            <a asp-action="Index" class="text-sm font-medium text-ink-500 hover:text-ink-700">Cancelar</a>
+        </div>
+    </form>
+
+    <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+        <h2 class="mb-3 text-sm font-semibold text-ink-700">Fotos actuales</h2>
+        <div class="grid grid-cols-3 gap-3">
+            @foreach (var foto in Model.Fotos.OrderBy(f => f.Orden))
+            {
+                <div class="group relative overflow-hidden rounded-xl">
+                    <img src="~/@foto.RutaArchivo" class="h-24 w-full object-cover" />
+                    <form asp-action="EliminarFoto" asp-route-id="@foto.Id" asp-route-cabanaId="@Model.Id" method="post"
+                          class="absolute right-1 top-1" onsubmit="return confirm('¿Eliminar esta foto?');">
+                        <button type="submit" class="flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-soft transition hover:bg-rose-700">&times;</button>
+                    </form>
+                </div>
+            }
+        </div>
+        @if (!Model.Fotos.Any())
+        {
+            <p class="text-sm text-ink-400">Todavía no hay fotos cargadas.</p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
