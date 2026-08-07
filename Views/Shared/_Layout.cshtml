@@ -20,6 +20,8 @@
                    class="rounded-full px-4 py-2 text-sm font-medium text-ink-600 transition hover:bg-river-50 hover:text-river-800">Cabañas</a>
                 <a asp-area="" asp-controller="Cabanas" asp-action="Disponibilidad"
                    class="rounded-full px-4 py-2 text-sm font-medium text-ink-600 transition hover:bg-river-50 hover:text-river-800">Disponibilidad</a>
+                <a asp-area="" asp-controller="Home" asp-action="ComoLlegar"
+                   class="rounded-full px-4 py-2 text-sm font-medium text-ink-600 transition hover:bg-river-50 hover:text-river-800">Cómo llegar</a>
                 <a asp-area="Admin" asp-controller="Reservas" asp-action="Index"
                    class="ml-2 rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-800">Panel de administración</a>
                 <a href="https://www.instagram.com/cabaniasidharta/" target="_blank" rel="noopener" aria-label="Instagram"
@@ -44,6 +46,7 @@
             <div class="flex flex-col gap-1">
                 <a asp-area="" asp-controller="Home" asp-action="Index" class="rounded-xl px-3 py-2 text-sm font-medium text-ink-700 hover:bg-river-50">Cabañas</a>
                 <a asp-area="" asp-controller="Cabanas" asp-action="Disponibilidad" class="rounded-xl px-3 py-2 text-sm font-medium text-ink-700 hover:bg-river-50">Disponibilidad</a>
+                <a asp-area="" asp-controller="Home" asp-action="ComoLlegar" class="rounded-xl px-3 py-2 text-sm font-medium text-ink-700 hover:bg-river-50">Cómo llegar</a>
                 <a asp-area="Admin" asp-controller="Reservas" asp-action="Index" class="rounded-xl px-3 py-2 text-sm font-medium text-ink-700 hover:bg-river-50">Panel de administración</a>
                 <a href="https://www.instagram.com/cabaniasidharta/" target="_blank" rel="noopener" class="rounded-xl px-3 py-2 text-sm font-medium text-ink-700 hover:bg-river-50">Instagram @@cabaniasidharta</a>
             </div>
@@ -57,6 +60,10 @@
     <footer class="mt-16 border-t border-ink-100 bg-white/60">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-ink-500 sm:px-6">
             <p>&copy; @DateTime.Now.Year Cabañas Sidharta &middot; El Tigre, Delta del Paraná.</p>
+            <div class="flex items-center gap-4">
+                <a asp-area="" asp-controller="Home" asp-action="ComoLlegar" class="font-medium text-ink-500 transition hover:text-river-700">Cómo llegar</a>
+                <a asp-area="" asp-controller="Home" asp-action="Terminos" class="font-medium text-ink-500 transition hover:text-river-700">Términos y condiciones</a>
+            </div>
             <div class="flex items-center gap-3">
                 <a href="https://www.instagram.com/cabaniasidharta/" target="_blank" rel="noopener" aria-label="Instagram"
                    class="flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 text-ink-500 transition hover:border-river-300 hover:text-river-700">
