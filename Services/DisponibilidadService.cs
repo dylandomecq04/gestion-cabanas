@@ -13,11 +13,11 @@ namespace GestionCabanas.Services
             _db = db;
         }
 
-        public async Task<bool> HaySuperposicionAsync(int cabanaId, DateTime desde, DateTime hasta, int? reservaIdExcluir = null)
+        public async Task<bool> HaySuperposicionAsync(int cabanaId, DateTime desde, DateTime hasta, int? reservaIdExcluir = null, bool incluirPendientes = false)
         {
             var query = _db.Reservas.Where(r =>
                 r.CabanaId == cabanaId &&
-                r.Estado == EstadoReserva.Confirmada &&
+                (r.Estado == EstadoReserva.Confirmada || (incluirPendientes && r.Estado == EstadoReserva.Pendiente)) &&
                 r.FechaDesde < hasta &&
                 r.FechaHasta > desde);
 
@@ -48,10 +48,10 @@ namespace GestionCabanas.Services
             return await query.OrderBy(r => r.FechaDesde).ToListAsync();
         }
 
-        public async Task<List<Reserva>> ObtenerConfirmadasEnRangoAsync(DateTime desde, DateTime hasta, int? cabanaId = null)
+        public async Task<List<Reserva>> ObtenerConfirmadasEnRangoAsync(DateTime desde, DateTime hasta, int? cabanaId = null, bool incluirPendientes = false)
         {
             var query = _db.Reservas.Where(r =>
-                r.Estado == EstadoReserva.Confirmada &&
+                (r.Estado == EstadoReserva.Confirmada || (incluirPendientes && r.Estado == EstadoReserva.Pendiente)) &&
                 r.FechaDesde <= hasta &&
                 r.FechaHasta >= desde);
 

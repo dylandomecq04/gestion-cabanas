@@ -71,7 +71,7 @@ namespace GestionCabanas.Controllers
             {
                 ModelState.AddModelError(nameof(modelo.FechaDesde), "La fecha de entrada no puede ser anterior a hoy");
             }
-            else if (await _disponibilidad.HaySuperposicionAsync(modelo.CabanaId, modelo.FechaDesde, modelo.FechaHasta))
+            else if (await _disponibilidad.HaySuperposicionAsync(modelo.CabanaId, modelo.FechaDesde, modelo.FechaHasta, incluirPendientes: true))
             {
                 ModelState.AddModelError(string.Empty, "Esas fechas ya no están disponibles para esta cabaña. Elegí otro rango.");
             }
@@ -119,7 +119,7 @@ namespace GestionCabanas.Controllers
             var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
 
             var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
-            var reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia);
+            var reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, incluirPendientes: true);
             var bloqueadas = await _disponibilidad.ObtenerBloqueadasEnRangoAsync(primerDia, ultimoDia);
 
             ViewBag.Cabanas = cabanas;
@@ -140,7 +140,7 @@ namespace GestionCabanas.Controllers
             var primerDia = new DateTime(anio ?? hoy.Year, mes ?? hoy.Month, 1);
             var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
 
-            ViewBag.Reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
+            ViewBag.Reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, cabanaId, incluirPendientes: true);
             ViewBag.Bloqueadas = await _disponibilidad.ObtenerBloqueadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
