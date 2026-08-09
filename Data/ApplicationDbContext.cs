@@ -14,6 +14,8 @@ namespace GestionCabanas.Data
         public DbSet<Reserva> Reservas => Set<Reserva>();
         public DbSet<AdminUsuario> AdminUsuarios => Set<AdminUsuario>();
         public DbSet<TarifaDia> TarifasDias => Set<TarifaDia>();
+        public DbSet<InformacionSitio> InformacionSitio => Set<InformacionSitio>();
+        public DbSet<PreguntaFrecuente> PreguntasFrecuentes => Set<PreguntaFrecuente>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

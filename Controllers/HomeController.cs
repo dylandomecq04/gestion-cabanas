@@ -30,6 +30,15 @@ public class HomeController : Controller
         return View();
     }
 
+    public async Task<IActionResult> Informacion()
+    {
+        var info = await _db.InformacionSitio.FirstOrDefaultAsync() ?? new InformacionSitio();
+        var preguntas = await _db.PreguntasFrecuentes.OrderBy(p => p.Orden).ToListAsync();
+
+        ViewBag.Preguntas = preguntas;
+        return View(info);
+    }
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

@@ -8,65 +8,166 @@
     DateTime mesAnterior = ViewBag.MesAnterior;
     DateTime mesSiguiente = ViewBag.MesSiguiente;
     var dias = Enumerable.Range(0, (ultimoDia - primerDia).Days + 1).Select(i => primerDia.AddDays(i)).ToList();
+    var hoy = DateTime.Today;
 
     Reserva? ReservaDeLaCabanaEnElDia(int cabanaId, DateTime dia)
         => reservas.FirstOrDefault(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
 
     bool EstaBloqueada(int cabanaId, DateTime dia)
         => bloqueadas.Any(b => b.CabanaId == cabanaId && b.Fecha.Date == dia.Date);
+
+    bool EsFinDeSemana(DateTime dia) => dia.DayOfWeek == DayOfWeek.Saturday || dia.DayOfWeek == DayOfWeek.Sunday;
 }
 
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="font-display text-2xl font-semibold text-ink-900">Calendario &middot; @primerDia.ToString("MMMM yyyy")</h1>
-    <div class="flex gap-2">
-        <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
-           asp-action="Calendario" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month">&larr; Mes anterior</a>
-        <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
-           asp-action="Calendario" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month">Mes siguiente &rarr;</a>
+<div class="relative left-1/2 w-screen -translate-x-1/2 px-4 sm:px-8">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 class="font-display text-2xl font-semibold text-ink-900">Calendario &middot; @primerDia.ToString("MMMM yyyy")</h1>
+        <div class="flex gap-2">
+            <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
+               asp-action="Calendario" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month">&larr; Mes anterior</a>
+            <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
+               asp-action="Calendario" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month">Mes siguiente &rarr;</a>
+        </div>
+    </div>
+
+    <div class="mb-1 flex flex-wrap items-center gap-4 text-xs font-medium text-ink-500">
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-300"></span> Pendiente</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-500"></span> Confirmada</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-400"></span> Bloqueada manualmente</span>
+    </div>
+    <p class="mb-4 text-xs text-ink-400">Tocá cualquier celda para bloquear/desbloquear ese día, cargar una reserva ahí o ver la reserva existente.</p>
+
+    <div class="overflow-x-auto rounded-2.5xl bg-white p-3 shadow-soft ring-1 ring-ink-100">
+        <table class="w-full border-separate text-sm" style="border-spacing: 4px;">
+            <thead>
+                <tr>
+                    <th class="sticky left-0 z-10 min-w-[150px] bg-white px-3 py-2 text-left font-semibold text-ink-600">Cabaña</th>
+                    @foreach (var dia in dias)
+                    {
+                        var clasesHeader = dia.Date == hoy
+                            ? "bg-river-600 text-white"
+                            : EsFinDeSemana(dia)
+                                ? "bg-sand-100 text-sand-800"
+                                : "text-ink-400";
+                        <th class="min-w-[42px] rounded-lg px-1 py-2 text-center font-semibold @clasesHeader">@dia.Day</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cabana in cabanas)
+                {
+                    <tr>
+                        <td class="sticky left-0 z-10 bg-white px-3 py-2 font-medium text-ink-800">@cabana.Nombre</td>
+                        @foreach (var dia in dias)
+                        {
+                            var reserva = ReservaDeLaCabanaEnElDia(cabana.Id, dia);
+                            var bloqueada = EstaBloqueada(cabana.Id, dia);
+                            var fechaAttr = dia.ToString("yyyy-MM-dd");
+                            var fechaTexto = dia.ToString("dd/MM/yyyy");
+
+                            if (reserva is not null)
+                            {
+                                var esConfirmada = reserva.Estado == EstadoReserva.Confirmada;
+                                var clase = esConfirmada ? "bg-river-500 hover:bg-river-600" : "bg-amber-300 hover:bg-amber-400";
+                                var infoReserva = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM} ({(esConfirmada ? "Confirmada" : "Pendiente")})";
+                                <td class="p-0">
+                                    <button type="button" onclick="abrirAccionDia(this)"
+                                            data-estado="@(esConfirmada ? "confirmada" : "pendiente")"
+                                            data-cabana-nombre="@cabana.Nombre"
+                                            data-fecha-texto="@fechaTexto"
+                                            data-reserva-id="@reserva.Id"
+                                            data-info-reserva="@infoReserva"
+                                            title="@infoReserva"
+                                            class="day-cell h-9 w-full rounded-lg @clase transition"></button>
+                                </td>
+                            }
+                            else
+                            {
+                                var clase = bloqueada
+                                    ? "bg-ink-400 hover:bg-ink-500"
+                                    : EsFinDeSemana(dia)
+                                        ? "bg-sand-100 hover:bg-sand-200"
+                                        : "bg-ink-50 hover:bg-ink-100";
+                                <td class="p-0">
+                                    <button type="button" onclick="abrirAccionDia(this)"
+                                            data-estado="@(bloqueada ? "bloqueada" : "libre")"
+                                            data-cabana-id="@cabana.Id"
+                                            data-cabana-nombre="@cabana.Nombre"
+                                            data-fecha="@fechaAttr"
+                                            data-fecha-texto="@fechaTexto"
+                                            title="@(bloqueada ? "Bloqueada manualmente" : "Libre")"
+                                            class="day-cell h-9 w-full rounded-lg @clase transition"></button>
+                                </td>
+                            }
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
 </div>
 
-<div class="mb-4 flex items-center gap-4 text-xs font-medium text-ink-500">
-    <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-300"></span> Pendiente</span>
-    <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-500"></span> Confirmada</span>
-    <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-400"></span> Bloqueada manualmente</span>
+<div id="modal-dia" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalDia();">
+    <div class="w-full max-w-sm rounded-2.5xl bg-white p-6 shadow-lift">
+        <h3 id="modal-dia-titulo" class="font-display text-lg font-semibold text-ink-900"></h3>
+
+        <div id="grupo-disponible" class="mt-5 space-y-2.5">
+            <form id="form-bloqueo" asp-action="AlternarBloqueo" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post">
+                <input type="hidden" id="input-bloqueo-cabanaId" name="cabanaId" />
+                <input type="hidden" id="input-bloqueo-fecha" name="fecha" />
+                <button id="btn-toggle-bloqueo" type="submit" class="w-full rounded-full border border-ink-200 px-4 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-ink-300">
+                    🚫 Bloquear este día
+                </button>
+            </form>
+            <a id="link-cargar-reserva" href="#" class="block w-full rounded-full bg-river-700 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
+                ➕ Cargar una reserva acá
+            </a>
+        </div>
+
+        <div id="grupo-reserva" class="mt-5 hidden space-y-3">
+            <p id="info-reserva" class="rounded-xl bg-sand-50 p-3 text-sm text-ink-600"></p>
+            <a id="link-editar-reserva" href="#" class="block w-full rounded-full bg-river-700 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
+                ✏️ Ver / editar reserva
+            </a>
+        </div>
+
+        <button type="button" onclick="cerrarModalDia()" class="mt-4 w-full text-sm font-medium text-ink-400 transition hover:text-ink-600">
+            Cerrar
+        </button>
+    </div>
 </div>
 
-<div class="overflow-x-auto rounded-2.5xl bg-white p-2 shadow-soft ring-1 ring-ink-100">
-    <table class="w-full border-separate text-xs" style="border-spacing: 3px;">
-        <thead>
-            <tr>
-                <th class="sticky left-0 z-10 min-w-[130px] bg-white px-3 py-2 text-left font-semibold text-ink-600">Cabaña</th>
-                @foreach (var dia in dias)
-                {
-                    <th class="min-w-[30px] rounded-md px-1 py-2 text-center font-semibold @(dia.Date == DateTime.Today ? "bg-river-50 text-river-700" : "text-ink-400")">@dia.Day</th>
-                }
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var cabana in cabanas)
-            {
-                <tr>
-                    <td class="sticky left-0 z-10 bg-white px-3 py-2 font-medium text-ink-800">@cabana.Nombre</td>
-                    @foreach (var dia in dias)
-                    {
-                        var reserva = ReservaDeLaCabanaEnElDia(cabana.Id, dia);
-                        if (reserva is not null)
-                        {
-                            var clase = reserva.Estado == EstadoReserva.Confirmada ? "bg-river-500" : "bg-amber-300";
-                            <td class="day-cell rounded-md @clase" title="@reserva.NombreHuesped (@reserva.FechaDesde.ToString("dd/MM") - @reserva.FechaHasta.ToString("dd/MM"))"></td>
-                        }
-                        else if (EstaBloqueada(cabana.Id, dia))
-                        {
-                            <td class="day-cell rounded-md bg-ink-400" title="Bloqueada manualmente"></td>
-                        }
-                        else
-                        {
-                            <td class="rounded-md bg-ink-50"></td>
-                        }
-                    }
-                </tr>
+@section Scripts {
+    <script>
+        function abrirAccionDia(btn) {
+            const estado = btn.dataset.estado;
+            document.getElementById('modal-dia-titulo').textContent = btn.dataset.cabanaNombre + ' · ' + btn.dataset.fechaTexto;
+
+            const grupoDisponible = document.getElementById('grupo-disponible');
+            const grupoReserva = document.getElementById('grupo-reserva');
+
+            if (estado === 'pendiente' || estado === 'confirmada') {
+                grupoDisponible.classList.add('hidden');
+                grupoReserva.classList.remove('hidden');
+                document.getElementById('info-reserva').textContent = btn.dataset.infoReserva;
+                document.getElementById('link-editar-reserva').href = '/Admin/Reservas/Edit/' + btn.dataset.reservaId;
+            } else {
+                grupoReserva.classList.add('hidden');
+                grupoDisponible.classList.remove('hidden');
+
+                const cabanaId = btn.dataset.cabanaId;
+                const fecha = btn.dataset.fecha;
+                document.getElementById('input-bloqueo-cabanaId').value = cabanaId;
+                document.getElementById('input-bloqueo-fecha').value = fecha;
+                document.getElementById('btn-toggle-bloqueo').textContent = estado === 'bloqueada' ? '✅ Desbloquear este día' : '🚫 Bloquear este día';
+                document.getElementById('link-cargar-reserva').href = '/Admin/Reservas/Create?cabanaId=' + cabanaId + '&fecha=' + fecha;
             }
-        </tbody>
-    </table>
-</div>
+
+            document.getElementById('modal-dia').classList.remove('hidden');
+        }
+
+        function cerrarModalDia() {
+            document.getElementById('modal-dia').classList.add('hidden');
+        }
+    </script>
+}

@@ -1,0 +1,33 @@
+@model PreguntaFrecuente
+@{
+    ViewData["Title"] = "Nueva pregunta frecuente";
+}
+
+<h1 class="mb-6 font-display text-2xl font-semibold text-ink-900">Nueva pregunta frecuente</h1>
+
+<form asp-action="CrearPregunta" method="post" class="max-w-xl space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+    <div asp-validation-summary="All" class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 empty:hidden"></div>
+
+    <div>
+        <label asp-for="Pregunta" class="mb-1 block text-sm font-medium text-ink-700"></label>
+        <input asp-for="Pregunta" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        <span asp-validation-for="Pregunta" class="mt-1 block text-xs font-medium text-rose-600"></span>
+    </div>
+    <div>
+        <label asp-for="Respuesta" class="mb-1 block text-sm font-medium text-ink-700"></label>
+        <textarea asp-for="Respuesta" rows="4" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+        <span asp-validation-for="Respuesta" class="mt-1 block text-xs font-medium text-rose-600"></span>
+    </div>
+    <div>
+        <label asp-for="Orden" class="mb-1 block text-sm font-medium text-ink-700">Orden (opcional, se agrega al final si lo dejás en 0)</label>
+        <input asp-for="Orden" class="w-32 rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+    </div>
+    <div class="flex items-center gap-3 pt-2">
+        <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">Guardar</button>
+        <a asp-action="Index" class="text-sm font-medium text-ink-500 hover:text-ink-700">Cancelar</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11819.183 stable
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GestionCabanas", "GestionCabanas.csproj", "{2E4EC8C3-6C3C-8ABF-7C25-FA46338BED9F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2E4EC8C3-6C3C-8ABF-7C25-FA46338BED9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E4EC8C3-6C3C-8ABF-7C25-FA46338BED9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E4EC8C3-6C3C-8ABF-7C25-FA46338BED9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E4EC8C3-6C3C-8ABF-7C25-FA46338BED9F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B3619CB9-91DF-4EC9-A10F-41CE3B39E60E}
+	EndGlobalSection
+EndGlobal

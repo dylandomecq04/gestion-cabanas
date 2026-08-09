@@ -1,0 +1,65 @@
+@model InformacionSitio
+@{
+    ViewData["Title"] = "Información del sitio";
+    var preguntas = (List<PreguntaFrecuente>)ViewBag.Preguntas;
+}
+
+<h1 class="mb-6 font-display text-2xl font-semibold text-ink-900">Información del sitio</h1>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <form asp-action="Guardar" method="post" class="space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+        <div asp-validation-summary="All" class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 empty:hidden"></div>
+
+        <div>
+            <label asp-for="Direccion" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="Direccion" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <span asp-validation-for="Direccion" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+        <div>
+            <label asp-for="ComoLlegar" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <textarea asp-for="ComoLlegar" rows="4" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+        </div>
+        <div>
+            <label asp-for="Comodidades" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <textarea asp-for="Comodidades" rows="5" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+            <p class="mt-1 text-xs text-ink-400">Un ítem por línea (ej: "Pileta compartida"), se muestran como lista en el sitio.</p>
+        </div>
+        <div>
+            <label asp-for="InformacionAdicional" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <textarea asp-for="InformacionAdicional" rows="4" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+        </div>
+        <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+            Guardar información
+        </button>
+    </form>
+
+    <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="font-display text-lg font-semibold text-ink-900">Preguntas frecuentes</h2>
+            <a asp-action="CrearPregunta" class="rounded-full bg-river-700 px-4 py-2 text-xs font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">+ Nueva pregunta</a>
+        </div>
+
+        <div class="space-y-3">
+            @foreach (var pregunta in preguntas)
+            {
+                <div class="rounded-xl border border-ink-100 p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <p class="font-medium text-ink-900">@pregunta.Pregunta</p>
+                        <span class="shrink-0 rounded-full bg-ink-100 px-2 py-0.5 text-[10px] font-semibold text-ink-500">#@pregunta.Orden</span>
+                    </div>
+                    <p class="mt-1 text-sm text-ink-600">@pregunta.Respuesta</p>
+                    <div class="mt-3 flex gap-2">
+                        <a asp-action="EditarPregunta" asp-route-id="@pregunta.Id" class="rounded-full border border-ink-200 px-3 py-1 text-xs font-semibold text-ink-600 transition hover:border-river-300 hover:text-river-700">Editar</a>
+                        <form asp-action="EliminarPregunta" asp-route-id="@pregunta.Id" method="post" onsubmit="return confirm('¿Eliminar esta pregunta?');">
+                            <button type="submit" class="rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+            }
+            @if (!preguntas.Any())
+            {
+                <p class="text-sm text-ink-400">Todavía no hay preguntas cargadas.</p>
+            }
+        </div>
+    </div>
+</div>

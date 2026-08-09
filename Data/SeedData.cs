@@ -41,6 +41,26 @@ namespace GestionCabanas.Data
                 }
             }
 
+            if (!db.InformacionSitio.Any())
+            {
+                db.InformacionSitio.Add(new InformacionSitio
+                {
+                    Direccion = "Completá acá la dirección real del complejo (ej: Ruta Provincial 25, Km 3, El Tigre, Buenos Aires).",
+                    ComoLlegar = "Contanos acá cómo llegar en auto, lancha o colectivo. Completá esta información desde el panel de administración.",
+                    Comodidades = "Pileta compartida\nParrilla individual\nWiFi\nEstacionamiento\nMuelle propio\nRío a metros",
+                    InformacionAdicional = "Agregá acá cualquier información adicional que quieras que vean tus huéspedes."
+                });
+            }
+
+            if (!db.PreguntasFrecuentes.Any())
+            {
+                db.PreguntasFrecuentes.AddRange(
+                    new PreguntaFrecuente { Pregunta = "¿A qué hora es el check-in y el check-out?", Respuesta = "Completá esta respuesta desde el panel de administración.", Orden = 1 },
+                    new PreguntaFrecuente { Pregunta = "¿Aceptan mascotas?", Respuesta = "Completá esta respuesta desde el panel de administración.", Orden = 2 },
+                    new PreguntaFrecuente { Pregunta = "¿Cómo se paga la reserva?", Respuesta = "Completá esta respuesta desde el panel de administración.", Orden = 3 }
+                );
+            }
+
             db.SaveChanges();
         }
     }

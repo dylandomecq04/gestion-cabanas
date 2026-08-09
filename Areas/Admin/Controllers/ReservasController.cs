@@ -35,10 +35,17 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return View(reservas);
         }
 
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(int? cabanaId, DateTime? fecha)
         {
             ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
-            return View(new Reserva { FechaDesde = DateTime.Today, FechaHasta = DateTime.Today.AddDays(1) });
+
+            var fechaDesde = fecha ?? DateTime.Today;
+            return View(new Reserva
+            {
+                CabanaId = cabanaId ?? 0,
+                FechaDesde = fechaDesde,
+                FechaHasta = fechaDesde.AddDays(1)
+            });
         }
 
         [HttpPost]
@@ -160,6 +167,39 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["Mensaje"] = "Reserva eliminada.";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AlternarBloqueo(int cabanaId, DateTime fecha, int? anio, int? mes)
+        {
+            var existente = await _db.TarifasDias.FirstOrDefaultAsync(t => t.CabanaId == cabanaId && t.Fecha.Date == fecha.Date);
+
+            if (existente is not null && existente.Bloqueada)
+            {
+                if (existente.Precio.HasValue)
+                {
+                    existente.Bloqueada = false;
+                }
+                else
+                {
+                    _db.TarifasDias.Remove(existente);
+                }
+                TempData["Mensaje"] = "Día desbloqueado.";
+            }
+            else if (existente is not null)
+            {
+                existente.Bloqueada = true;
+                TempData["Mensaje"] = "Día bloqueado.";
+            }
+            else
+            {
+                _db.TarifasDias.Add(new TarifaDia { CabanaId = cabanaId, Fecha = fecha.Date, Bloqueada = true });
+                TempData["Mensaje"] = "Día bloqueado.";
+            }
+
+            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(Calendario), new { anio, mes });
         }
 
         public async Task<IActionResult> Calendario(int? anio, int? mes)
