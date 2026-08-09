@@ -212,17 +212,26 @@ namespace GestionCabanas.Areas.Admin.Controllers
             var reservas = await _db.Reservas
                 .Where(r => r.Estado != EstadoReserva.Cancelada && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
                 .ToListAsync();
-            var bloqueadas = await _disponibilidad.ObtenerBloqueadasEnRangoAsync(primerDia, ultimoDia);
+            var tarifas = await _disponibilidad.ObtenerTarifasEnRangoTodasCabanasAsync(primerDia, ultimoDia);
 
             ViewBag.Cabanas = cabanas;
             ViewBag.Reservas = reservas;
-            ViewBag.Bloqueadas = bloqueadas;
+            ViewBag.Tarifas = tarifas;
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
             ViewBag.MesSiguiente = primerDia.AddMonths(1);
 
             return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GuardarTarifasCalendario(int anio, int mes, List<TarifaDiaInput> dias)
+        {
+            await _disponibilidad.GuardarTarifasAsync(dias ?? new List<TarifaDiaInput>());
+            TempData["Mensaje"] = "Cambios guardados.";
+            return RedirectToAction(nameof(Calendario), new { anio, mes });
         }
 
         private async Task ValidarFechasAsync(Reserva modelo, int? idExcluir)

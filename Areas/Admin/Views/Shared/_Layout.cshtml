@@ -52,7 +52,16 @@
     <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         @if (TempData["Mensaje"] != null)
         {
-            <div class="mb-6 rounded-xl bg-river-50 px-4 py-3 text-sm font-medium text-river-800 ring-1 ring-river-100">@TempData["Mensaje"]</div>
+            <div id="mensaje-flash" class="mb-6 rounded-xl bg-river-50 px-4 py-3 text-sm font-medium text-river-800 ring-1 ring-river-100 transition-opacity duration-700">@TempData["Mensaje"]</div>
+            <script>
+                setTimeout(function () {
+                    var el = document.getElementById('mensaje-flash');
+                    if (el) {
+                        el.style.opacity = '0';
+                        setTimeout(function () { el.remove(); }, 700);
+                    }
+                }, 3000);
+            </script>
         }
         @RenderBody()
     </main>

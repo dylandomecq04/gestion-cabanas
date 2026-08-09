@@ -2,21 +2,25 @@
     ViewData["Title"] = "Calendario de disponibilidad";
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
     var reservas = (List<Reserva>)ViewBag.Reservas;
-    var bloqueadas = (List<TarifaDia>)ViewBag.Bloqueadas;
+    var tarifas = (List<TarifaDia>)ViewBag.Tarifas;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
     DateTime mesSiguiente = ViewBag.MesSiguiente;
     var dias = Enumerable.Range(0, (ultimoDia - primerDia).Days + 1).Select(i => primerDia.AddDays(i)).ToList();
     var hoy = DateTime.Today;
+    int indice = 0;
 
     Reserva? ReservaDeLaCabanaEnElDia(int cabanaId, DateTime dia)
         => reservas.FirstOrDefault(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
 
-    bool EstaBloqueada(int cabanaId, DateTime dia)
-        => bloqueadas.Any(b => b.CabanaId == cabanaId && b.Fecha.Date == dia.Date);
+    TarifaDia? TarifaDeLaCabanaEnElDia(int cabanaId, DateTime dia)
+        => tarifas.FirstOrDefault(t => t.CabanaId == cabanaId && t.Fecha.Date == dia.Date);
 
     bool EsFinDeSemana(DateTime dia) => dia.DayOfWeek == DayOfWeek.Saturday || dia.DayOfWeek == DayOfWeek.Sunday;
+
+    string[] diasSemana = { "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom" };
+    int IndiceDiaSemana(DateTime dia) => ((int)dia.DayOfWeek + 6) % 7;
 }
 
 <div class="relative left-1/2 w-screen -translate-x-1/2 px-4 sm:px-8">
@@ -31,107 +35,137 @@
     </div>
 
     <div class="mb-1 flex flex-wrap items-center gap-4 text-xs font-medium text-ink-500">
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-600"></span> Reservada</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-300"></span> Pendiente</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-500"></span> Confirmada</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-400"></span> Bloqueada manualmente</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-400"></span> Bloqueada</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
     </div>
-    <p class="mb-4 text-xs text-ink-400">Tocá cualquier celda para bloquear/desbloquear ese día, cargar una reserva ahí o ver la reserva existente.</p>
+    <p class="mb-4 text-xs text-ink-400">Tocá una o varias celdas libres para bloquearlas o ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
 
-    <div class="overflow-x-auto rounded-2.5xl bg-white p-3 shadow-soft ring-1 ring-ink-100">
-        <table class="w-full border-separate text-sm" style="border-spacing: 4px;">
-            <thead>
-                <tr>
-                    <th class="sticky left-0 z-10 min-w-[150px] bg-white px-3 py-2 text-left font-semibold text-ink-600">Cabaña</th>
-                    @foreach (var dia in dias)
-                    {
-                        var clasesHeader = dia.Date == hoy
-                            ? "bg-river-600 text-white"
-                            : EsFinDeSemana(dia)
-                                ? "bg-sand-100 text-sand-800"
-                                : "text-ink-400";
-                        <th class="min-w-[42px] rounded-lg px-1 py-2 text-center font-semibold @clasesHeader">@dia.Day</th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var cabana in cabanas)
-                {
+    <form id="form-tarifas" asp-action="GuardarTarifasCalendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-24">
+        <div class="overflow-x-auto rounded-2.5xl bg-white p-3 shadow-soft ring-1 ring-ink-100">
+            <table class="w-full border-separate text-xs" style="border-spacing: 4px;">
+                <thead>
                     <tr>
-                        <td class="sticky left-0 z-10 bg-white px-3 py-2 font-medium text-ink-800">@cabana.Nombre</td>
+                        <th class="sticky left-0 z-10 min-w-[150px] bg-white px-3 py-2 text-left font-semibold text-ink-600">Cabaña</th>
                         @foreach (var dia in dias)
                         {
-                            var reserva = ReservaDeLaCabanaEnElDia(cabana.Id, dia);
-                            var bloqueada = EstaBloqueada(cabana.Id, dia);
-                            var fechaAttr = dia.ToString("yyyy-MM-dd");
-                            var fechaTexto = dia.ToString("dd/MM/yyyy");
-
-                            if (reserva is not null)
-                            {
-                                var esConfirmada = reserva.Estado == EstadoReserva.Confirmada;
-                                var clase = esConfirmada ? "bg-river-500 hover:bg-river-600" : "bg-amber-300 hover:bg-amber-400";
-                                var infoReserva = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM} ({(esConfirmada ? "Confirmada" : "Pendiente")})";
-                                <td class="p-0">
-                                    <button type="button" onclick="abrirAccionDia(this)"
-                                            data-estado="@(esConfirmada ? "confirmada" : "pendiente")"
-                                            data-cabana-nombre="@cabana.Nombre"
-                                            data-fecha-texto="@fechaTexto"
-                                            data-reserva-id="@reserva.Id"
-                                            data-info-reserva="@infoReserva"
-                                            title="@infoReserva"
-                                            class="day-cell h-9 w-full rounded-lg @clase transition"></button>
-                                </td>
-                            }
-                            else
-                            {
-                                var clase = bloqueada
-                                    ? "bg-ink-400 hover:bg-ink-500"
-                                    : EsFinDeSemana(dia)
-                                        ? "bg-sand-100 hover:bg-sand-200"
-                                        : "bg-ink-50 hover:bg-ink-100";
-                                <td class="p-0">
-                                    <button type="button" onclick="abrirAccionDia(this)"
-                                            data-estado="@(bloqueada ? "bloqueada" : "libre")"
-                                            data-cabana-id="@cabana.Id"
-                                            data-cabana-nombre="@cabana.Nombre"
-                                            data-fecha="@fechaAttr"
-                                            data-fecha-texto="@fechaTexto"
-                                            title="@(bloqueada ? "Bloqueada manualmente" : "Libre")"
-                                            class="day-cell h-9 w-full rounded-lg @clase transition"></button>
-                                </td>
-                            }
+                            var clasesHeader = dia.Date == hoy
+                                ? "bg-river-600 text-white"
+                                : EsFinDeSemana(dia)
+                                    ? "bg-sand-100 text-sand-800"
+                                    : "text-ink-400";
+                            <th class="min-w-[80px] rounded-lg px-1 py-2 text-center font-semibold @clasesHeader">
+                                <div class="text-[11px] uppercase opacity-80">@diasSemana[IndiceDiaSemana(dia)]</div>
+                                <div class="text-base">@dia.Day</div>
+                            </th>
                         }
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var cabana in cabanas)
+                    {
+                        <tr>
+                            <td class="sticky left-0 z-10 bg-white px-3 py-2 font-medium text-ink-800">@cabana.Nombre</td>
+                            @foreach (var dia in dias)
+                            {
+                                var reserva = ReservaDeLaCabanaEnElDia(cabana.Id, dia);
+                                var fechaAttr = dia.ToString("yyyy-MM-dd");
+                                var fechaTexto = dia.ToString("dd/MM/yyyy");
+
+                                if (reserva is not null)
+                                {
+                                    var esConfirmada = reserva.Estado == EstadoReserva.Confirmada;
+                                    var clase = esConfirmada ? "bg-green-600 hover:bg-green-700 text-white" : "bg-amber-300 hover:bg-amber-400 text-amber-950";
+                                    var infoReserva = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM} ({(esConfirmada ? "Reservada" : "Pendiente")})";
+                                    <td class="p-0">
+                                        <button type="button" onclick="abrirReserva(this)"
+                                                data-cabana-nombre="@cabana.Nombre"
+                                                data-fecha-texto="@fechaTexto"
+                                                data-reserva-id="@reserva.Id"
+                                                data-info-reserva="@infoReserva"
+                                                title="@infoReserva"
+                                                class="day-cell flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg text-xs font-bold leading-tight @clase">
+                                            <span>@(esConfirmada ? "Reservada" : "Pendiente")</span>
+                                        </button>
+                                    </td>
+                                }
+                                else
+                                {
+                                    var tarifa = TarifaDeLaCabanaEnElDia(cabana.Id, dia);
+                                    var bloqueada = tarifa?.Bloqueada ?? false;
+                                    var precioTexto = tarifa?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+                                    var precioMostrar = tarifa?.Precio ?? cabana.PrecioPorNoche;
+                                    var etiquetaEstado = bloqueada ? "Bloqueada" : "Disponible";
+                                    var etiquetaPrecio = precioMostrar.HasValue ? "$" + precioMostrar.Value.ToString("N0") : "Sin precio";
+                                    var clase = bloqueada
+                                        ? "bg-ink-200 text-ink-500 hover:bg-ink-300"
+                                        : "bg-red-50 text-red-700 hover:bg-red-100";
+
+                                    <td class="p-0">
+                                        <button type="button" data-index="@indice"
+                                                data-cabana-id="@cabana.Id"
+                                                data-cabana-nombre="@cabana.Nombre"
+                                                data-fecha="@fechaAttr"
+                                                data-fecha-texto="@fechaTexto"
+                                                data-precio="@precioTexto"
+                                                data-bloqueada="@(bloqueada ? "true" : "false")"
+                                                onclick="alternarSeleccionDia(this)"
+                                                class="dia-editable day-cell relative flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg text-xs font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clase">
+                                            <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
+                                            <span class="etiqueta-precio text-[10px] font-normal leading-tight opacity-70">@etiquetaPrecio</span>
+                                            <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft">✓</span>
+                                        </button>
+                                        <input type="hidden" name="dias[@indice].CabanaId" value="@cabana.Id" />
+                                        <input type="hidden" name="dias[@indice].Fecha" value="@fechaAttr" />
+                                        <input type="hidden" name="dias[@indice].Precio" value="@precioTexto" />
+                                        <input type="hidden" name="dias[@indice].Bloqueada" value="@(bloqueada ? "true" : "false")" />
+                                    </td>
+                                    indice++;
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+
+<div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 p-4 shadow-lift backdrop-blur">
+    <div class="mx-auto flex max-w-4xl flex-wrap items-end gap-3">
+        <div class="text-sm font-medium text-ink-700"><span id="contador-seleccion">0</span> día(s) seleccionados</div>
+        <div class="min-w-[140px] flex-1">
+            <label class="mb-1 block text-xs font-medium text-ink-600">Precio esa noche (vacío = base)</label>
+            <input id="bulk-precio" type="text" inputmode="numeric" placeholder="Base"
+                   oninput="formatearMiles(this)"
+                   class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        </div>
+        <label class="flex items-center gap-2 pb-2 text-sm font-medium text-ink-700">
+            <input id="bulk-bloqueada" type="checkbox" class="h-4 w-4 rounded border-ink-300 text-rose-600 focus:ring-rose-400" />
+            Bloquear
+        </label>
+        <a id="link-cargar-reserva-bulk" href="#" class="hidden rounded-full border border-ink-200 px-4 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-river-300">
+            ➕ Cargar reserva acá
+        </a>
+        <button type="button" onclick="aplicarSeleccion()" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
+            Aplicar a seleccionados
+        </button>
+        <button type="button" onclick="cancelarSeleccion()" class="rounded-full border border-ink-200 px-4 py-2.5 text-sm font-medium text-ink-600 transition hover:border-ink-300">
+            Cancelar
+        </button>
     </div>
 </div>
 
-<div id="modal-dia" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalDia();">
+<div id="modal-reserva" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalReserva();">
     <div class="w-full max-w-sm rounded-2.5xl bg-white p-6 shadow-lift">
-        <h3 id="modal-dia-titulo" class="font-display text-lg font-semibold text-ink-900"></h3>
-
-        <div id="grupo-disponible" class="mt-5 space-y-2.5">
-            <form id="form-bloqueo" asp-action="AlternarBloqueo" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post">
-                <input type="hidden" id="input-bloqueo-cabanaId" name="cabanaId" />
-                <input type="hidden" id="input-bloqueo-fecha" name="fecha" />
-                <button id="btn-toggle-bloqueo" type="submit" class="w-full rounded-full border border-ink-200 px-4 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-ink-300">
-                    🚫 Bloquear este día
-                </button>
-            </form>
-            <a id="link-cargar-reserva" href="#" class="block w-full rounded-full bg-river-700 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
-                ➕ Cargar una reserva acá
-            </a>
-        </div>
-
-        <div id="grupo-reserva" class="mt-5 hidden space-y-3">
-            <p id="info-reserva" class="rounded-xl bg-sand-50 p-3 text-sm text-ink-600"></p>
-            <a id="link-editar-reserva" href="#" class="block w-full rounded-full bg-river-700 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
-                ✏️ Ver / editar reserva
-            </a>
-        </div>
-
-        <button type="button" onclick="cerrarModalDia()" class="mt-4 w-full text-sm font-medium text-ink-400 transition hover:text-ink-600">
+        <h3 id="modal-reserva-titulo" class="font-display text-lg font-semibold text-ink-900"></h3>
+        <p id="info-reserva" class="mt-4 rounded-xl bg-sand-50 p-3 text-sm text-ink-600"></p>
+        <a id="link-editar-reserva" href="#" class="mt-4 block w-full rounded-full bg-river-700 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
+            ✏️ Ver / editar reserva
+        </a>
+        <button type="button" onclick="cerrarModalReserva()" class="mt-3 w-full text-sm font-medium text-ink-400 transition hover:text-ink-600">
             Cerrar
         </button>
     </div>
@@ -139,35 +173,105 @@
 
 @section Scripts {
     <script>
-        function abrirAccionDia(btn) {
-            const estado = btn.dataset.estado;
-            document.getElementById('modal-dia-titulo').textContent = btn.dataset.cabanaNombre + ' · ' + btn.dataset.fechaTexto;
+        const seleccionDias = new Set();
 
-            const grupoDisponible = document.getElementById('grupo-disponible');
-            const grupoReserva = document.getElementById('grupo-reserva');
-
-            if (estado === 'pendiente' || estado === 'confirmada') {
-                grupoDisponible.classList.add('hidden');
-                grupoReserva.classList.remove('hidden');
-                document.getElementById('info-reserva').textContent = btn.dataset.infoReserva;
-                document.getElementById('link-editar-reserva').href = '/Admin/Reservas/Edit/' + btn.dataset.reservaId;
+        function alternarSeleccionDia(btn) {
+            const idx = btn.dataset.index;
+            const badge = btn.querySelector('.badge-seleccionado');
+            if (seleccionDias.has(idx)) {
+                seleccionDias.delete(idx);
+                btn.classList.remove('ring-river-600');
+                badge.classList.add('hidden');
+                badge.classList.remove('flex');
             } else {
-                grupoReserva.classList.add('hidden');
-                grupoDisponible.classList.remove('hidden');
-
-                const cabanaId = btn.dataset.cabanaId;
-                const fecha = btn.dataset.fecha;
-                document.getElementById('input-bloqueo-cabanaId').value = cabanaId;
-                document.getElementById('input-bloqueo-fecha').value = fecha;
-                document.getElementById('btn-toggle-bloqueo').textContent = estado === 'bloqueada' ? '✅ Desbloquear este día' : '🚫 Bloquear este día';
-                document.getElementById('link-cargar-reserva').href = '/Admin/Reservas/Create?cabanaId=' + cabanaId + '&fecha=' + fecha;
+                seleccionDias.add(idx);
+                btn.classList.add('ring-river-600');
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
             }
-
-            document.getElementById('modal-dia').classList.remove('hidden');
+            actualizarBarraSeleccion();
         }
 
-        function cerrarModalDia() {
-            document.getElementById('modal-dia').classList.add('hidden');
+        function actualizarBarraSeleccion() {
+            const barra = document.getElementById('barra-seleccion');
+            document.getElementById('contador-seleccion').textContent = seleccionDias.size;
+            barra.classList.toggle('hidden', seleccionDias.size === 0);
+
+            const linkCargar = document.getElementById('link-cargar-reserva-bulk');
+            if (seleccionDias.size === 1) {
+                const idx = [...seleccionDias][0];
+                const btn = document.querySelector(`.dia-editable[data-index="${idx}"]`);
+                linkCargar.href = '/Admin/Reservas/Create?cabanaId=' + btn.dataset.cabanaId + '&fecha=' + btn.dataset.fecha;
+                linkCargar.classList.remove('hidden');
+            } else {
+                linkCargar.classList.add('hidden');
+            }
+        }
+
+        function cancelarSeleccion() {
+            seleccionDias.forEach(idx => {
+                const btn = document.querySelector(`.dia-editable[data-index="${idx}"]`);
+                if (!btn) return;
+                btn.classList.remove('ring-river-600');
+                const badge = btn.querySelector('.badge-seleccionado');
+                badge.classList.add('hidden');
+                badge.classList.remove('flex');
+            });
+            seleccionDias.clear();
+            document.getElementById('bulk-precio').value = '';
+            document.getElementById('bulk-bloqueada').checked = false;
+            actualizarBarraSeleccion();
+        }
+
+        function formatearMiles(input) {
+            const soloDigitos = input.value.replace(/\D/g, '');
+            input.value = soloDigitos ? Number(soloDigitos).toLocaleString('es-AR') : '';
+        }
+
+        function aplicarSeleccion() {
+            const precioTexto = document.getElementById('bulk-precio').value.replace(/\D/g, '');
+            const bloqueada = document.getElementById('bulk-bloqueada').checked;
+
+            seleccionDias.forEach(idx => {
+                const btn = document.querySelector(`.dia-editable[data-index="${idx}"]`);
+                if (!btn) return;
+
+                btn.dataset.precio = precioTexto;
+                btn.dataset.bloqueada = bloqueada ? 'true' : 'false';
+
+                document.querySelector(`input[name="dias[${idx}].Precio"]`).value = precioTexto;
+                document.querySelector(`input[name="dias[${idx}].Bloqueada"]`).value = bloqueada ? 'true' : 'false';
+
+                btn.classList.remove('bg-ink-200', 'text-ink-500', 'hover:bg-ink-300', 'bg-red-50', 'text-red-700', 'hover:bg-red-100');
+                if (bloqueada) {
+                    btn.classList.add('bg-ink-200', 'text-ink-500', 'hover:bg-ink-300');
+                } else {
+                    btn.classList.add('bg-red-50', 'text-red-700', 'hover:bg-red-100');
+                }
+
+                const etiquetaEstado = btn.querySelector('.etiqueta-estado');
+                if (etiquetaEstado) {
+                    etiquetaEstado.textContent = bloqueada ? 'Bloqueada' : 'Disponible';
+                }
+                const etiquetaPrecio = btn.querySelector('.etiqueta-precio');
+                if (etiquetaPrecio) {
+                    etiquetaPrecio.textContent = precioTexto ? '$' + Number(precioTexto).toLocaleString('es-AR') : 'Sin precio';
+                }
+            });
+
+            cancelarSeleccion();
+            document.getElementById('form-tarifas').requestSubmit();
+        }
+
+        function abrirReserva(btn) {
+            document.getElementById('modal-reserva-titulo').textContent = btn.dataset.cabanaNombre + ' · ' + btn.dataset.fechaTexto;
+            document.getElementById('info-reserva').textContent = btn.dataset.infoReserva;
+            document.getElementById('link-editar-reserva').href = '/Admin/Reservas/Edit/' + btn.dataset.reservaId;
+            document.getElementById('modal-reserva').classList.remove('hidden');
+        }
+
+        function cerrarModalReserva() {
+            document.getElementById('modal-reserva').classList.add('hidden');
         }
     </script>
 }

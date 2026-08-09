@@ -70,6 +70,49 @@ namespace GestionCabanas.Services
                 .ToListAsync();
         }
 
+        public async Task<List<TarifaDia>> ObtenerTarifasEnRangoTodasCabanasAsync(DateTime desde, DateTime hasta)
+        {
+            return await _db.TarifasDias
+                .Where(t => t.Fecha >= desde && t.Fecha <= hasta)
+                .ToListAsync();
+        }
+
+        public async Task GuardarTarifasAsync(IEnumerable<TarifaDiaInput> dias)
+        {
+            foreach (var dia in dias)
+            {
+                var existente = await _db.TarifasDias.FirstOrDefaultAsync(t => t.CabanaId == dia.CabanaId && t.Fecha.Date == dia.Fecha.Date);
+                var necesitaFila = dia.Bloqueada || dia.Precio.HasValue;
+
+                if (!necesitaFila)
+                {
+                    if (existente is not null)
+                    {
+                        _db.TarifasDias.Remove(existente);
+                    }
+                    continue;
+                }
+
+                if (existente is null)
+                {
+                    _db.TarifasDias.Add(new TarifaDia
+                    {
+                        CabanaId = dia.CabanaId,
+                        Fecha = dia.Fecha.Date,
+                        Precio = dia.Precio,
+                        Bloqueada = dia.Bloqueada
+                    });
+                }
+                else
+                {
+                    existente.Precio = dia.Precio;
+                    existente.Bloqueada = dia.Bloqueada;
+                }
+            }
+
+            await _db.SaveChangesAsync();
+        }
+
         public async Task<List<TarifaDia>> ObtenerBloqueadasEnRangoAsync(DateTime desde, DateTime hasta, int? cabanaId = null)
         {
             var query = _db.TarifasDias.Where(t => t.Bloqueada && t.Fecha >= desde && t.Fecha <= hasta);

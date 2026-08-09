@@ -1,5 +1,6 @@
 using GestionCabanas.Data;
 using GestionCabanas.Models;
+using GestionCabanas.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,11 +13,13 @@ namespace GestionCabanas.Areas.Admin.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly IWebHostEnvironment _env;
+        private readonly DisponibilidadService _disponibilidad;
 
-        public CabanasController(ApplicationDbContext db, IWebHostEnvironment env)
+        public CabanasController(ApplicationDbContext db, IWebHostEnvironment env, DisponibilidadService disponibilidad)
         {
             _db = db;
             _env = env;
+            _disponibilidad = disponibilidad;
         }
 
         public async Task<IActionResult> Index()
@@ -164,38 +167,12 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            foreach (var dia in dias ?? new List<TarifaDiaInput>())
+            var dias2 = dias ?? new List<TarifaDiaInput>();
+            foreach (var dia in dias2)
             {
-                var existente = await _db.TarifasDias.FirstOrDefaultAsync(t => t.CabanaId == id && t.Fecha.Date == dia.Fecha.Date);
-                var necesitaFila = dia.Bloqueada || dia.Precio.HasValue;
-
-                if (!necesitaFila)
-                {
-                    if (existente is not null)
-                    {
-                        _db.TarifasDias.Remove(existente);
-                    }
-                    continue;
-                }
-
-                if (existente is null)
-                {
-                    _db.TarifasDias.Add(new TarifaDia
-                    {
-                        CabanaId = id,
-                        Fecha = dia.Fecha.Date,
-                        Precio = dia.Precio,
-                        Bloqueada = dia.Bloqueada
-                    });
-                }
-                else
-                {
-                    existente.Precio = dia.Precio;
-                    existente.Bloqueada = dia.Bloqueada;
-                }
+                dia.CabanaId = id;
             }
-
-            await _db.SaveChangesAsync();
+            await _disponibilidad.GuardarTarifasAsync(dias2);
 
             TempData["Mensaje"] = $"Precios y disponibilidad de \"{cabana.Nombre}\" actualizados.";
             return RedirectToAction(nameof(Tarifas), new { id, anio, mes });
