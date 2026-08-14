@@ -2,7 +2,7 @@
 @{
     var cabana = (Cabana)ViewBag.Cabana;
     var reservas = (List<Reserva>)ViewBag.Reservas;
-    var bloqueadas = (List<TarifaDia>)ViewBag.Bloqueadas;
+    var tarifas = (List<TarifaDia>)ViewBag.Tarifas;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
@@ -12,7 +12,9 @@
     ViewData["Title"] = cabana.Nombre;
 
     bool EstaOcupado(DateTime dia) => reservas.Any(r => r.FechaDesde <= dia && dia < r.FechaHasta);
-    bool EstaBloqueada(DateTime dia) => bloqueadas.Any(b => b.Fecha.Date == dia.Date);
+    TarifaDia? TarifaDelDia(DateTime dia) => tarifas.FirstOrDefault(t => t.Fecha.Date == dia.Date);
+    bool EstaBloqueada(DateTime dia) => TarifaDelDia(dia)?.Bloqueada ?? false;
+    decimal? PrecioDelDia(DateTime dia) => TarifaDelDia(dia)?.Precio ?? cabana.PrecioPorNoche;
 
     int offset = ((int)primerDia.DayOfWeek + 6) % 7;
     var celdas = new List<DateTime?>();
@@ -20,6 +22,9 @@
     for (int d = 1; d <= ultimoDia.Day; d++) celdas.Add(primerDia.AddDays(d - 1));
     while (celdas.Count % 7 != 0) celdas.Add(null);
     var fotos = cabana.Fotos.OrderBy(f => f.Orden).ToList();
+
+    var mesTitulo = primerDia.ToString("MMMM yyyy");
+    mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
 }
 
 @if (TempData["SolicitudEnviada"] != null)
@@ -156,7 +161,7 @@
 
         <div class="mt-10">
             <div class="mb-3 flex items-center justify-between">
-                <h2 class="font-display text-xl font-semibold text-ink-900">Disponibilidad &middot; @primerDia.ToString("MMMM yyyy")</h2>
+                <h2 class="font-display text-xl font-semibold text-ink-900">Disponibilidad &middot; @mesTitulo</h2>
                 <div class="flex gap-1.5">
                     @if (permitirMesAnterior)
                     {
@@ -192,7 +197,15 @@
                     }
                     else
                     {
-                        <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-river-100 text-sm font-medium text-river-700">@dia.Value.Day</div>
+                        var precioDia = PrecioDelDia(dia.Value);
+                        <button type="button" onclick="seleccionarDiaCalendario(this)" data-fecha="@dia.Value.ToString("yyyy-MM-dd")"
+                                class="day-cell flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg bg-river-100 text-sm font-medium leading-tight text-river-700 ring-2 ring-inset ring-transparent transition hover:bg-river-200">
+                            <span>@dia.Value.Day</span>
+                            @if (precioDia.HasValue)
+                            {
+                                <span class="text-[10px] font-normal opacity-80">$@precioDia.Value.ToString("N0")</span>
+                            }
+                        </button>
                     }
                 }
             </div>
@@ -228,16 +241,9 @@
                     <input asp-for="NombreHuesped" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
                     <span asp-validation-for="NombreHuesped" class="mt-1 block text-xs font-medium text-rose-600"></span>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label asp-for="Telefono" class="mb-1 block text-sm font-medium text-ink-700"></label>
-                        <input asp-for="Telefono" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                    </div>
-                    <div>
-                        <label asp-for="Email" class="mb-1 block text-sm font-medium text-ink-700"></label>
-                        <input asp-for="Email" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                        <span asp-validation-for="Email" class="mt-1 block text-xs font-medium text-rose-600"></span>
-                    </div>
+                <div>
+                    <label asp-for="Telefono" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                    <input asp-for="Telefono" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -261,6 +267,9 @@
                     <label asp-for="Notas" class="mb-1 block text-sm font-medium text-ink-700"></label>
                     <textarea asp-for="Notas" rows="2" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
                 </div>
+
+                <div id="resumen-total" class="hidden"></div>
+
                 <button type="submit" class="w-full rounded-full bg-river-700 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 hover:shadow-lift">
                     Enviar solicitud
                 </button>
@@ -293,5 +302,90 @@
             const idx = (__galeriaIndex + delta + imgs.length) % imgs.length;
             mostrarFotoCabana(idx);
         }
+
+        const __cabanaId = @cabana.Id;
+        const __inputDesde = document.getElementById('FechaDesde');
+        const __inputHasta = document.getElementById('FechaHasta');
+        const __resumenTotal = document.getElementById('resumen-total');
+        let __ultimaConsulta = 0;
+
+        async function actualizarResumenTotal() {
+            const desde = __inputDesde.value;
+            const hasta = __inputHasta.value;
+            if (!desde || !hasta) {
+                __resumenTotal.classList.add('hidden');
+                return;
+            }
+
+            const consultaId = ++__ultimaConsulta;
+            try {
+                const resp = await fetch(`/Cabanas/CalcularTotal?id=${__cabanaId}&desde=${desde}&hasta=${hasta}`);
+                const data = await resp.json();
+                if (consultaId !== __ultimaConsulta) return;
+
+                if (!data.valido) {
+                    __resumenTotal.classList.add('hidden');
+                    return;
+                }
+
+                __resumenTotal.classList.remove('hidden');
+                if (!data.disponible) {
+                    __resumenTotal.className = 'rounded-2xl border-2 border-rose-200 bg-rose-50 px-5 py-4 text-center';
+                    __resumenTotal.innerHTML = '<p class="text-sm font-semibold text-rose-700">Esas fechas ya no están disponibles para esta cabaña.</p>';
+                } else if (data.total !== null) {
+                    __resumenTotal.className = 'rounded-2xl border-2 border-river-300 bg-river-50 px-5 py-4 text-center shadow-soft';
+                    const totalTexto = Number(data.total).toLocaleString('es-AR');
+                    __resumenTotal.innerHTML =
+                        '<p class="text-xs font-semibold uppercase tracking-wide text-river-600">Total estimado</p>' +
+                        '<p class="mt-1 text-3xl font-bold text-river-800">$' + totalTexto + '</p>' +
+                        '<p class="text-xs font-medium text-river-600">' + data.noches + ' noche(s)</p>';
+                } else {
+                    __resumenTotal.className = 'rounded-2xl border-2 border-sand-200 bg-sand-100 px-5 py-4 text-center';
+                    __resumenTotal.innerHTML = '<p class="text-sm font-medium text-ink-600">' + data.noches + ' noche(s) · consultanos el precio para esas fechas.</p>';
+                }
+            } catch (e) {
+                __resumenTotal.classList.add('hidden');
+            }
+        }
+
+        if (__inputDesde && __inputHasta) {
+            __inputDesde.addEventListener('change', function () { actualizarResaltadoCalendario(); actualizarResumenTotal(); });
+            __inputHasta.addEventListener('change', function () { actualizarResaltadoCalendario(); actualizarResumenTotal(); });
+            actualizarResumenTotal();
+        }
+
+        function seleccionarDiaCalendario(btn) {
+            const fecha = btn.dataset.fecha;
+            let desde = __inputDesde.value;
+            let hasta = __inputHasta.value;
+
+            if (!desde || (desde && hasta)) {
+                desde = fecha;
+                hasta = '';
+            } else if (fecha <= desde) {
+                desde = fecha;
+                hasta = '';
+            } else {
+                hasta = fecha;
+            }
+
+            __inputDesde.value = desde;
+            __inputHasta.value = hasta;
+            actualizarResaltadoCalendario();
+            actualizarResumenTotal();
+        }
+
+        function actualizarResaltadoCalendario() {
+            const desde = __inputDesde.value;
+            const hasta = __inputHasta.value;
+            document.querySelectorAll('.day-cell[data-fecha]').forEach(function (celda) {
+                const f = celda.dataset.fecha;
+                const enRango = desde && ((hasta && f >= desde && f < hasta) || (!hasta && f === desde));
+                celda.classList.toggle('ring-river-600', !!enRango);
+                celda.classList.toggle('bg-river-300', !!enRango);
+            });
+        }
+
+        actualizarResaltadoCalendario();
     </script>
 }

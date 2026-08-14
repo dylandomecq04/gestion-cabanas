@@ -20,6 +20,9 @@
     for (int i = 0; i < offset; i++) celdas.Add(null);
     for (int d = 1; d <= ultimoDia.Day; d++) celdas.Add(primerDia.AddDays(d - 1));
     while (celdas.Count % 7 != 0) celdas.Add(null);
+
+    var mesTitulo = primerDia.ToString("MMMM yyyy");
+    mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
 }
 
 <a asp-controller="Home" asp-action="Index" class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition hover:text-river-700">
@@ -30,7 +33,7 @@
 </a>
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">Disponibilidad &middot; @primerDia.ToString("MMMM yyyy")</h1>
+    <h1 class="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">Disponibilidad &middot; @mesTitulo</h1>
     <div class="flex gap-2">
         @if (permitirMesAnterior)
         {

@@ -112,6 +112,22 @@ namespace GestionCabanas.Controllers
             return RedirectToAction(nameof(Details), new { id = modelo.CabanaId });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> CalcularTotal(int id, DateTime? desde, DateTime? hasta)
+        {
+            var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == id && c.Activa);
+            if (cabana is null || desde is null || hasta is null || hasta <= desde)
+            {
+                return Json(new { valido = false });
+            }
+
+            var disponible = !await _disponibilidad.HaySuperposicionAsync(id, desde.Value, hasta.Value);
+            var total = await _disponibilidad.CalcularValorTotalAsync(id, desde.Value, hasta.Value, cabana.PrecioPorNoche);
+            var noches = (hasta.Value - desde.Value).Days;
+
+            return Json(new { valido = true, disponible, total, noches });
+        }
+
         public async Task<IActionResult> Disponibilidad(int? anio, int? mes)
         {
             var hoy = DateTime.Today;
@@ -141,7 +157,7 @@ namespace GestionCabanas.Controllers
             var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
 
             ViewBag.Reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
-            ViewBag.Bloqueadas = await _disponibilidad.ObtenerBloqueadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
+            ViewBag.Tarifas = await _disponibilidad.ObtenerTarifasEnRangoAsync(cabanaId, primerDia, ultimoDia);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);

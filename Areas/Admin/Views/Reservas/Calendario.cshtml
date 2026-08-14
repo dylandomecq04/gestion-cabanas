@@ -21,11 +21,14 @@
 
     string[] diasSemana = { "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom" };
     int IndiceDiaSemana(DateTime dia) => ((int)dia.DayOfWeek + 6) % 7;
+
+    var mesTitulo = primerDia.ToString("MMMM yyyy");
+    mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
 }
 
 <div class="relative left-1/2 w-screen -translate-x-1/2 px-4 sm:px-8">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="font-display text-2xl font-semibold text-ink-900">Calendario &middot; @primerDia.ToString("MMMM yyyy")</h1>
+        <h1 class="font-display text-2xl font-semibold text-ink-900">Calendario &middot; @mesTitulo</h1>
         <div class="flex gap-2">
             <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
                asp-action="Calendario" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month">&larr; Mes anterior</a>
@@ -35,10 +38,10 @@
     </div>
 
     <div class="mb-1 flex flex-wrap items-center gap-4 text-xs font-medium text-ink-500">
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-600"></span> Reservada</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-300"></span> Pendiente</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Pendiente</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-400"></span> Bloqueada</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
     </div>
     <p class="mb-4 text-xs text-ink-400">Tocá una o varias celdas libres para bloquearlas o ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
@@ -77,7 +80,7 @@
                                 if (reserva is not null)
                                 {
                                     var esConfirmada = reserva.Estado == EstadoReserva.Confirmada;
-                                    var clase = esConfirmada ? "bg-green-600 hover:bg-green-700 text-white" : "bg-amber-300 hover:bg-amber-400 text-amber-950";
+                                    var clase = esConfirmada ? "bg-green-300 hover:bg-green-400 text-green-900" : "bg-amber-200 hover:bg-amber-300 text-amber-900";
                                     var infoReserva = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM} ({(esConfirmada ? "Reservada" : "Pendiente")})";
                                     <td class="p-0">
                                         <button type="button" onclick="abrirReserva(this)"
@@ -86,8 +89,9 @@
                                                 data-reserva-id="@reserva.Id"
                                                 data-info-reserva="@infoReserva"
                                                 title="@infoReserva"
-                                                class="day-cell flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg text-xs font-bold leading-tight @clase">
+                                                class="day-cell flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold leading-tight @clase">
                                             <span>@(esConfirmada ? "Reservada" : "Pendiente")</span>
+                                            <span class="truncate text-[10px] font-normal opacity-90 max-w-full">@reserva.NombreHuesped</span>
                                         </button>
                                     </td>
                                 }
@@ -100,7 +104,7 @@
                                     var etiquetaEstado = bloqueada ? "Bloqueada" : "Disponible";
                                     var etiquetaPrecio = precioMostrar.HasValue ? "$" + precioMostrar.Value.ToString("N0") : "Sin precio";
                                     var clase = bloqueada
-                                        ? "bg-ink-200 text-ink-500 hover:bg-ink-300"
+                                        ? "bg-green-100 text-green-700 hover:bg-green-200"
                                         : "bg-red-50 text-red-700 hover:bg-red-100";
 
                                     <td class="p-0">
@@ -242,9 +246,9 @@
                 document.querySelector(`input[name="dias[${idx}].Precio"]`).value = precioTexto;
                 document.querySelector(`input[name="dias[${idx}].Bloqueada"]`).value = bloqueada ? 'true' : 'false';
 
-                btn.classList.remove('bg-ink-200', 'text-ink-500', 'hover:bg-ink-300', 'bg-red-50', 'text-red-700', 'hover:bg-red-100');
+                btn.classList.remove('bg-green-100', 'text-green-700', 'hover:bg-green-200', 'bg-red-50', 'text-red-700', 'hover:bg-red-100');
                 if (bloqueada) {
-                    btn.classList.add('bg-ink-200', 'text-ink-500', 'hover:bg-ink-300');
+                    btn.classList.add('bg-green-100', 'text-green-700', 'hover:bg-green-200');
                 } else {
                     btn.classList.add('bg-red-50', 'text-red-700', 'hover:bg-red-100');
                 }
