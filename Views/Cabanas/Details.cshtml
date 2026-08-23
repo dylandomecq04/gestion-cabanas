@@ -303,6 +303,10 @@
             mostrarFotoCabana(idx);
         }
 
+        function pluralizar(cantidad, singular, plural) {
+            return cantidad + ' ' + (cantidad === 1 ? singular : plural);
+        }
+
         const __cabanaId = @cabana.Id;
         const __inputDesde = document.getElementById('FechaDesde');
         const __inputHasta = document.getElementById('FechaHasta');
@@ -338,10 +342,10 @@
                     __resumenTotal.innerHTML =
                         '<p class="text-xs font-semibold uppercase tracking-wide text-river-600">Total estimado</p>' +
                         '<p class="mt-1 text-3xl font-bold text-river-800">$' + totalTexto + '</p>' +
-                        '<p class="text-xs font-medium text-river-600">' + data.noches + ' noche(s)</p>';
+                        '<p class="text-xs font-medium text-river-600">' + pluralizar(data.noches, 'noche', 'noches') + '</p>';
                 } else {
                     __resumenTotal.className = 'rounded-2xl border-2 border-sand-200 bg-sand-100 px-5 py-4 text-center';
-                    __resumenTotal.innerHTML = '<p class="text-sm font-medium text-ink-600">' + data.noches + ' noche(s) · consultanos el precio para esas fechas.</p>';
+                    __resumenTotal.innerHTML = '<p class="text-sm font-medium text-ink-600">' + pluralizar(data.noches, 'noche', 'noches') + ' · consultanos el precio para esas fechas.</p>';
                 }
             } catch (e) {
                 __resumenTotal.classList.add('hidden');

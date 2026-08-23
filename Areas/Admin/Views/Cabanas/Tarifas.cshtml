@@ -113,7 +113,7 @@
 
 <div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 p-4 shadow-lift backdrop-blur">
     <div class="mx-auto flex max-w-4xl flex-wrap items-end gap-3">
-        <div class="text-sm font-medium text-ink-700"><span id="contador-seleccion">0</span> día(s) seleccionados</div>
+        <div id="texto-seleccion" class="text-sm font-medium text-ink-700">0 días seleccionados</div>
         <div class="min-w-[140px] flex-1">
             <label class="mb-1 block text-xs font-medium text-ink-600">Precio esa noche (vacío = @precioBaseTexto)</label>
             <input id="bulk-precio" type="text" inputmode="numeric" placeholder="@precioBaseTexto"
@@ -157,8 +157,10 @@
 
         function actualizarBarraSeleccion() {
             const barra = document.getElementById('barra-seleccion');
-            document.getElementById('contador-seleccion').textContent = seleccionDias.size;
-            barra.classList.toggle('hidden', seleccionDias.size === 0);
+            const cantidadSeleccion = seleccionDias.size;
+            document.getElementById('texto-seleccion').textContent =
+                cantidadSeleccion + (cantidadSeleccion === 1 ? ' día seleccionado' : ' días seleccionados');
+            barra.classList.toggle('hidden', cantidadSeleccion === 0);
         }
 
         function cancelarSeleccion() {

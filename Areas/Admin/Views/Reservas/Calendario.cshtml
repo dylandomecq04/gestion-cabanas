@@ -51,7 +51,7 @@
             <table class="w-full border-separate text-xs" style="border-spacing: 4px;">
                 <thead>
                     <tr>
-                        <th class="sticky left-0 z-10 min-w-[150px] bg-white px-3 py-2 text-left font-semibold text-ink-600">Cabaña</th>
+                        <th class="sticky left-0 z-10 min-w-[160px] bg-white px-3 py-2 text-left text-sm font-semibold text-ink-600">Cabaña</th>
                         @foreach (var dia in dias)
                         {
                             var clasesHeader = dia.Date == hoy
@@ -59,9 +59,9 @@
                                 : EsFinDeSemana(dia)
                                     ? "bg-sand-100 text-sand-800"
                                     : "text-ink-400";
-                            <th class="min-w-[80px] rounded-lg px-1 py-2 text-center font-semibold @clasesHeader">
-                                <div class="text-[11px] uppercase opacity-80">@diasSemana[IndiceDiaSemana(dia)]</div>
-                                <div class="text-base">@dia.Day</div>
+                            <th class="min-w-[112px] rounded-lg px-1 py-2.5 text-center font-semibold @clasesHeader">
+                                <div class="text-xs uppercase opacity-80">@diasSemana[IndiceDiaSemana(dia)]</div>
+                                <div class="text-lg">@dia.Day</div>
                             </th>
                         }
                     </tr>
@@ -70,7 +70,7 @@
                     @foreach (var cabana in cabanas)
                     {
                         <tr>
-                            <td class="sticky left-0 z-10 bg-white px-3 py-2 font-medium text-ink-800">@cabana.Nombre</td>
+                            <td class="sticky left-0 z-10 bg-white px-3 py-2 text-sm font-medium text-ink-800">@cabana.Nombre</td>
                             @foreach (var dia in dias)
                             {
                                 var reserva = ReservaDeLaCabanaEnElDia(cabana.Id, dia);
@@ -89,9 +89,9 @@
                                                 data-reserva-id="@reserva.Id"
                                                 data-info-reserva="@infoReserva"
                                                 title="@infoReserva"
-                                                class="day-cell flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold leading-tight @clase">
+                                                class="day-cell flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-bold leading-tight @clase">
                                             <span>@(esConfirmada ? "Reservada" : "Pendiente")</span>
-                                            <span class="truncate text-[10px] font-normal opacity-90 max-w-full">@reserva.NombreHuesped</span>
+                                            <span class="truncate text-xs font-normal opacity-90 max-w-full">@reserva.NombreHuesped</span>
                                         </button>
                                     </td>
                                 }
@@ -116,10 +116,10 @@
                                                 data-precio="@precioTexto"
                                                 data-bloqueada="@(bloqueada ? "true" : "false")"
                                                 onclick="alternarSeleccionDia(this)"
-                                                class="dia-editable day-cell relative flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg text-xs font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clase">
+                                                class="dia-editable day-cell relative flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg text-sm font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clase">
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
-                                            <span class="etiqueta-precio text-[10px] font-normal leading-tight opacity-70">@etiquetaPrecio</span>
-                                            <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft">✓</span>
+                                            <span class="etiqueta-precio text-xs font-normal leading-tight opacity-70">@etiquetaPrecio</span>
+                                            <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-river-700 text-sm text-white shadow-soft">✓</span>
                                         </button>
                                         <input type="hidden" name="dias[@indice].CabanaId" value="@cabana.Id" />
                                         <input type="hidden" name="dias[@indice].Fecha" value="@fechaAttr" />
@@ -139,7 +139,7 @@
 
 <div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 p-4 shadow-lift backdrop-blur">
     <div class="mx-auto flex max-w-4xl flex-wrap items-end gap-3">
-        <div class="text-sm font-medium text-ink-700"><span id="contador-seleccion">0</span> día(s) seleccionados</div>
+        <div id="texto-seleccion" class="text-sm font-medium text-ink-700">0 días seleccionados</div>
         <div class="min-w-[140px] flex-1">
             <label class="mb-1 block text-xs font-medium text-ink-600">Precio esa noche (vacío = base)</label>
             <input id="bulk-precio" type="text" inputmode="numeric" placeholder="Base"
@@ -198,7 +198,9 @@
 
         function actualizarBarraSeleccion() {
             const barra = document.getElementById('barra-seleccion');
-            document.getElementById('contador-seleccion').textContent = seleccionDias.size;
+            const cantidadSeleccion = seleccionDias.size;
+            document.getElementById('texto-seleccion').textContent =
+                cantidadSeleccion + (cantidadSeleccion === 1 ? ' día seleccionado' : ' días seleccionados');
             barra.classList.toggle('hidden', seleccionDias.size === 0);
 
             const linkCargar = document.getElementById('link-cargar-reserva-bulk');
