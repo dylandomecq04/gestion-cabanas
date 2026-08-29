@@ -163,28 +163,38 @@
     </form>
 </div>
 
-<div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 p-4 shadow-lift backdrop-blur">
-    <div class="mx-auto flex max-w-4xl flex-wrap items-end gap-3">
-        <div id="texto-seleccion" class="text-sm font-medium text-ink-700">0 días seleccionados</div>
-        <div class="min-w-[140px] flex-1">
-            <label class="mb-1 block text-xs font-medium text-ink-600">Precio</label>
-            <input id="bulk-precio" type="text" inputmode="numeric" placeholder="Base"
-                   oninput="formatearMiles(this)"
-                   class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+<div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 shadow-lift backdrop-blur">
+    <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 py-3">
+        <div id="texto-seleccion" class="whitespace-nowrap rounded-full bg-river-50 px-3.5 py-2 text-sm font-semibold text-river-800">
+            0 días seleccionados
         </div>
-        <label class="flex items-center gap-2 pb-2 text-sm font-medium text-ink-700">
-            <input id="bulk-bloqueada" type="checkbox" class="h-4 w-4 rounded border-ink-300 text-rose-600 focus:ring-rose-400" />
-            Bloquear
-        </label>
-        <a id="link-cargar-reserva-bulk" href="#" class="hidden rounded-full border border-ink-200 px-4 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-river-300">
-            ➕ Cargar reserva acá
-        </a>
-        <button type="button" onclick="aplicarSeleccion()" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
-            Aplicar a seleccionados
-        </button>
-        <button type="button" onclick="cancelarSeleccion()" class="rounded-full border border-ink-200 px-4 py-2.5 text-sm font-medium text-ink-600 transition hover:border-ink-300">
-            Cancelar
-        </button>
+
+        <div class="hidden h-9 w-px bg-ink-200 sm:block"></div>
+
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="w-28">
+                <label class="mb-1 block text-xs font-medium text-ink-500">Precio</label>
+                <input id="bulk-precio" type="text" inputmode="numeric" placeholder="Base"
+                       oninput="formatearMiles(this)"
+                       class="h-10 w-full rounded-xl border border-ink-200 px-3 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <label class="flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-ink-200 px-3.5 text-sm font-medium text-ink-700 transition hover:border-rose-300">
+                <input id="bulk-bloqueada" type="checkbox" class="h-4 w-4 rounded border-ink-300 text-rose-600 focus:ring-rose-400" />
+                Bloquear
+            </label>
+        </div>
+
+        <div class="ml-auto flex items-center gap-2">
+            <a id="link-cargar-reserva-bulk" href="#" class="hidden h-10 inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-4 text-sm font-semibold text-ink-700 transition hover:border-river-300">
+                ➕ Cargar reserva acá
+            </a>
+            <button type="button" onclick="cancelarSeleccion()" class="h-10 rounded-full border border-ink-200 px-4 text-sm font-medium text-ink-600 transition hover:border-ink-300">
+                Cancelar
+            </button>
+            <button type="button" onclick="aplicarSeleccion()" class="h-10 rounded-full bg-river-700 px-5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
+                Aplicar
+            </button>
+        </div>
     </div>
 </div>
 
