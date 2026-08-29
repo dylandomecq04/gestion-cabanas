@@ -105,7 +105,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
             reserva.CabanaId = modelo.CabanaId;
             reserva.NombreHuesped = modelo.NombreHuesped;
             reserva.Telefono = modelo.Telefono;
-            reserva.Email = modelo.Email;
             reserva.FechaDesde = modelo.FechaDesde;
             reserva.FechaHasta = modelo.FechaHasta;
             reserva.Estado = modelo.Estado;

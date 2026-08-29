@@ -17,11 +17,6 @@ namespace GestionCabanas.Models
         [Display(Name = "Teléfono")]
         public string? Telefono { get; set; }
 
-        [StringLength(150)]
-        [EmailAddress(ErrorMessage = "El email no es válido")]
-        [Display(Name = "Email")]
-        public string? Email { get; set; }
-
         [Required(ErrorMessage = "Elegí la fecha de entrada")]
         [DataType(DataType.Date)]
         [Display(Name = "Fecha de entrada")]

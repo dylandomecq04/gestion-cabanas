@@ -40,13 +40,7 @@
                 <tr class="transition hover:bg-sand-50/60">
                     <td class="px-5 py-3 font-medium text-ink-900">@r.Cabana?.Nombre</td>
                     <td class="px-3 py-3 text-ink-700">@r.NombreHuesped</td>
-                    <td class="px-3 py-3 text-ink-500">
-                        @r.Telefono
-                        @if (!string.IsNullOrEmpty(r.Email))
-                        {
-                            <div class="text-xs text-ink-400">@r.Email</div>
-                        }
-                    </td>
+                    <td class="px-3 py-3 text-ink-500">@r.Telefono</td>
                     <td class="whitespace-nowrap px-3 py-3 text-ink-600">@r.FechaDesde.ToString("dd/MM/yyyy") &ndash; @r.FechaHasta.ToString("dd/MM/yyyy")</td>
                     <td class="px-3 py-3 text-ink-600">@r.CantidadPersonas</td>
                     <td class="px-3 py-3 text-ink-600">@(r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "-")</td>

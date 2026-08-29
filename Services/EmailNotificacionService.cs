@@ -49,7 +49,6 @@ namespace GestionCabanas.Services
                     Fechas: {reserva.FechaDesde:dd/MM/yyyy} – {reserva.FechaHasta:dd/MM/yyyy}
                     Personas: {reserva.CantidadPersonas}
                     Teléfono: {reserva.Telefono}
-                    Email: {reserva.Email}
 
                     Entrá al panel de administración para confirmarla o rechazarla.
                     """

@@ -94,7 +94,6 @@ namespace GestionCabanas.Controllers
                 CabanaId = modelo.CabanaId,
                 NombreHuesped = modelo.NombreHuesped,
                 Telefono = modelo.Telefono,
-                Email = modelo.Email,
                 FechaDesde = modelo.FechaDesde,
                 FechaHasta = modelo.FechaHasta,
                 CantidadPersonas = modelo.CantidadPersonas,
