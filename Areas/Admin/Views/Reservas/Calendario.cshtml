@@ -14,6 +14,12 @@
     Reserva? ReservaDeLaCabanaEnElDia(int cabanaId, DateTime dia)
         => reservas.FirstOrDefault(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
 
+    Reserva? ReservaQueLlegaEseDia(int cabanaId, DateTime dia)
+        => reservas.FirstOrDefault(r => r.CabanaId == cabanaId && r.FechaDesde.Date == dia.Date);
+
+    Reserva? ReservaQueSaleEseDia(int cabanaId, DateTime dia)
+        => reservas.FirstOrDefault(r => r.CabanaId == cabanaId && r.FechaHasta.Date == dia.Date);
+
     TarifaDia? TarifaDeLaCabanaEnElDia(int cabanaId, DateTime dia)
         => tarifas.FirstOrDefault(t => t.CabanaId == cabanaId && t.Fecha.Date == dia.Date);
 
@@ -43,6 +49,8 @@
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
+        <span class="flex items-center gap-1.5">🔑 Ingresa ese día</span>
+        <span class="flex items-center gap-1.5">🧳 Sale ese día</span>
     </div>
     <p class="mb-4 text-xs text-ink-400">Tocá una o varias celdas libres para bloquearlas o ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
 
@@ -74,6 +82,8 @@
                             @foreach (var dia in dias)
                             {
                                 var reserva = ReservaDeLaCabanaEnElDia(cabana.Id, dia);
+                                var llega = ReservaQueLlegaEseDia(cabana.Id, dia);
+                                var sale = ReservaQueSaleEseDia(cabana.Id, dia);
                                 var fechaAttr = dia.ToString("yyyy-MM-dd");
                                 var fechaTexto = dia.ToString("dd/MM/yyyy");
 
@@ -89,9 +99,17 @@
                                                 data-reserva-id="@reserva.Id"
                                                 data-info-reserva="@infoReserva"
                                                 title="@infoReserva"
-                                                class="day-cell flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-bold leading-tight @clase">
+                                                class="day-cell relative flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-bold leading-tight @clase">
                                             <span>@(esConfirmada ? "Reservada" : "Pendiente")</span>
                                             <span class="truncate text-xs font-normal opacity-90 max-w-full">@reserva.NombreHuesped</span>
+                                            @if (llega is not null)
+                                            {
+                                                <span title="Ingresa: @llega.NombreHuesped" class="absolute bottom-1 left-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm shadow ring-1 ring-ink-200">🔑</span>
+                                            }
+                                            @if (sale is not null)
+                                            {
+                                                <span title="Sale: @sale.NombreHuesped" class="absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm shadow ring-1 ring-ink-200">🧳</span>
+                                            }
                                         </button>
                                     </td>
                                 }
@@ -120,6 +138,14 @@
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
                                             <span class="etiqueta-precio text-xs font-normal leading-tight opacity-70">@etiquetaPrecio</span>
                                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-river-700 text-sm text-white shadow-soft">✓</span>
+                                            @if (llega is not null)
+                                            {
+                                                <span title="Ingresa: @llega.NombreHuesped" class="absolute bottom-1 left-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm shadow ring-1 ring-ink-200">🔑</span>
+                                            }
+                                            @if (sale is not null)
+                                            {
+                                                <span title="Sale: @sale.NombreHuesped" class="absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm shadow ring-1 ring-ink-200">🧳</span>
+                                            }
                                         </button>
                                         <input type="hidden" name="dias[@indice].CabanaId" value="@cabana.Id" />
                                         <input type="hidden" name="dias[@indice].Fecha" value="@fechaAttr" />
