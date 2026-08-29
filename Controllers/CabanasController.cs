@@ -97,7 +97,6 @@ namespace GestionCabanas.Controllers
                 FechaDesde = modelo.FechaDesde,
                 FechaHasta = modelo.FechaHasta,
                 CantidadPersonas = modelo.CantidadPersonas,
-                Notas = modelo.Notas,
                 Estado = EstadoReserva.Pendiente
             };
             _db.Reservas.Add(reserva);

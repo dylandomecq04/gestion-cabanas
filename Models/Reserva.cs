@@ -12,6 +12,7 @@ namespace GestionCabanas.Models
 
         [Required(ErrorMessage = "El nombre del huésped es obligatorio")]
         [StringLength(150)]
+        [Display(Name = "Nombre")]
         public string NombreHuesped { get; set; } = string.Empty;
 
         [StringLength(50)]
@@ -19,10 +20,12 @@ namespace GestionCabanas.Models
 
         [Required(ErrorMessage = "La fecha de entrada es obligatoria")]
         [DataType(DataType.Date)]
+        [Display(Name = "Fecha desde")]
         public DateTime FechaDesde { get; set; }
 
         [Required(ErrorMessage = "La fecha de salida es obligatoria")]
         [DataType(DataType.Date)]
+        [Display(Name = "Fecha hasta")]
         public DateTime FechaHasta { get; set; }
 
         [Range(1, 50, ErrorMessage = "La cantidad de personas debe ser mayor a 0")]
@@ -33,9 +36,6 @@ namespace GestionCabanas.Models
 
         [Range(0, 999999999)]
         public decimal? Valor { get; set; }
-
-        [StringLength(1000)]
-        public string? Notas { get; set; }
 
         public DateTime FechaCreacion { get; set; } = DateTime.Now;
     }

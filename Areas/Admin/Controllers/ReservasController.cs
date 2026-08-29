@@ -109,7 +109,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
             reserva.FechaHasta = modelo.FechaHasta;
             reserva.Estado = modelo.Estado;
             reserva.Valor = modelo.Valor;
-            reserva.Notas = modelo.Notas;
 
             await _db.SaveChangesAsync();
             TempData["Mensaje"] = "Reserva actualizada correctamente.";

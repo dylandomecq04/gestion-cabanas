@@ -8,7 +8,10 @@
 
 <form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="max-w-2xl space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
     <input type="hidden" asp-for="Id" />
-    <div asp-validation-summary="All" class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 empty:hidden"></div>
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div asp-validation-summary="All" class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"></div>
+    }
 
     <div>
         <label class="mb-1 block text-sm font-medium text-ink-700">Cabaña</label>
@@ -48,12 +51,12 @@
         </div>
         <div>
             <label asp-for="Valor" class="mb-1 block text-sm font-medium text-ink-700"></label>
-            <input asp-for="Valor" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <input type="text" inputmode="numeric" id="valor-display" placeholder="0"
+                   value="@(Model.Valor.HasValue ? Model.Valor.Value.ToString("N0", new System.Globalization.CultureInfo("es-AR")) : "")"
+                   oninput="formatearMilesValor(this)"
+                   class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <input type="hidden" asp-for="Valor" id="valor-real" />
         </div>
-    </div>
-    <div>
-        <label asp-for="Notas" class="mb-1 block text-sm font-medium text-ink-700"></label>
-        <textarea asp-for="Notas" rows="2" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
     </div>
     <div class="flex items-center gap-3 pt-2">
         <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">Guardar</button>
@@ -63,4 +66,11 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function formatearMilesValor(input) {
+            const soloDigitos = input.value.replace(/\D/g, '');
+            input.value = soloDigitos ? Number(soloDigitos).toLocaleString('es-AR') : '';
+            document.getElementById('valor-real').value = soloDigitos;
+        }
+    </script>
 }

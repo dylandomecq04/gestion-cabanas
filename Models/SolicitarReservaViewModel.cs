@@ -31,9 +31,5 @@ namespace GestionCabanas.Models
         [Range(1, 50, ErrorMessage = "La cantidad de personas debe ser mayor a 0")]
         [Display(Name = "Cantidad de personas")]
         public int CantidadPersonas { get; set; } = 1;
-
-        [StringLength(1000)]
-        [Display(Name = "Comentarios (opcional)")]
-        public string? Notas { get; set; }
     }
 }
