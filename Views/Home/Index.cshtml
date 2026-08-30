@@ -4,6 +4,9 @@
     var promoIzquierda = ViewBag.PromoIzquierda as Promocion;
     var promoDerecha = ViewBag.PromoDerecha as Promocion;
     var hayPromoActiva = promoIzquierda?.Activa == true || promoDerecha?.Activa == true;
+
+    // Fotos de ejemplo para el fondo del hero (temporal, se pueden reemplazar por las reales).
+    var heroFotos = new[] { "foto_2.jpg", "foto_3.jpg", "foto_4.jpg", "foto_5.jpg", "foto_6.jpg", "foto_7.jpg", "foto_8.jpg" };
 }
 
 @if (hayPromoActiva)
@@ -37,18 +40,27 @@
     }
 }
 
-<section class="relative -mx-4 mb-14 overflow-hidden rounded-3xl bg-gradient-to-br from-river-700 via-river-600 to-river-800 px-6 py-16 text-center text-white shadow-lift sm:-mx-6 sm:px-10 sm:py-20">
-    <div class="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-river-400/30 blur-3xl"></div>
-    <div class="pointer-events-none absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-sand-300/20 blur-3xl"></div>
+<section class="relative -mx-4 mb-14 flex min-h-screen items-center overflow-hidden rounded-3xl bg-river-800 text-center text-white shadow-lift sm:-mx-6">
+    <div class="absolute inset-0 bg-gradient-to-br from-river-700 via-river-600 to-river-800"></div>
+    @for (int i = 0; i < heroFotos.Length; i++)
+    {
+        <img src="~/images/hero/@heroFotos[i]" alt=""
+             class="hero-fondo-img absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ease-in-out @(i == 0 ? "opacity-100" : "opacity-0")" />
+    }
+    <div class="absolute inset-0 bg-gradient-to-b from-river-950/75 via-river-900/55 to-river-950/80"></div>
+    <div class="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-river-400/20 blur-3xl"></div>
+    <div class="pointer-events-none absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-sand-300/15 blur-3xl"></div>
 
-    <p class="relative mb-3 text-sm font-medium uppercase tracking-[0.2em] text-river-100">Cabañas Sidharta &middot; El Tigre, Delta del Paraná</p>
-    <h1 class="relative font-display text-4xl font-semibold sm:text-5xl md:text-6xl">Tu escapada frente al río</h1>
-    <p class="relative mx-auto mt-4 max-w-xl text-base text-river-50/90 sm:text-lg">
-        5 cabañas de madera a metros del agua, listas para desconectar en familia o con amigos.
-    </p>
-    <div class="relative mt-8 flex flex-wrap items-center justify-center gap-3">
-        <a href="#cabanas" class="rounded-full bg-white px-6 py-3 text-sm font-semibold text-river-800 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">Ver cabañas</a>
-        <a asp-controller="Cabanas" asp-action="Disponibilidad" class="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">Ver disponibilidad</a>
+    <div class="relative mx-auto max-w-2xl px-6 py-16 sm:px-10">
+        <p class="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-river-100">Cabañas Sidharta &middot; El Tigre, Delta del Paraná</p>
+        <h1 class="font-display text-4xl font-semibold sm:text-5xl md:text-6xl">Tu escapada frente al río</h1>
+        <p class="mx-auto mt-4 max-w-xl text-base text-river-50/90 sm:text-lg">
+            5 cabañas de madera a metros del agua, listas para desconectar en familia o con amigos.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <a href="#cabanas" class="rounded-full bg-white px-6 py-3 text-sm font-semibold text-river-800 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">Ver cabañas</a>
+            <a asp-controller="Cabanas" asp-action="Disponibilidad" class="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">Ver disponibilidad</a>
+        </div>
     </div>
 </section>
 
@@ -107,4 +119,20 @@
     <div class="rounded-2.5xl border border-dashed border-ink-200 bg-white/60 py-16 text-center text-ink-500">
         Todavía no hay cabañas cargadas.
     </div>
+}
+
+@section Scripts {
+    <script>
+        let __heroFondoIndex = 0;
+        function avanzarFondoHero() {
+            const imgs = document.querySelectorAll('.hero-fondo-img');
+            if (imgs.length < 2) return;
+            imgs[__heroFondoIndex].classList.remove('opacity-100');
+            imgs[__heroFondoIndex].classList.add('opacity-0');
+            __heroFondoIndex = (__heroFondoIndex + 1) % imgs.length;
+            imgs[__heroFondoIndex].classList.remove('opacity-0');
+            imgs[__heroFondoIndex].classList.add('opacity-100');
+        }
+        setInterval(avanzarFondoHero, 4000);
+    </script>
 }
