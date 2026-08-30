@@ -22,6 +22,10 @@ public class HomeController : Controller
             .Include(c => c.Fotos)
             .OrderBy(c => c.Nombre)
             .ToListAsync();
+
+        ViewBag.PromoIzquierda = await _db.Promociones.FirstOrDefaultAsync(p => p.Lado == LadoPromocion.Izquierda);
+        ViewBag.PromoDerecha = await _db.Promociones.FirstOrDefaultAsync(p => p.Lado == LadoPromocion.Derecha);
+
         return View(cabanas);
     }
 

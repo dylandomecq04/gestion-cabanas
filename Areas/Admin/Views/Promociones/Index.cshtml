@@ -1,0 +1,74 @@
+@using GestionCabanas.Models
+@{
+    ViewData["Title"] = "Promociones";
+    var izquierda = (Promocion)ViewBag.Izquierda;
+    var derecha = (Promocion)ViewBag.Derecha;
+}
+
+<h1 class="mb-2 font-display text-2xl font-semibold text-ink-900">Promociones</h1>
+<p class="mb-6 text-sm text-ink-500">
+    Se muestran como carteles a los costados de la página de inicio (en pantallas grandes se ven a los lados;
+    en celular, arriba de las cabañas). Activá el que quieras mostrar y completá el texto.
+</p>
+
+<form asp-action="Guardar" method="post" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+        <h2 class="mb-4 font-display text-lg font-semibold text-ink-900">Cartel izquierdo</h2>
+        <input type="hidden" name="izquierda.Lado" value="Izquierda" />
+        <div class="space-y-4">
+            <label class="flex items-center gap-2 text-sm font-medium text-ink-700">
+                <input type="checkbox" name="izquierda.Activa" value="true" checked="@izquierda.Activa"
+                       class="h-4 w-4 rounded border-ink-300 text-river-600 focus:ring-river-400" />
+                Mostrar en el sitio
+            </label>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Etiqueta destacada</label>
+                <input name="izquierda.Etiqueta" value="@izquierda.Etiqueta" maxlength="40" placeholder="Ej: OFERTA"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Título</label>
+                <input name="izquierda.Titulo" value="@izquierda.Titulo" maxlength="120"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Descripción</label>
+                <textarea name="izquierda.Descripcion" rows="3" maxlength="300"
+                          class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">@izquierda.Descripcion</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+        <h2 class="mb-4 font-display text-lg font-semibold text-ink-900">Cartel derecho</h2>
+        <input type="hidden" name="derecha.Lado" value="Derecha" />
+        <div class="space-y-4">
+            <label class="flex items-center gap-2 text-sm font-medium text-ink-700">
+                <input type="checkbox" name="derecha.Activa" value="true" checked="@derecha.Activa"
+                       class="h-4 w-4 rounded border-ink-300 text-river-600 focus:ring-river-400" />
+                Mostrar en el sitio
+            </label>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Etiqueta destacada</label>
+                <input name="derecha.Etiqueta" value="@derecha.Etiqueta" maxlength="40" placeholder="Ej: OFERTA"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Título</label>
+                <input name="derecha.Titulo" value="@derecha.Titulo" maxlength="120"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Descripción</label>
+                <textarea name="derecha.Descripcion" rows="3" maxlength="300"
+                          class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">@derecha.Descripcion</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:col-span-2">
+        <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+            Guardar
+        </button>
+    </div>
+</form>

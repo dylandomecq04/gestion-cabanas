@@ -1,6 +1,40 @@
 @model List<Cabana>
 @{
     ViewData["Title"] = "Cabañas Sidharta";
+    var promoIzquierda = ViewBag.PromoIzquierda as Promocion;
+    var promoDerecha = ViewBag.PromoDerecha as Promocion;
+    var hayPromoActiva = promoIzquierda?.Activa == true || promoDerecha?.Activa == true;
+}
+
+@if (hayPromoActiva)
+{
+    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:hidden">
+        @if (promoIzquierda?.Activa == true)
+        {
+            <partial name="_PromoBanner" model="promoIzquierda" />
+        }
+        @if (promoDerecha?.Activa == true)
+        {
+            <partial name="_PromoBanner" model="promoDerecha" />
+        }
+    </div>
+
+    @if (promoIzquierda?.Activa == true)
+    {
+        <div class="pointer-events-none fixed inset-y-0 left-0 z-30 hidden w-64 items-center 2xl:flex">
+            <div class="pointer-events-auto w-56 pl-4">
+                <partial name="_PromoBanner" model="promoIzquierda" />
+            </div>
+        </div>
+    }
+    @if (promoDerecha?.Activa == true)
+    {
+        <div class="pointer-events-none fixed inset-y-0 right-0 z-30 hidden w-64 items-center 2xl:flex">
+            <div class="pointer-events-auto w-56 pr-4">
+                <partial name="_PromoBanner" model="promoDerecha" />
+            </div>
+        </div>
+    }
 }
 
 <section class="relative -mx-4 mb-14 overflow-hidden rounded-3xl bg-gradient-to-br from-river-700 via-river-600 to-river-800 px-6 py-16 text-center text-white shadow-lift sm:-mx-6 sm:px-10 sm:py-20">
