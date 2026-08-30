@@ -22,3 +22,21 @@ body {
 [x-cloak] {
   display: none !important;
 }
+
+@keyframes promo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.promo-card {
+  animation: promo-float 3.5s ease-in-out infinite;
+}
+
+@keyframes promo-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(246, 241, 230, 0.55); }
+  70% { box-shadow: 0 0 0 9px rgba(246, 241, 230, 0); }
+}
+
+.promo-badge {
+  animation: promo-badge-pulse 2s ease-out infinite;
+}
