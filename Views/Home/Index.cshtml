@@ -24,23 +24,23 @@
 
     @if (promoIzquierda?.Activa == true)
     {
-        <div class="pointer-events-none fixed inset-y-0 left-0 z-30 hidden w-64 items-center 2xl:flex">
-            <div class="pointer-events-auto w-56 pl-4">
+        <div class="pointer-events-none fixed inset-y-0 left-0 z-30 hidden w-72 items-center 2xl:flex">
+            <div class="pointer-events-auto w-64 pl-4">
                 <partial name="_PromoBanner" model="promoIzquierda" />
             </div>
         </div>
     }
     @if (promoDerecha?.Activa == true)
     {
-        <div class="pointer-events-none fixed inset-y-0 right-0 z-30 hidden w-64 items-center 2xl:flex">
-            <div class="pointer-events-auto w-56 pr-4">
+        <div class="pointer-events-none fixed inset-y-0 right-0 z-30 hidden w-72 items-center 2xl:flex">
+            <div class="pointer-events-auto w-64 pr-4">
                 <partial name="_PromoBanner" model="promoDerecha" />
             </div>
         </div>
     }
 }
 
-<section class="relative -mx-4 mb-14 flex min-h-screen items-center overflow-hidden rounded-3xl bg-river-800 text-center text-white shadow-lift sm:-mx-6">
+<section class="group relative -mx-4 mb-14 flex min-h-screen items-center overflow-hidden rounded-3xl bg-river-800 text-center text-white shadow-lift sm:-mx-6">
     <div class="absolute inset-0 bg-gradient-to-br from-river-700 via-river-600 to-river-800"></div>
     @for (int i = 0; i < heroFotos.Length; i++)
     {
@@ -50,6 +50,15 @@
     <div class="absolute inset-0 bg-gradient-to-b from-river-950/75 via-river-900/55 to-river-950/80"></div>
     <div class="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-river-400/20 blur-3xl"></div>
     <div class="pointer-events-none absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-sand-300/15 blur-3xl"></div>
+
+    <button type="button" onclick="moverFondoHeroManual(-1)" aria-label="Foto anterior"
+            class="absolute left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white opacity-0 backdrop-blur transition hover:bg-white/25 group-hover:opacity-100 sm:left-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+    </button>
+    <button type="button" onclick="moverFondoHeroManual(1)" aria-label="Foto siguiente"
+            class="absolute right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white opacity-0 backdrop-blur transition hover:bg-white/25 group-hover:opacity-100 sm:right-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+    </button>
 
     <div class="relative mx-auto max-w-2xl px-6 py-16 sm:px-10">
         <p class="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-river-100">Cabañas Sidharta &middot; El Tigre, Delta del Paraná</p>
@@ -124,15 +133,28 @@
 @section Scripts {
     <script>
         let __heroFondoIndex = 0;
-        function avanzarFondoHero() {
+        let __heroFondoTimer = null;
+
+        function moverFondoHero(delta) {
             const imgs = document.querySelectorAll('.hero-fondo-img');
             if (imgs.length < 2) return;
             imgs[__heroFondoIndex].classList.remove('opacity-100');
             imgs[__heroFondoIndex].classList.add('opacity-0');
-            __heroFondoIndex = (__heroFondoIndex + 1) % imgs.length;
+            __heroFondoIndex = ((__heroFondoIndex + delta) % imgs.length + imgs.length) % imgs.length;
             imgs[__heroFondoIndex].classList.remove('opacity-0');
             imgs[__heroFondoIndex].classList.add('opacity-100');
         }
-        setInterval(avanzarFondoHero, 4000);
+
+        function iniciarAutoAvanceHero() {
+            if (__heroFondoTimer) clearInterval(__heroFondoTimer);
+            __heroFondoTimer = setInterval(() => moverFondoHero(1), 4000);
+        }
+
+        function moverFondoHeroManual(delta) {
+            moverFondoHero(delta);
+            iniciarAutoAvanceHero();
+        }
+
+        iniciarAutoAvanceHero();
     </script>
 }
