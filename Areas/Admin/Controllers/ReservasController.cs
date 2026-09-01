@@ -20,18 +20,28 @@ namespace GestionCabanas.Areas.Admin.Controllers
             _disponibilidad = disponibilidad;
         }
 
-        public async Task<IActionResult> Index(EstadoReserva? estado)
+        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId)
         {
             var query = _db.Reservas.Include(r => r.Cabana).AsQueryable();
             if (estado.HasValue)
             {
                 query = query.Where(r => r.Estado == estado.Value);
             }
+            if (!string.IsNullOrWhiteSpace(busqueda))
+            {
+                query = query.Where(r => EF.Functions.Like(r.NombreHuesped, $"%{busqueda}%"));
+            }
+            if (cabanaId.HasValue)
+            {
+                query = query.Where(r => r.CabanaId == cabanaId.Value);
+            }
 
             ViewBag.EstadoFiltro = estado;
-            var reservas = await query.OrderBy(r => r.Estado == EstadoReserva.Pendiente ? 0 : r.Estado == EstadoReserva.Confirmada ? 1 : 2)
-                .ThenBy(r => r.FechaDesde)
-                .ToListAsync();
+            ViewBag.Busqueda = busqueda;
+            ViewBag.CabanaIdFiltro = cabanaId;
+            ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
+
+            var reservas = await query.OrderBy(r => r.FechaDesde).ThenBy(r => r.Cabana!.Nombre).ToListAsync();
             return View(reservas);
         }
 

@@ -2,10 +2,23 @@
 @{
     ViewData["Title"] = "Reservas";
     EstadoReserva? filtro = ViewBag.EstadoFiltro;
+    string? busqueda = ViewBag.Busqueda;
+    int? cabanaIdFiltro = ViewBag.CabanaIdFiltro;
+    var cabanas = (List<Cabana>)ViewBag.Cabanas;
 
     string ClasesTab(bool activo) => activo
         ? "rounded-full bg-river-700 px-4 py-2 text-sm font-semibold text-white shadow-soft"
         : "rounded-full border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700";
+
+    string TituloMes(DateTime dia)
+    {
+        var texto = dia.ToString("MMMM yyyy");
+        return char.ToUpper(texto[0]) + texto.Substring(1);
+    }
+
+    var grupos = Model
+        .GroupBy(r => new DateTime(r.FechaDesde.Year, r.FechaDesde.Month, 1))
+        .OrderBy(g => g.Key);
 }
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -13,74 +26,105 @@
     <a asp-action="Create" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">+ Cargar reserva</a>
 </div>
 
-<div class="mb-6 flex flex-wrap gap-2">
-    <a asp-action="Index" class="@ClasesTab(filtro == null)">Todas</a>
-    <a asp-action="Index" asp-route-estado="Pendiente" class="@ClasesTab(filtro == EstadoReserva.Pendiente)">Pendientes</a>
-    <a asp-action="Index" asp-route-estado="Confirmada" class="@ClasesTab(filtro == EstadoReserva.Confirmada)">Confirmadas</a>
-    <a asp-action="Index" asp-route-estado="Cancelada" class="@ClasesTab(filtro == EstadoReserva.Cancelada)">Canceladas</a>
+<div class="mb-4 flex flex-wrap gap-2">
+    <a asp-action="Index" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == null)">Todas</a>
+    <a asp-action="Index" asp-route-estado="Pendiente" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Pendiente)">Pendientes</a>
+    <a asp-action="Index" asp-route-estado="Confirmada" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Confirmada)">Confirmadas</a>
+    <a asp-action="Index" asp-route-estado="Cancelada" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Cancelada)">Canceladas</a>
 </div>
 
-<div class="overflow-x-auto rounded-2.5xl bg-white shadow-soft ring-1 ring-ink-100">
-    <table class="w-full text-left text-sm">
-        <thead class="border-b border-ink-100 bg-ink-50/60 text-xs font-semibold uppercase tracking-wide text-ink-500">
-            <tr>
-                <th class="px-5 py-3">Cabaña</th>
-                <th class="px-3 py-3">Huésped</th>
-                <th class="px-3 py-3">Contacto</th>
-                <th class="px-3 py-3">Fechas</th>
-                <th class="px-3 py-3">Personas</th>
-                <th class="px-3 py-3">Valor</th>
-                <th class="px-3 py-3">Estado</th>
-                <th class="px-5 py-3 text-right">Acciones</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-ink-100">
-            @foreach (var r in Model)
+<form asp-action="Index" method="get" class="mb-6 flex flex-wrap items-end gap-3 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
+    <input type="hidden" name="estado" value="@filtro" />
+    <div class="min-w-[200px] flex-1">
+        <label class="mb-1 block text-xs font-medium text-ink-600">Buscar por huésped</label>
+        <input type="text" name="busqueda" value="@busqueda" placeholder="Ej: Juan Pérez"
+               class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+    </div>
+    <div class="min-w-[180px]">
+        <label class="mb-1 block text-xs font-medium text-ink-600">Cabaña</label>
+        <select name="cabanaId" class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">
+            <option value="">Todas las cabañas</option>
+            @foreach (var c in cabanas)
             {
-                <tr class="transition hover:bg-sand-50/60">
-                    <td class="px-5 py-3 font-medium text-ink-900">@r.Cabana?.Nombre</td>
-                    <td class="px-3 py-3 text-ink-700">@r.NombreHuesped</td>
-                    <td class="px-3 py-3 text-ink-500">@r.Telefono</td>
-                    <td class="whitespace-nowrap px-3 py-3 text-ink-600">@r.FechaDesde.ToString("dd/MM/yyyy") &ndash; @r.FechaHasta.ToString("dd/MM/yyyy")</td>
-                    <td class="px-3 py-3 text-ink-600">@r.CantidadPersonas</td>
-                    <td class="px-3 py-3 text-ink-600">@(r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "-")</td>
-                    <td class="px-3 py-3">
-                        @switch (r.Estado)
-                        {
-                            case EstadoReserva.Pendiente:
-                                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Pendiente</span>
-                                break;
-                            case EstadoReserva.Confirmada:
-                                <span class="rounded-full bg-river-100 px-2.5 py-1 text-xs font-semibold text-river-700">Confirmada</span>
-                                break;
-                            default:
-                                <span class="rounded-full bg-ink-100 px-2.5 py-1 text-xs font-semibold text-ink-500">Cancelada</span>
-                                break;
-                        }
-                    </td>
-                    <td class="px-5 py-3">
-                        <div class="flex justify-end gap-2 whitespace-nowrap">
-                            @if (r.Estado != EstadoReserva.Confirmada)
-                            {
-                                <form asp-action="Confirmar" asp-route-id="@r.Id" method="post">
-                                    <button type="submit" class="rounded-full bg-river-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-river-700">Confirmar</button>
-                                </form>
-                            }
-                            @if (r.Estado != EstadoReserva.Cancelada)
-                            {
-                                <form asp-action="Cancelar" asp-route-id="@r.Id" method="post" onsubmit="return confirm('¿Cancelar esta reserva?');">
-                                    <button type="submit" class="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Cancelar</button>
-                                </form>
-                            }
-                            <a asp-action="Edit" asp-route-id="@r.Id" class="rounded-full border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-600 transition hover:border-river-300 hover:text-river-700">Editar</a>
-                        </div>
-                    </td>
-                </tr>
+                <option value="@c.Id" selected="@(cabanaIdFiltro == c.Id)">@c.Nombre</option>
             }
-        </tbody>
-    </table>
-    @if (!Model.Any())
+        </select>
+    </div>
+    <button type="submit" class="rounded-full bg-river-700 px-5 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">Buscar</button>
+    @if (!string.IsNullOrWhiteSpace(busqueda) || cabanaIdFiltro.HasValue)
     {
-        <p class="px-5 py-8 text-center text-sm text-ink-400">No hay reservas para mostrar.</p>
+        <a asp-action="Index" asp-route-estado="@filtro" class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-ink-300">Limpiar filtros</a>
     }
-</div>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="rounded-2.5xl bg-white p-8 text-center text-sm text-ink-400 shadow-soft ring-1 ring-ink-100">No hay reservas para mostrar.</div>
+}
+
+@foreach (var grupo in grupos)
+{
+    <div class="mb-8">
+        <h2 class="mb-3 font-display text-lg font-semibold text-ink-800">@TituloMes(grupo.Key)</h2>
+        <div class="overflow-x-auto rounded-2.5xl bg-white shadow-soft ring-1 ring-ink-100">
+            <table class="w-full text-left text-sm">
+                <thead class="border-b border-ink-100 bg-ink-50/60 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                    <tr>
+                        <th class="px-5 py-3">Cabaña</th>
+                        <th class="px-3 py-3">Huésped</th>
+                        <th class="px-3 py-3">Contacto</th>
+                        <th class="px-3 py-3">Fechas</th>
+                        <th class="px-3 py-3">Personas</th>
+                        <th class="px-3 py-3">Valor</th>
+                        <th class="px-3 py-3">Estado</th>
+                        <th class="px-5 py-3 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    @foreach (var r in grupo)
+                    {
+                        <tr class="transition hover:bg-sand-50/60">
+                            <td class="px-5 py-3 font-medium text-ink-900">@r.Cabana?.Nombre</td>
+                            <td class="px-3 py-3 text-ink-700">@r.NombreHuesped</td>
+                            <td class="px-3 py-3 text-ink-500">@r.Telefono</td>
+                            <td class="whitespace-nowrap px-3 py-3 text-ink-600">@r.FechaDesde.ToString("dd/MM/yyyy") &ndash; @r.FechaHasta.ToString("dd/MM/yyyy")</td>
+                            <td class="px-3 py-3 text-ink-600">@r.CantidadPersonas</td>
+                            <td class="px-3 py-3 text-ink-600">@(r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "-")</td>
+                            <td class="px-3 py-3">
+                                @switch (r.Estado)
+                                {
+                                    case EstadoReserva.Pendiente:
+                                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Pendiente</span>
+                                        break;
+                                    case EstadoReserva.Confirmada:
+                                        <span class="rounded-full bg-river-100 px-2.5 py-1 text-xs font-semibold text-river-700">Confirmada</span>
+                                        break;
+                                    default:
+                                        <span class="rounded-full bg-ink-100 px-2.5 py-1 text-xs font-semibold text-ink-500">Cancelada</span>
+                                        break;
+                                }
+                            </td>
+                            <td class="px-5 py-3">
+                                <div class="flex justify-end gap-2 whitespace-nowrap">
+                                    @if (r.Estado != EstadoReserva.Confirmada)
+                                    {
+                                        <form asp-action="Confirmar" asp-route-id="@r.Id" method="post">
+                                            <button type="submit" class="rounded-full bg-river-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-river-700">Confirmar</button>
+                                        </form>
+                                    }
+                                    @if (r.Estado != EstadoReserva.Cancelada)
+                                    {
+                                        <form asp-action="Cancelar" asp-route-id="@r.Id" method="post" onsubmit="return confirm('¿Cancelar esta reserva?');">
+                                            <button type="submit" class="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Cancelar</button>
+                                        </form>
+                                    }
+                                    <a asp-action="Edit" asp-route-id="@r.Id" class="rounded-full border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-600 transition hover:border-river-300 hover:text-river-700">Editar</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
