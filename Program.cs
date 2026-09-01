@@ -18,7 +18,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddScoped<IPasswordHasher<AdminUsuario>, PasswordHasher<AdminUsuario>>();
 builder.Services.AddScoped<GestionCabanas.Services.DisponibilidadService>();
-builder.Services.AddHttpClient<GestionCabanas.Services.INotificacionWhatsAppService, GestionCabanas.Services.CallMeBotWhatsAppService>();
 builder.Services.AddScoped<GestionCabanas.Services.INotificacionEmailService, GestionCabanas.Services.EmailNotificacionService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

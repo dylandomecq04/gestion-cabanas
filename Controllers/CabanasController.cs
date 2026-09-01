@@ -10,14 +10,12 @@ namespace GestionCabanas.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly DisponibilidadService _disponibilidad;
-        private readonly INotificacionWhatsAppService _whatsApp;
         private readonly INotificacionEmailService _email;
 
-        public CabanasController(ApplicationDbContext db, DisponibilidadService disponibilidad, INotificacionWhatsAppService whatsApp, INotificacionEmailService email)
+        public CabanasController(ApplicationDbContext db, DisponibilidadService disponibilidad, INotificacionEmailService email)
         {
             _db = db;
             _disponibilidad = disponibilidad;
-            _whatsApp = whatsApp;
             _email = email;
         }
 
@@ -102,7 +100,6 @@ namespace GestionCabanas.Controllers
             _db.Reservas.Add(reserva);
             await _db.SaveChangesAsync();
 
-            await _whatsApp.NotificarNuevaSolicitudAsync(cabana, reserva);
             await _email.NotificarNuevaSolicitudAsync(cabana, reserva);
 
             TempData["SolicitudEnviada"] = $"¡Listo! Recibimos tu solicitud para {cabana.Nombre}.";
