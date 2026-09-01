@@ -33,16 +33,17 @@
     <a asp-action="Index" asp-route-estado="Cancelada" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Cancelada)">Canceladas</a>
 </div>
 
-<form asp-action="Index" method="get" class="mb-6 flex flex-wrap items-end gap-3 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
+<form id="form-filtros" asp-action="Index" method="get" class="mb-6 flex flex-wrap items-end gap-3 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
     <input type="hidden" name="estado" value="@filtro" />
     <div class="min-w-[200px] flex-1">
         <label class="mb-1 block text-xs font-medium text-ink-600">Buscar por huésped</label>
-        <input type="text" name="busqueda" value="@busqueda" placeholder="Ej: Juan Pérez"
+        <input type="text" name="busqueda" value="@busqueda" placeholder="Ej: Juan Pérez" oninput="buscarReservasConDemora()"
                class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
     </div>
     <div class="min-w-[180px]">
         <label class="mb-1 block text-xs font-medium text-ink-600">Cabaña</label>
-        <select name="cabanaId" class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">
+        <select name="cabanaId" onchange="document.getElementById('form-filtros').requestSubmit()"
+                class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">
             <option value="">Todas las cabañas</option>
             @foreach (var c in cabanas)
             {
@@ -50,7 +51,6 @@
             }
         </select>
     </div>
-    <button type="submit" class="rounded-full bg-river-700 px-5 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">Buscar</button>
     @if (!string.IsNullOrWhiteSpace(busqueda) || cabanaIdFiltro.HasValue)
     {
         <a asp-action="Index" asp-route-estado="@filtro" class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-ink-300">Limpiar filtros</a>
@@ -127,4 +127,24 @@
             </table>
         </div>
     </div>
+}
+
+@section Scripts {
+    <script>
+        let __buscarReservasTimeout = null;
+        function buscarReservasConDemora() {
+            clearTimeout(__buscarReservasTimeout);
+            __buscarReservasTimeout = setTimeout(() => {
+                document.getElementById('form-filtros').requestSubmit();
+            }, 450);
+        }
+
+        (function () {
+            const input = document.querySelector('input[name="busqueda"]');
+            if (input && input.value) {
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
+        })();
+    </script>
 }
