@@ -14,6 +14,7 @@ namespace GestionCabanas.Services
         public int Omitidas { get; set; }
         public List<string> NoInterpretadas { get; } = new();
         public List<string> CabanasNoEncontradas { get; } = new();
+        public List<string> Superposiciones { get; } = new();
     }
 
     public class ExcelReservasSyncService
@@ -196,7 +197,35 @@ namespace GestionCabanas.Services
             }
 
             await _db.SaveChangesAsync();
+
+            await DetectarSuperposicionesAsync(resultado, cabanas);
+
             return resultado;
+        }
+
+        private async Task DetectarSuperposicionesAsync(ResultadoSincronizacion resultado, List<Cabana> cabanas)
+        {
+            var activas = await _db.Reservas
+                .Where(r => r.Estado != EstadoReserva.Cancelada)
+                .ToListAsync();
+
+            foreach (var grupo in activas.GroupBy(r => r.CabanaId))
+            {
+                var nombreCabana = cabanas.FirstOrDefault(c => c.Id == grupo.Key)?.Nombre ?? "Cabaña";
+                var lista = grupo.OrderBy(r => r.FechaDesde).ToList();
+
+                for (var i = 0; i < lista.Count; i++)
+                {
+                    for (var j = i + 1; j < lista.Count; j++)
+                    {
+                        if (lista[i].FechaDesde < lista[j].FechaHasta && lista[j].FechaDesde < lista[i].FechaHasta)
+                        {
+                            resultado.Superposiciones.Add(
+                                $"{nombreCabana}: {lista[i].NombreHuesped} ({lista[i].FechaDesde:dd/MM} - {lista[i].FechaHasta:dd/MM}) se superpone con {lista[j].NombreHuesped} ({lista[j].FechaDesde:dd/MM} - {lista[j].FechaHasta:dd/MM})");
+                        }
+                    }
+                }
+            }
         }
 
         private static decimal? LeerDecimal(IXLCell celda)

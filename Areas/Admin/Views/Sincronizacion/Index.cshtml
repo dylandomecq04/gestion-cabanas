@@ -9,6 +9,7 @@
     int? omitidas = TempData["ResultadoOmitidas"] as int?;
     string? noInterpretadas = TempData["ResultadoNoInterpretadas"] as string;
     string? cabanasNoEncontradas = TempData["ResultadoCabanasNoEncontradas"] as string;
+    string? superposiciones = TempData["ResultadoSuperposiciones"] as string;
 }
 
 <h1 class="mb-2 font-display text-2xl font-semibold text-ink-900">Sincronización con Excel</h1>
@@ -42,6 +43,20 @@ else
                     <p class="mt-1 text-xs text-ink-600">@noInterpretadas</p>
                 </details>
             }
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(superposiciones))
+    {
+        <div class="mb-6 max-w-2xl rounded-2.5xl bg-rose-50 p-5 text-sm text-rose-800 ring-1 ring-rose-200">
+            <p class="font-semibold">🚨 Hay fechas que se superponen en la misma cabaña</p>
+            <p class="mt-1 text-rose-700">Revisá estas reservas y cancelá la que no corresponda:</p>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                @foreach (var linea in superposiciones.Split(" | "))
+                {
+                    <li>@linea</li>
+                }
+            </ul>
         </div>
     }
 

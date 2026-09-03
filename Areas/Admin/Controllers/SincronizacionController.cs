@@ -105,6 +105,9 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["ResultadoCabanasNoEncontradas"] = resultado.CabanasNoEncontradas.Count > 0
                     ? string.Join(", ", resultado.CabanasNoEncontradas)
                     : null;
+                TempData["ResultadoSuperposiciones"] = resultado.Superposiciones.Count > 0
+                    ? string.Join(" | ", resultado.Superposiciones)
+                    : null;
                 TempData["Mensaje"] = $"Sincronización terminada: {resultado.Creadas} reserva(s) nueva(s), {resultado.Omitidas} ya existían.";
             }
             catch (Exception ex)
