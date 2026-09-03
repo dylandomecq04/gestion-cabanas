@@ -9,8 +9,8 @@ namespace GestionCabanas.Services
 {
     public class GraphOneDriveService
     {
-        private const string TokenEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-        private const string AuthorizeEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
+        private const string TokenEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+        private const string AuthorizeEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
         private const string Scopes = "Files.Read offline_access";
 
         private readonly ApplicationDbContext _db;
