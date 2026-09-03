@@ -38,5 +38,8 @@ namespace GestionCabanas.Models
         public decimal? Valor { get; set; }
 
         public DateTime FechaCreacion { get; set; } = DateTime.Now;
+
+        [StringLength(200)]
+        public string? ExcelUbicacion { get; set; }
     }
 }

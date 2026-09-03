@@ -11,10 +11,12 @@ namespace GestionCabanas.Services
     public class ResultadoSincronizacion
     {
         public int Creadas { get; set; }
+        public int Actualizadas { get; set; }
         public int Omitidas { get; set; }
         public List<string> NoInterpretadas { get; } = new();
         public List<string> CabanasNoEncontradas { get; } = new();
         public List<string> Superposiciones { get; } = new();
+        public List<string> YaNoEstanEnElExcel { get; } = new();
     }
 
     public class ExcelReservasSyncService
@@ -47,6 +49,16 @@ namespace GestionCabanas.Services
         {
             var resultado = new ResultadoSincronizacion();
             var cabanas = await _db.Cabanas.ToListAsync();
+
+            var reservasPorUbicacion = await _db.Reservas
+                .Where(r => r.ExcelUbicacion != null)
+                .ToDictionaryAsync(r => r.ExcelUbicacion!);
+
+            var reservasSinTag = await _db.Reservas
+                .Where(r => r.ExcelUbicacion == null)
+                .ToListAsync();
+
+            var ubicacionesVistas = new HashSet<string>();
 
             using var workbook = new XLWorkbook(new MemoryStream(archivo));
 
@@ -167,21 +179,48 @@ namespace GestionCabanas.Services
                         }
 
                         decimal? pagar = colPagar.HasValue ? LeerDecimal(hoja.Cell(r, colPagar.Value)) : null;
-                        var nombreHuespedNormalizado = textoNombre.ToLowerInvariant();
+                        var ubicacion = $"{anio}/{hoja.Name}!{hoja.Cell(r, colFecha).Address}";
+                        ubicacionesVistas.Add(ubicacion);
 
-                        var existe = await _db.Reservas.AnyAsync(res =>
+                        if (reservasPorUbicacion.TryGetValue(ubicacion, out var reservaExistente))
+                        {
+                            if (reservaExistente.CabanaId != cabana.Id ||
+                                reservaExistente.NombreHuesped != textoNombre ||
+                                reservaExistente.FechaDesde != fechaDesde ||
+                                reservaExistente.FechaHasta != fechaHasta ||
+                                reservaExistente.Valor != pagar)
+                            {
+                                reservaExistente.CabanaId = cabana.Id;
+                                reservaExistente.NombreHuesped = textoNombre;
+                                reservaExistente.FechaDesde = fechaDesde;
+                                reservaExistente.FechaHasta = fechaHasta;
+                                reservaExistente.Valor = pagar;
+                                resultado.Actualizadas++;
+                            }
+                            else
+                            {
+                                resultado.Omitidas++;
+                            }
+                            continue;
+                        }
+
+                        var nombreHuespedNormalizado = textoNombre.ToLowerInvariant();
+                        var adoptada = reservasSinTag.FirstOrDefault(res =>
+                            res.ExcelUbicacion is null &&
                             res.CabanaId == cabana.Id &&
                             res.FechaDesde == fechaDesde &&
                             res.FechaHasta == fechaHasta &&
-                            res.NombreHuesped.ToLower() == nombreHuespedNormalizado);
+                            res.NombreHuesped.ToLowerInvariant() == nombreHuespedNormalizado);
 
-                        if (existe)
+                        if (adoptada is not null)
                         {
+                            adoptada.ExcelUbicacion = ubicacion;
+                            reservasPorUbicacion[ubicacion] = adoptada;
                             resultado.Omitidas++;
                             continue;
                         }
 
-                        _db.Reservas.Add(new Reserva
+                        var nueva = new Reserva
                         {
                             CabanaId = cabana.Id,
                             NombreHuesped = textoNombre,
@@ -190,17 +229,52 @@ namespace GestionCabanas.Services
                             CantidadPersonas = 1,
                             Estado = EstadoReserva.Confirmada,
                             Valor = pagar,
-                        });
+                            ExcelUbicacion = ubicacion,
+                        };
+                        _db.Reservas.Add(nueva);
+                        reservasPorUbicacion[ubicacion] = nueva;
                         resultado.Creadas++;
                     }
                 }
             }
+
+            DetectarFaltantes(resultado, cabanas, reservasPorUbicacion, ubicacionesVistas, anio);
 
             await _db.SaveChangesAsync();
 
             await DetectarSuperposicionesAsync(resultado, cabanas);
 
             return resultado;
+        }
+
+        private static void DetectarFaltantes(
+            ResultadoSincronizacion resultado,
+            List<Cabana> cabanas,
+            Dictionary<string, Reserva> reservasPorUbicacion,
+            HashSet<string> ubicacionesVistas,
+            int anio)
+        {
+            var prefijoAnio = $"{anio}/";
+
+            foreach (var (ubicacion, reserva) in reservasPorUbicacion)
+            {
+                if (!ubicacion.StartsWith(prefijoAnio, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                if (ubicacionesVistas.Contains(ubicacion))
+                {
+                    continue;
+                }
+                if (reserva.Estado == EstadoReserva.Cancelada)
+                {
+                    continue;
+                }
+
+                var nombreCabana = cabanas.FirstOrDefault(c => c.Id == reserva.CabanaId)?.Nombre ?? "Cabaña";
+                resultado.YaNoEstanEnElExcel.Add(
+                    $"{nombreCabana}: {reserva.NombreHuesped} ({reserva.FechaDesde:dd/MM} - {reserva.FechaHasta:dd/MM})");
+            }
         }
 
         private async Task DetectarSuperposicionesAsync(ResultadoSincronizacion resultado, List<Cabana> cabanas)

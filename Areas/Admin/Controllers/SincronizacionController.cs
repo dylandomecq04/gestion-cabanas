@@ -99,6 +99,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 await _oneDrive.MarcarSincronizadoAsync();
 
                 TempData["ResultadoCreadas"] = resultado.Creadas;
+                TempData["ResultadoActualizadas"] = resultado.Actualizadas;
                 TempData["ResultadoOmitidas"] = resultado.Omitidas;
                 TempData["ResultadoNoInterpretadas"] = resultado.NoInterpretadas.Count > 0
                     ? string.Join(" | ", resultado.NoInterpretadas)
@@ -109,7 +110,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["ResultadoSuperposiciones"] = resultado.Superposiciones.Count > 0
                     ? string.Join(" | ", resultado.Superposiciones)
                     : null;
-                TempData["Mensaje"] = $"Sincronización terminada: {resultado.Creadas} reserva(s) nueva(s), {resultado.Omitidas} ya existían.";
+                TempData["ResultadoYaNoEstanEnElExcel"] = resultado.YaNoEstanEnElExcel.Count > 0
+                    ? string.Join(" | ", resultado.YaNoEstanEnElExcel)
+                    : null;
+                TempData["Mensaje"] = $"Sincronización terminada: {resultado.Creadas} reserva(s) nueva(s), {resultado.Actualizadas} actualizada(s), {resultado.Omitidas} sin cambios.";
             }
             catch (Exception ex)
             {
