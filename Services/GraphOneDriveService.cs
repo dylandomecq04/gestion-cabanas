@@ -96,6 +96,16 @@ namespace GestionCabanas.Services
             }
         }
 
+        public async Task MarcarSincronizadoAsync()
+        {
+            var conexion = await _db.OneDriveConexiones.FirstOrDefaultAsync();
+            if (conexion is not null)
+            {
+                conexion.UltimaSincronizacion = DateTime.Now;
+                await _db.SaveChangesAsync();
+            }
+        }
+
         private async Task<string> ObtenerAccessTokenAsync()
         {
             var conexion = await _db.OneDriveConexiones.FirstOrDefaultAsync();

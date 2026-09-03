@@ -76,7 +76,7 @@ else
                 <div>
                     <p class="text-sm font-semibold text-ink-800">✅ Cuenta de OneDrive conectada</p>
                     <p class="text-xs text-ink-500">
-                        Conectada desde @(conexion.FechaConexion?.ToString("dd/MM/yyyy") ?? "-")
+                        Conectada desde @(conexion.FechaConexion?.ToString("dd/MM/yyyy HH:mm") ?? "-")
                         @if (conexion.UltimaSincronizacion.HasValue)
                         {
                             <text> · Última sincronización: @conexion.UltimaSincronizacion.Value.ToString("dd/MM/yyyy HH:mm")</text>

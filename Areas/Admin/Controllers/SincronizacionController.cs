@@ -96,6 +96,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             {
                 var bytes = await _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo);
                 var resultado = await _sync.SincronizarAsync(bytes, anio);
+                await _oneDrive.MarcarSincronizadoAsync();
 
                 TempData["ResultadoCreadas"] = resultado.Creadas;
                 TempData["ResultadoOmitidas"] = resultado.Omitidas;
