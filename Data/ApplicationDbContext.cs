@@ -17,6 +17,7 @@ namespace GestionCabanas.Data
         public DbSet<InformacionSitio> InformacionSitio => Set<InformacionSitio>();
         public DbSet<PreguntaFrecuente> PreguntasFrecuentes => Set<PreguntaFrecuente>();
         public DbSet<Promocion> Promociones => Set<Promocion>();
+        public DbSet<OneDriveConexion> OneDriveConexiones => Set<OneDriveConexion>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

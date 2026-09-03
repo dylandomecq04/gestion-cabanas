@@ -19,6 +19,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IPasswordHasher<AdminUsuario>, PasswordHasher<AdminUsuario>>();
 builder.Services.AddScoped<GestionCabanas.Services.DisponibilidadService>();
 builder.Services.AddScoped<GestionCabanas.Services.INotificacionEmailService, GestionCabanas.Services.EmailNotificacionService>();
+builder.Services.AddDataProtection();
+builder.Services.AddHttpClient<GestionCabanas.Services.GraphOneDriveService>();
+builder.Services.AddScoped<GestionCabanas.Services.ExcelReservasSyncService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
