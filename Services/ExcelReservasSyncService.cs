@@ -73,8 +73,12 @@ namespace GestionCabanas.Services
                     for (var c = colFecha + 1; c <= colFecha + 6; c++)
                     {
                         var texto = Normalizar(hoja.Cell(fila, c).GetString());
-                        if (texto == "NOMBRE") colNombre = c;
-                        else if (texto == "PAGAR") colPagar = c;
+                        if (texto == "FECHA")
+                        {
+                            break;
+                        }
+                        if (texto == "NOMBRE") colNombre ??= c;
+                        else if (texto == "PAGAR") colPagar ??= c;
                     }
 
                     if (colNombre is null)
@@ -118,10 +122,6 @@ namespace GestionCabanas.Services
                         var textoFecha = hoja.Cell(r, colFecha).GetString().Trim();
                         var textoNombre = hoja.Cell(r, colNombre.Value).GetString().Trim();
 
-                        if (string.IsNullOrWhiteSpace(textoFecha) && string.IsNullOrWhiteSpace(textoNombre))
-                        {
-                            break;
-                        }
                         if (Normalizar(textoFecha) == "TOTAL" || Normalizar(textoNombre) == "TOTAL")
                         {
                             break;
