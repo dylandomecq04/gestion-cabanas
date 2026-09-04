@@ -30,7 +30,6 @@
     <a asp-action="Index" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == null)">Todas</a>
     <a asp-action="Index" asp-route-estado="Pendiente" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Pendiente)">Pendientes</a>
     <a asp-action="Index" asp-route-estado="Confirmada" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Confirmada)">Confirmadas</a>
-    <a asp-action="Index" asp-route-estado="Cancelada" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Cancelada)">Canceladas</a>
 </div>
 
 <form id="form-filtros" asp-action="Index" method="get" class="mb-6 flex flex-wrap items-end gap-3 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
@@ -91,17 +90,13 @@
                             <td class="px-3 py-3 text-ink-600">@r.CantidadPersonas</td>
                             <td class="px-3 py-3 text-ink-600">@(r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "-")</td>
                             <td class="px-3 py-3">
-                                @switch (r.Estado)
+                                @if (r.Estado == EstadoReserva.Confirmada)
                                 {
-                                    case EstadoReserva.Pendiente:
-                                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Pendiente</span>
-                                        break;
-                                    case EstadoReserva.Confirmada:
-                                        <span class="rounded-full bg-river-100 px-2.5 py-1 text-xs font-semibold text-river-700">Confirmada</span>
-                                        break;
-                                    default:
-                                        <span class="rounded-full bg-ink-100 px-2.5 py-1 text-xs font-semibold text-ink-500">Cancelada</span>
-                                        break;
+                                    <span class="rounded-full bg-river-100 px-2.5 py-1 text-xs font-semibold text-river-700">Confirmada</span>
+                                }
+                                else
+                                {
+                                    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Pendiente</span>
                                 }
                             </td>
                             <td class="px-5 py-3">
@@ -112,13 +107,10 @@
                                             <button type="submit" class="rounded-full bg-river-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-river-700">Confirmar</button>
                                         </form>
                                     }
-                                    @if (r.Estado != EstadoReserva.Cancelada)
-                                    {
-                                        <form asp-action="Cancelar" asp-route-id="@r.Id" method="post" onsubmit="return confirm('¿Cancelar esta reserva?');">
-                                            <button type="submit" class="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Cancelar</button>
-                                        </form>
-                                    }
                                     <a asp-action="Edit" asp-route-id="@r.Id" class="rounded-full border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-600 transition hover:border-river-300 hover:text-river-700">Editar</a>
+                                    <form asp-action="Delete" asp-route-id="@r.Id" method="post" onsubmit="return confirm('¿Eliminar esta reserva? No se puede deshacer.');">
+                                        <button type="submit" title="Eliminar" class="flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:bg-rose-50">🗑️</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

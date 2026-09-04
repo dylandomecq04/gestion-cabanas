@@ -266,10 +266,6 @@ namespace GestionCabanas.Services
                 {
                     continue;
                 }
-                if (reserva.Estado == EstadoReserva.Cancelada)
-                {
-                    continue;
-                }
 
                 var nombreCabana = cabanas.FirstOrDefault(c => c.Id == reserva.CabanaId)?.Nombre ?? "Cabaña";
                 resultado.YaNoEstanEnElExcel.Add(
@@ -279,9 +275,7 @@ namespace GestionCabanas.Services
 
         private async Task DetectarSuperposicionesAsync(ResultadoSincronizacion resultado, List<Cabana> cabanas)
         {
-            var activas = await _db.Reservas
-                .Where(r => r.Estado != EstadoReserva.Cancelada)
-                .ToListAsync();
+            var activas = await _db.Reservas.ToListAsync();
 
             foreach (var grupo in activas.GroupBy(r => r.CabanaId))
             {

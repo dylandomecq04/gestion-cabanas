@@ -149,22 +149,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Cancelar(int id)
-        {
-            var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
-            if (reserva is null)
-            {
-                return NotFound();
-            }
-
-            reserva.Estado = EstadoReserva.Cancelada;
-            await _db.SaveChangesAsync();
-            TempData["Mensaje"] = "Reserva cancelada.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
@@ -218,7 +202,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
             var reservas = await _db.Reservas
-                .Where(r => r.Estado != EstadoReserva.Cancelada && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
+                .Where(r => r.Estado == EstadoReserva.Confirmada && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
                 .ToListAsync();
             var tarifas = await _disponibilidad.ObtenerTarifasEnRangoTodasCabanasAsync(primerDia, ultimoDia);
 
