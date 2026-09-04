@@ -65,8 +65,11 @@
                 <form asp-controller="Sincronizacion" asp-action="Sincronizar" method="post" class="flex items-center gap-2">
                     <input type="hidden" name="anio" value="@primerDia.Year" />
                     <input type="hidden" name="mes" value="@primerDia.Month" />
-                    <button type="submit" class="rounded-full bg-river-700 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
-                        🔄 Sincronizar con Excel
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-river-700 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 text-emerald-300">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                        Sincronizar con Excel
                     </button>
                 </form>
                 <span class="text-xs text-ink-400">
@@ -88,58 +91,13 @@
             else
             {
                 <a asp-controller="Sincronizacion" asp-action="Conectar" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month"
-                   class="rounded-full border border-river-300 px-4 py-2 text-sm font-semibold text-river-700 transition hover:bg-river-50">
-                    🔗 Conectar OneDrive para sincronizar
+                   class="inline-flex items-center gap-2 rounded-full border border-river-300 px-4 py-2 text-sm font-semibold text-river-700 transition hover:bg-river-50">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                    </svg>
+                    Conectar OneDrive para sincronizar
                 </a>
             }
-        </div>
-    }
-
-    @if (syncCreadas.HasValue)
-    {
-        <div class="mb-6 max-w-2xl rounded-2.5xl bg-river-50 p-4 text-sm text-river-800 ring-1 ring-river-100">
-            <p>
-                ✅ @SyncPlural(syncCreadas.Value, "reserva nueva", "reservas nuevas") &middot;
-                ✏️ @SyncPlural(syncActualizadas ?? 0, "actualizada", "actualizadas") &middot;
-                ↪️ @SyncPlural(syncOmitidas ?? 0, "sin cambios", "sin cambios")
-            </p>
-            @if (!string.IsNullOrEmpty(syncCabanasNoEncontradas))
-            {
-                <p class="mt-2 text-amber-700">⚠️ No encontré estas cabañas en el sistema: @syncCabanasNoEncontradas</p>
-            }
-            @if (!string.IsNullOrEmpty(syncNoInterpretadas))
-            {
-                <details class="mt-2">
-                    <summary class="cursor-pointer text-amber-700">⚠️ Filas que no pude interpretar (clic para ver)</summary>
-                    <p class="mt-1 text-xs text-ink-600">@syncNoInterpretadas</p>
-                </details>
-            }
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(syncSuperposiciones))
-    {
-        <div class="mb-6 max-w-2xl rounded-2.5xl bg-rose-50 p-4 text-sm text-rose-800 ring-1 ring-rose-200">
-            <p class="font-semibold">🚨 Hay fechas que se superponen en la misma cabaña</p>
-            <ul class="mt-2 list-disc space-y-1 pl-5">
-                @foreach (var linea in syncSuperposiciones.Split(" | "))
-                {
-                    <li>@linea</li>
-                }
-            </ul>
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(syncYaNoEstanEnElExcel))
-    {
-        <div class="mb-6 max-w-2xl rounded-2.5xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
-            <p class="font-semibold">⚠️ Estas reservas ya no están en el Excel</p>
-            <ul class="mt-2 list-disc space-y-1 pl-5">
-                @foreach (var linea in syncYaNoEstanEnElExcel.Split(" | "))
-                {
-                    <li>@linea</li>
-                }
-            </ul>
         </div>
     }
 
@@ -295,6 +253,99 @@
     </div>
 </div>
 
+@if (syncCreadas.HasValue)
+{
+    <div id="modal-sincronizacion" class="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalSincronizacion();">
+        <div class="w-full max-w-md rounded-2.5xl bg-white p-6 shadow-lift">
+            <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-display text-lg font-semibold text-ink-900">Sincronización con Excel</h3>
+                <button type="button" onclick="cerrarModalSincronizacion()" aria-label="Cerrar" class="flex h-7 w-7 items-center justify-center rounded-full text-ink-400 transition hover:bg-sand-100 hover:text-ink-600">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <ul class="space-y-2.5 text-sm text-ink-700">
+                <li class="flex items-center gap-2.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-emerald-500">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    @SyncPlural(syncCreadas.Value, "reserva nueva", "reservas nuevas")
+                </li>
+                <li class="flex items-center gap-2.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-amber-500">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                    </svg>
+                    @SyncPlural(syncActualizadas ?? 0, "reserva actualizada", "reservas actualizadas")
+                </li>
+                <li class="flex items-center gap-2.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-ink-300">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    @SyncPlural(syncOmitidas ?? 0, "reserva sin cambios", "reservas sin cambios")
+                </li>
+            </ul>
+
+            @if (!string.IsNullOrEmpty(syncCabanasNoEncontradas) || !string.IsNullOrEmpty(syncNoInterpretadas) || !string.IsNullOrEmpty(syncSuperposiciones) || !string.IsNullOrEmpty(syncYaNoEstanEnElExcel))
+            {
+                <div class="mt-4 space-y-3 border-t border-ink-100 pt-4">
+                    @if (!string.IsNullOrEmpty(syncSuperposiciones))
+                    {
+                        <div class="flex gap-2.5 text-sm text-ink-600">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="mt-0.5 h-4 w-4 shrink-0 text-rose-500">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                            <div>
+                                <p class="font-medium text-ink-700">Fechas superpuestas en la misma cabaña</p>
+                                <ul class="mt-1 list-disc space-y-0.5 pl-4 text-xs text-ink-500">
+                                    @foreach (var linea in syncSuperposiciones.Split(" | "))
+                                    {
+                                        <li>@linea</li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(syncYaNoEstanEnElExcel))
+                    {
+                        <div class="flex gap-2.5 text-sm text-ink-600">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="mt-0.5 h-4 w-4 shrink-0 text-amber-500">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                            <div>
+                                <p class="font-medium text-ink-700">Ya no están en el Excel</p>
+                                <ul class="mt-1 list-disc space-y-0.5 pl-4 text-xs text-ink-500">
+                                    @foreach (var linea in syncYaNoEstanEnElExcel.Split(" | "))
+                                    {
+                                        <li>@linea</li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(syncCabanasNoEncontradas))
+                    {
+                        <div class="flex gap-2.5 text-sm text-ink-600">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="mt-0.5 h-4 w-4 shrink-0 text-amber-500">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                            <p><span class="font-medium text-ink-700">Cabañas no encontradas:</span> @syncCabanasNoEncontradas</p>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(syncNoInterpretadas))
+                    {
+                        <details>
+                            <summary class="cursor-pointer text-sm font-medium text-ink-500 transition hover:text-ink-700">Filas que no pude interpretar</summary>
+                            <p class="mt-1.5 pl-1 text-xs text-ink-500">@syncNoInterpretadas</p>
+                        </details>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
 <div id="modal-reserva" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalReserva();">
     <div class="w-full max-w-sm rounded-2.5xl bg-white p-6 shadow-lift">
         <h3 id="modal-reserva-titulo" class="font-display text-lg font-semibold text-ink-900"></h3>
@@ -411,6 +462,11 @@
 
         function cerrarModalReserva() {
             document.getElementById('modal-reserva').classList.add('hidden');
+        }
+
+        function cerrarModalSincronizacion() {
+            const modal = document.getElementById('modal-sincronizacion');
+            if (modal) modal.classList.add('hidden');
         }
     </script>
 }
