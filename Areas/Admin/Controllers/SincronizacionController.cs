@@ -113,7 +113,8 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["ResultadoYaNoEstanEnElExcel"] = resultado.YaNoEstanEnElExcel.Count > 0
                     ? string.Join(" | ", resultado.YaNoEstanEnElExcel)
                     : null;
-                TempData["Mensaje"] = $"Sincronización terminada: {resultado.Creadas} reserva(s) nueva(s), {resultado.Actualizadas} actualizada(s), {resultado.Omitidas} sin cambios.";
+                TempData["Mensaje"] = $"Sincronización terminada: {Plural(resultado.Creadas, "reserva nueva", "reservas nuevas")}, " +
+                    $"{Plural(resultado.Actualizadas, "actualizada", "actualizadas")}, {Plural(resultado.Omitidas, "sin cambios", "sin cambios")}.";
             }
             catch (Exception ex)
             {
@@ -122,5 +123,8 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        private static string Plural(int cantidad, string singular, string plural)
+            => $"{cantidad} {(cantidad == 1 ? singular : plural)}";
     }
 }

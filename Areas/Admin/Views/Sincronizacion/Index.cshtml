@@ -12,6 +12,8 @@
     string? cabanasNoEncontradas = TempData["ResultadoCabanasNoEncontradas"] as string;
     string? superposiciones = TempData["ResultadoSuperposiciones"] as string;
     string? yaNoEstanEnElExcel = TempData["ResultadoYaNoEstanEnElExcel"] as string;
+
+    string ReservaTexto(int n, string singular, string plural) => $"{n} {(n == 1 ? singular : plural)}";
 }
 
 <h1 class="mb-2 font-display text-2xl font-semibold text-ink-900">Sincronización con Excel</h1>
@@ -32,9 +34,9 @@ else
     {
         <div class="mb-6 max-w-2xl rounded-2.5xl bg-river-50 p-5 text-sm text-river-800 ring-1 ring-river-100">
             <p class="font-semibold">Resultado de la última sincronización</p>
-            <p class="mt-1">✅ @creadas reserva(s) nueva(s) creada(s)</p>
-            <p>✏️ @actualizadas reserva(s) actualizada(s) por un cambio en el Excel</p>
-            <p>↪️ @omitidas reserva(s) sin cambios</p>
+            <p class="mt-1">✅ @ReservaTexto(creadas ?? 0, "reserva nueva creada", "reservas nuevas creadas")</p>
+            <p>✏️ @ReservaTexto(actualizadas ?? 0, "reserva actualizada", "reservas actualizadas") por un cambio en el Excel</p>
+            <p>↪️ @ReservaTexto(omitidas ?? 0, "reserva sin cambios", "reservas sin cambios")</p>
             @if (!string.IsNullOrEmpty(cabanasNoEncontradas))
             {
                 <p class="mt-2 text-amber-700">⚠️ No encontré estas cabañas en el sistema: @cabanasNoEncontradas</p>
