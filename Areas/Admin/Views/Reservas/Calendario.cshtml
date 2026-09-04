@@ -30,10 +30,24 @@
 
     var mesTitulo = primerDia.ToString("MMMM yyyy");
     mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
+
+    bool syncConfigurada = ViewBag.SincronizacionConfigurada;
+    var syncConexion = ViewBag.SincronizacionConexion as OneDriveConexion;
+    bool syncConectada = syncConexion?.RefreshTokenCifrado is not null;
+
+    int? syncCreadas = TempData["ResultadoCreadas"] as int?;
+    int? syncActualizadas = TempData["ResultadoActualizadas"] as int?;
+    int? syncOmitidas = TempData["ResultadoOmitidas"] as int?;
+    string? syncNoInterpretadas = TempData["ResultadoNoInterpretadas"] as string;
+    string? syncCabanasNoEncontradas = TempData["ResultadoCabanasNoEncontradas"] as string;
+    string? syncSuperposiciones = TempData["ResultadoSuperposiciones"] as string;
+    string? syncYaNoEstanEnElExcel = TempData["ResultadoYaNoEstanEnElExcel"] as string;
+
+    string SyncPlural(int n, string singular, string plural) => $"{n} {(n == 1 ? singular : plural)}";
 }
 
 <div class="relative left-1/2 w-screen -translate-x-1/2 px-4 sm:px-8">
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
         <h1 class="font-display text-2xl font-semibold text-ink-900">Calendario &middot; @mesTitulo</h1>
         <div class="flex gap-2">
             <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
@@ -42,6 +56,92 @@
                asp-action="Calendario" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month">Mes siguiente &rarr;</a>
         </div>
     </div>
+
+    @if (syncConfigurada)
+    {
+        <div class="mb-6 flex flex-wrap items-center gap-3">
+            @if (syncConectada)
+            {
+                <form asp-controller="Sincronizacion" asp-action="Sincronizar" method="post" class="flex items-center gap-2">
+                    <input type="hidden" name="anio" value="@primerDia.Year" />
+                    <input type="hidden" name="mes" value="@primerDia.Month" />
+                    <button type="submit" class="rounded-full bg-river-700 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+                        🔄 Sincronizar con Excel
+                    </button>
+                </form>
+                <span class="text-xs text-ink-400">
+                    @if (syncConexion!.UltimaSincronizacion.HasValue)
+                    {
+                        <text>Última sincronización: @syncConexion.UltimaSincronizacion.Value.ToString("dd/MM/yyyy HH:mm")</text>
+                    }
+                    else
+                    {
+                        <text>Todavía no sincronizaste</text>
+                    }
+                </span>
+                <form asp-controller="Sincronizacion" asp-action="Desconectar" method="post" onsubmit="return confirm('¿Desconectar la cuenta de OneDrive?');">
+                    <input type="hidden" name="anio" value="@primerDia.Year" />
+                    <input type="hidden" name="mes" value="@primerDia.Month" />
+                    <button type="submit" class="text-xs font-medium text-ink-400 underline transition hover:text-rose-600">Desconectar OneDrive</button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Sincronizacion" asp-action="Conectar" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month"
+                   class="rounded-full border border-river-300 px-4 py-2 text-sm font-semibold text-river-700 transition hover:bg-river-50">
+                    🔗 Conectar OneDrive para sincronizar
+                </a>
+            }
+        </div>
+    }
+
+    @if (syncCreadas.HasValue)
+    {
+        <div class="mb-6 max-w-2xl rounded-2.5xl bg-river-50 p-4 text-sm text-river-800 ring-1 ring-river-100">
+            <p>
+                ✅ @SyncPlural(syncCreadas.Value, "reserva nueva", "reservas nuevas") &middot;
+                ✏️ @SyncPlural(syncActualizadas ?? 0, "actualizada", "actualizadas") &middot;
+                ↪️ @SyncPlural(syncOmitidas ?? 0, "sin cambios", "sin cambios")
+            </p>
+            @if (!string.IsNullOrEmpty(syncCabanasNoEncontradas))
+            {
+                <p class="mt-2 text-amber-700">⚠️ No encontré estas cabañas en el sistema: @syncCabanasNoEncontradas</p>
+            }
+            @if (!string.IsNullOrEmpty(syncNoInterpretadas))
+            {
+                <details class="mt-2">
+                    <summary class="cursor-pointer text-amber-700">⚠️ Filas que no pude interpretar (clic para ver)</summary>
+                    <p class="mt-1 text-xs text-ink-600">@syncNoInterpretadas</p>
+                </details>
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(syncSuperposiciones))
+    {
+        <div class="mb-6 max-w-2xl rounded-2.5xl bg-rose-50 p-4 text-sm text-rose-800 ring-1 ring-rose-200">
+            <p class="font-semibold">🚨 Hay fechas que se superponen en la misma cabaña</p>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                @foreach (var linea in syncSuperposiciones.Split(" | "))
+                {
+                    <li>@linea</li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(syncYaNoEstanEnElExcel))
+    {
+        <div class="mb-6 max-w-2xl rounded-2.5xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
+            <p class="font-semibold">⚠️ Estas reservas ya no están en el Excel</p>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                @foreach (var linea in syncYaNoEstanEnElExcel.Split(" | "))
+                {
+                    <li>@linea</li>
+                }
+            </ul>
+        </div>
+    }
 
     <div class="mb-1 flex flex-wrap items-center gap-4 text-xs font-medium text-ink-500">
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>

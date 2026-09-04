@@ -19,24 +19,21 @@ namespace GestionCabanas.Areas.Admin.Controllers
             _config = config;
         }
 
-        public async Task<IActionResult> Index()
-        {
-            ViewBag.Configurado = _oneDrive.EstaConfigurado;
-            ViewBag.Conexion = await _oneDrive.ObtenerConexionAsync();
-            ViewBag.AnioSugerido = DateTime.Today.Year;
-            return View();
-        }
+        private IActionResult VolverAlCalendario(int? anio, int? mes)
+            => RedirectToAction("Calendario", "Reservas", new { anio, mes });
 
-        public IActionResult Conectar()
+        public IActionResult Conectar(int? anio, int? mes)
         {
             if (!_oneDrive.EstaConfigurado)
             {
                 TempData["Mensaje"] = "Todavía falta configurar las credenciales de Microsoft (Client ID / Client Secret).";
-                return RedirectToAction(nameof(Index));
+                return VolverAlCalendario(anio, mes);
             }
 
             var estado = Guid.NewGuid().ToString("N");
             TempData["OAuthState"] = estado;
+            TempData["OAuthAnio"] = anio;
+            TempData["OAuthMes"] = mes;
 
             var redirectUri = Url.Action(nameof(Callback), "Sincronizacion", null, Request.Scheme)!;
             var url = _oneDrive.ConstruirUrlAutorizacion(redirectUri, estado);
@@ -45,17 +42,20 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         public async Task<IActionResult> Callback(string? code, string? state, string? error, string? error_description)
         {
+            var anio = TempData["OAuthAnio"] as int?;
+            var mes = TempData["OAuthMes"] as int?;
+
             if (!string.IsNullOrEmpty(error))
             {
                 TempData["Mensaje"] = $"Microsoft devolvió un error: {error_description ?? error}";
-                return RedirectToAction(nameof(Index));
+                return VolverAlCalendario(anio, mes);
             }
 
             var estadoEsperado = TempData["OAuthState"] as string;
             if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state) || state != estadoEsperado)
             {
                 TempData["Mensaje"] = "No se pudo validar la respuesta de Microsoft. Probá conectar de nuevo.";
-                return RedirectToAction(nameof(Index));
+                return VolverAlCalendario(anio, mes);
             }
 
             try
@@ -69,27 +69,27 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["Mensaje"] = $"No se pudo completar la conexión: {ex.Message}";
             }
 
-            return RedirectToAction(nameof(Index));
+            return VolverAlCalendario(anio, mes);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Desconectar()
+        public async Task<IActionResult> Desconectar(int? anio, int? mes)
         {
             await _oneDrive.DesconectarAsync();
             TempData["Mensaje"] = "Se desconectó la cuenta de OneDrive.";
-            return RedirectToAction(nameof(Index));
+            return VolverAlCalendario(anio, mes);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Sincronizar(int anio)
+        public async Task<IActionResult> Sincronizar(int anio, int? mes)
         {
             var urlArchivo = _config["OneDrive:ArchivoUrl"];
             if (string.IsNullOrWhiteSpace(urlArchivo))
             {
                 TempData["Mensaje"] = "Falta configurar el link del archivo de OneDrive a sincronizar.";
-                return RedirectToAction(nameof(Index));
+                return VolverAlCalendario(anio, mes);
             }
 
             try
@@ -121,7 +121,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["Mensaje"] = $"No se pudo sincronizar: {ex.Message}";
             }
 
-            return RedirectToAction(nameof(Index));
+            return VolverAlCalendario(anio, mes);
         }
 
         private static string Plural(int cantidad, string singular, string plural)

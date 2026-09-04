@@ -13,11 +13,13 @@ namespace GestionCabanas.Areas.Admin.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly DisponibilidadService _disponibilidad;
+        private readonly GraphOneDriveService _oneDrive;
 
-        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad)
+        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad, GraphOneDriveService oneDrive)
         {
             _db = db;
             _disponibilidad = disponibilidad;
+            _oneDrive = oneDrive;
         }
 
         public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId)
@@ -213,6 +215,9 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
             ViewBag.MesSiguiente = primerDia.AddMonths(1);
+
+            ViewBag.SincronizacionConfigurada = _oneDrive.EstaConfigurado;
+            ViewBag.SincronizacionConexion = await _oneDrive.ObtenerConexionAsync();
 
             return View();
         }
