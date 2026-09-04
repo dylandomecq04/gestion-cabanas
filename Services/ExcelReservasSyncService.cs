@@ -13,6 +13,9 @@ namespace GestionCabanas.Services
         public int Creadas { get; set; }
         public int Actualizadas { get; set; }
         public int Omitidas { get; set; }
+        public List<string> DetalleCreadas { get; } = new();
+        public List<string> DetalleActualizadas { get; } = new();
+        public List<string> DetalleOmitidas { get; } = new();
         public List<string> NoInterpretadas { get; } = new();
         public List<string> CabanasNoEncontradas { get; } = new();
         public List<string> Superposiciones { get; } = new();
@@ -156,9 +159,32 @@ namespace GestionCabanas.Services
 
                         DateTime fechaDesde;
                         DateTime fechaHasta;
-                        try
+
+                        if (diaDesde > DateTime.DaysInMonth(anio, mes))
+                        {
+                            // El día de inicio no existe en el mes de la hoja: la estadía arrancó el mes anterior
+                            // (ej. hoja "Septiembre" con "31 a 3" = 31 de agosto a 3 de septiembre).
+                            var mesDesde = mes - 1;
+                            var anioDesde = anio;
+                            if (mesDesde < 1)
+                            {
+                                mesDesde = 12;
+                                anioDesde--;
+                            }
+
+                            if (diaDesde > DateTime.DaysInMonth(anioDesde, mesDesde))
+                            {
+                                resultado.NoInterpretadas.Add($"{hoja.Name} / {nombreCabana}: fecha inválida \"{textoFecha}\" ({textoNombre})");
+                                continue;
+                            }
+
+                            fechaDesde = new DateTime(anioDesde, mesDesde, diaDesde);
+                            fechaHasta = new DateTime(anio, mes, diaHasta);
+                        }
+                        else
                         {
                             fechaDesde = new DateTime(anio, mes, diaDesde);
+
                             var mesHasta = mes;
                             var anioHasta = anio;
                             if (diaHasta < diaDesde)
@@ -170,17 +196,20 @@ namespace GestionCabanas.Services
                                     anioHasta++;
                                 }
                             }
+
+                            if (diaHasta > DateTime.DaysInMonth(anioHasta, mesHasta))
+                            {
+                                resultado.NoInterpretadas.Add($"{hoja.Name} / {nombreCabana}: fecha inválida \"{textoFecha}\" ({textoNombre})");
+                                continue;
+                            }
+
                             fechaHasta = new DateTime(anioHasta, mesHasta, diaHasta);
-                        }
-                        catch
-                        {
-                            resultado.NoInterpretadas.Add($"{hoja.Name} / {nombreCabana}: fecha inválida \"{textoFecha}\" ({textoNombre})");
-                            continue;
                         }
 
                         decimal? pagar = colPagar.HasValue ? LeerDecimal(hoja.Cell(r, colPagar.Value)) : null;
                         var ubicacion = $"{anio}/{hoja.Name}!{hoja.Cell(r, colFecha).Address}";
                         ubicacionesVistas.Add(ubicacion);
+                        var descripcion = $"{cabana.Nombre}: {textoNombre} ({fechaDesde:dd/MM} - {fechaHasta:dd/MM})";
 
                         if (reservasPorUbicacion.TryGetValue(ubicacion, out var reservaExistente))
                         {
@@ -196,10 +225,12 @@ namespace GestionCabanas.Services
                                 reservaExistente.FechaHasta = fechaHasta;
                                 reservaExistente.Valor = pagar;
                                 resultado.Actualizadas++;
+                                resultado.DetalleActualizadas.Add(descripcion);
                             }
                             else
                             {
                                 resultado.Omitidas++;
+                                resultado.DetalleOmitidas.Add(descripcion);
                             }
                             continue;
                         }
@@ -217,6 +248,7 @@ namespace GestionCabanas.Services
                             adoptada.ExcelUbicacion = ubicacion;
                             reservasPorUbicacion[ubicacion] = adoptada;
                             resultado.Omitidas++;
+                            resultado.DetalleOmitidas.Add(descripcion);
                             continue;
                         }
 
@@ -234,6 +266,7 @@ namespace GestionCabanas.Services
                         _db.Reservas.Add(nueva);
                         reservasPorUbicacion[ubicacion] = nueva;
                         resultado.Creadas++;
+                        resultado.DetalleCreadas.Add(descripcion);
                     }
                 }
             }

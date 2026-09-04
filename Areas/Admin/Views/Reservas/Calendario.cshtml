@@ -38,6 +38,9 @@
     int? syncCreadas = TempData["ResultadoCreadas"] as int?;
     int? syncActualizadas = TempData["ResultadoActualizadas"] as int?;
     int? syncOmitidas = TempData["ResultadoOmitidas"] as int?;
+    string? syncDetalleCreadas = TempData["ResultadoDetalleCreadas"] as string;
+    string? syncDetalleActualizadas = TempData["ResultadoDetalleActualizadas"] as string;
+    string? syncDetalleOmitidas = TempData["ResultadoDetalleOmitidas"] as string;
     string? syncNoInterpretadas = TempData["ResultadoNoInterpretadas"] as string;
     string? syncCabanasNoEncontradas = TempData["ResultadoCabanasNoEncontradas"] as string;
     string? syncSuperposiciones = TempData["ResultadoSuperposiciones"] as string;
@@ -256,8 +259,8 @@
 @if (syncCreadas.HasValue)
 {
     <div id="modal-sincronizacion" class="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalSincronizacion();">
-        <div class="w-full max-w-md rounded-2.5xl bg-white p-6 shadow-lift">
-            <div class="mb-4 flex items-center justify-between">
+        <div class="flex max-h-[85vh] w-full max-w-md flex-col rounded-2.5xl bg-white p-6 shadow-lift">
+            <div class="mb-4 flex shrink-0 items-center justify-between">
                 <h3 class="font-display text-lg font-semibold text-ink-900">Sincronización con Excel</h3>
                 <button type="button" onclick="cerrarModalSincronizacion()" aria-label="Cerrar" class="flex h-7 w-7 items-center justify-center rounded-full text-ink-400 transition hover:bg-sand-100 hover:text-ink-600">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
@@ -266,24 +269,91 @@
                 </button>
             </div>
 
-            <ul class="space-y-2.5 text-sm text-ink-700">
-                <li class="flex items-center gap-2.5">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-emerald-500">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    @SyncPlural(syncCreadas.Value, "reserva nueva", "reservas nuevas")
+            <div class="overflow-y-auto">
+            <ul class="space-y-1 text-sm text-ink-700">
+                <li>
+                    @if (!string.IsNullOrEmpty(syncDetalleCreadas))
+                    {
+                        <details>
+                            <summary class="flex cursor-pointer list-none items-center gap-2.5 rounded-lg py-1 transition hover:bg-sand-50">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-emerald-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                @SyncPlural(syncCreadas.Value, "reserva nueva", "reservas nuevas")
+                            </summary>
+                            <ul class="mt-1 list-disc space-y-0.5 py-1 pl-10 text-xs text-ink-500">
+                                @foreach (var linea in syncDetalleCreadas.Split(" | "))
+                                {
+                                    <li>@linea</li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    else
+                    {
+                        <div class="flex items-center gap-2.5 py-1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-emerald-500">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            @SyncPlural(syncCreadas.Value, "reserva nueva", "reservas nuevas")
+                        </div>
+                    }
                 </li>
-                <li class="flex items-center gap-2.5">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-amber-500">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-                    </svg>
-                    @SyncPlural(syncActualizadas ?? 0, "reserva actualizada", "reservas actualizadas")
+                <li>
+                    @if (!string.IsNullOrEmpty(syncDetalleActualizadas))
+                    {
+                        <details>
+                            <summary class="flex cursor-pointer list-none items-center gap-2.5 rounded-lg py-1 transition hover:bg-sand-50">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-amber-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                                </svg>
+                                @SyncPlural(syncActualizadas ?? 0, "reserva actualizada", "reservas actualizadas")
+                            </summary>
+                            <ul class="mt-1 list-disc space-y-0.5 py-1 pl-10 text-xs text-ink-500">
+                                @foreach (var linea in syncDetalleActualizadas.Split(" | "))
+                                {
+                                    <li>@linea</li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    else
+                    {
+                        <div class="flex items-center gap-2.5 py-1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-amber-500">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                            </svg>
+                            @SyncPlural(syncActualizadas ?? 0, "reserva actualizada", "reservas actualizadas")
+                        </div>
+                    }
                 </li>
-                <li class="flex items-center gap-2.5">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-ink-300">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
-                    @SyncPlural(syncOmitidas ?? 0, "reserva sin cambios", "reservas sin cambios")
+                <li>
+                    @if (!string.IsNullOrEmpty(syncDetalleOmitidas))
+                    {
+                        <details>
+                            <summary class="flex cursor-pointer list-none items-center gap-2.5 rounded-lg py-1 transition hover:bg-sand-50">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-ink-300">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                                @SyncPlural(syncOmitidas ?? 0, "reserva sin cambios", "reservas sin cambios")
+                            </summary>
+                            <ul class="mt-1 list-disc space-y-0.5 py-1 pl-10 text-xs text-ink-500">
+                                @foreach (var linea in syncDetalleOmitidas.Split(" | "))
+                                {
+                                    <li>@linea</li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    else
+                    {
+                        <div class="flex items-center gap-2.5 py-1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-ink-300">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                            @SyncPlural(syncOmitidas ?? 0, "reserva sin cambios", "reservas sin cambios")
+                        </div>
+                    }
                 </li>
             </ul>
 
@@ -342,6 +412,7 @@
                     }
                 </div>
             }
+            </div>
         </div>
     </div>
 }

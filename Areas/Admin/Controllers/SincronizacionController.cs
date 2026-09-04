@@ -102,6 +102,15 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["ResultadoCreadas"] = resultado.Creadas;
                 TempData["ResultadoActualizadas"] = resultado.Actualizadas;
                 TempData["ResultadoOmitidas"] = resultado.Omitidas;
+                TempData["ResultadoDetalleCreadas"] = resultado.DetalleCreadas.Count > 0
+                    ? string.Join(" | ", resultado.DetalleCreadas)
+                    : null;
+                TempData["ResultadoDetalleActualizadas"] = resultado.DetalleActualizadas.Count > 0
+                    ? string.Join(" | ", resultado.DetalleActualizadas)
+                    : null;
+                TempData["ResultadoDetalleOmitidas"] = resultado.DetalleOmitidas.Count > 0
+                    ? string.Join(" | ", resultado.DetalleOmitidas)
+                    : null;
                 TempData["ResultadoNoInterpretadas"] = resultado.NoInterpretadas.Count > 0
                     ? string.Join(" | ", resultado.NoInterpretadas)
                     : null;
