@@ -133,6 +133,7 @@ namespace GestionCabanas.Services
                     }
 
                     var ultimaFila = usado.LastRow().RowNumber();
+                    var primeraFilaDelBloque = true;
                     for (var r = fila + 1; r <= ultimaFila; r++)
                     {
                         var textoFecha = hoja.Cell(r, colFecha).GetString().Trim();
@@ -147,6 +148,14 @@ namespace GestionCabanas.Services
                             continue;
                         }
 
+                        // La posición de la fila dentro del bloque importa: las filas están en orden
+                        // cronológico. Si la primera reserva del bloque tiene el día de "hasta" menor
+                        // que el de "desde" (ej. "27 al 2"), es porque arrancó el mes anterior y terminó
+                        // en el mes de la hoja. Si esa misma ambigüedad aparece más abajo, es al revés:
+                        // arrancó en el mes de la hoja y terminó en el siguiente.
+                        var esPrimeraFila = primeraFilaDelBloque;
+                        primeraFilaDelBloque = false;
+
                         var match = Regex.Match(textoFecha, @"(\d{1,2})\s*al?b?\.?\s*(\d{1,2})", RegexOptions.IgnoreCase);
                         if (!match.Success)
                         {
@@ -160,10 +169,13 @@ namespace GestionCabanas.Services
                         DateTime fechaDesde;
                         DateTime fechaHasta;
 
-                        if (diaDesde > DateTime.DaysInMonth(anio, mes))
+                        var retrocedeMes = diaDesde > DateTime.DaysInMonth(anio, mes) ||
+                            (esPrimeraFila && diaHasta < diaDesde);
+
+                        if (retrocedeMes)
                         {
-                            // El día de inicio no existe en el mes de la hoja: la estadía arrancó el mes anterior
-                            // (ej. hoja "Septiembre" con "31 a 3" = 31 de agosto a 3 de septiembre).
+                            // El día de inicio pertenece al mes anterior al de la hoja
+                            // (ej. hoja "Septiembre" con "27 al 2" = 27 de agosto a 2 de septiembre).
                             var mesDesde = mes - 1;
                             var anioDesde = anio;
                             if (mesDesde < 1)
@@ -172,7 +184,7 @@ namespace GestionCabanas.Services
                                 anioDesde--;
                             }
 
-                            if (diaDesde > DateTime.DaysInMonth(anioDesde, mesDesde))
+                            if (diaDesde > DateTime.DaysInMonth(anioDesde, mesDesde) || diaHasta > DateTime.DaysInMonth(anio, mes))
                             {
                                 resultado.NoInterpretadas.Add($"{hoja.Name} / {nombreCabana}: fecha inválida \"{textoFecha}\" ({textoNombre})");
                                 continue;
