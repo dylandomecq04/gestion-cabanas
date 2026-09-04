@@ -144,7 +144,7 @@ namespace GestionCabanas.Services
                             continue;
                         }
 
-                        var match = Regex.Match(textoFecha, @"(\d{1,2})\s*a\.?\s*b?\.?\s*(\d{1,2})", RegexOptions.IgnoreCase);
+                        var match = Regex.Match(textoFecha, @"(\d{1,2})\s*al?b?\.?\s*(\d{1,2})", RegexOptions.IgnoreCase);
                         if (!match.Success)
                         {
                             resultado.NoInterpretadas.Add($"{hoja.Name} / {nombreCabana}: \"{textoFecha}\" ({textoNombre})");
