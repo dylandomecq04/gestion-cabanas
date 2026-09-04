@@ -11,5 +11,7 @@ namespace GestionCabanas.Models
         public DateTime? FechaConexion { get; set; }
 
         public DateTime? UltimaSincronizacion { get; set; }
+
+        public DateTime? UltimaModificacionExcelVista { get; set; }
     }
 }

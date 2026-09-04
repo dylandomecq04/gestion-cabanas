@@ -96,12 +96,16 @@ namespace GestionCabanas.Services
             }
         }
 
-        public async Task MarcarSincronizadoAsync()
+        public async Task MarcarSincronizadoAsync(DateTime? modificacionExcelVista = null)
         {
             var conexion = await _db.OneDriveConexiones.FirstOrDefaultAsync();
             if (conexion is not null)
             {
                 conexion.UltimaSincronizacion = DateTime.Now;
+                if (modificacionExcelVista.HasValue)
+                {
+                    conexion.UltimaModificacionExcelVista = modificacionExcelVista;
+                }
                 await _db.SaveChangesAsync();
             }
         }
@@ -142,6 +146,27 @@ namespace GestionCabanas.Services
             }
 
             return accessToken;
+        }
+
+        public async Task<DateTime?> ObtenerFechaModificacionAsync(string urlCompartida)
+        {
+            var accessToken = await ObtenerAccessTokenAsync();
+            var shareId = CodificarUrlCompartida(urlCompartida);
+
+            using var solicitud = new HttpRequestMessage(HttpMethod.Get, $"https://graph.microsoft.com/v1.0/shares/{shareId}/driveItem?$select=lastModifiedDateTime");
+            solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var respuesta = await _http.SendAsync(solicitud);
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"No se pudo consultar el archivo de OneDrive: {detalle}");
+            }
+
+            using var json = JsonDocument.Parse(await respuesta.Content.ReadAsStringAsync());
+            return json.RootElement.TryGetProperty("lastModifiedDateTime", out var valor)
+                ? valor.GetDateTime()
+                : null;
         }
 
         public async Task<byte[]> DescargarArchivoCompartidoAsync(string urlCompartida)
