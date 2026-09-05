@@ -44,15 +44,36 @@ namespace GestionCabanas.Services
             ["DICIEMBRE"] = 12,
         };
 
-        public ExcelReservasSyncService(ApplicationDbContext db)
+        private readonly IConfiguration _config;
+
+        public ExcelReservasSyncService(ApplicationDbContext db, IConfiguration config)
         {
             _db = db;
+            _config = config;
+        }
+
+        /// <summary>
+        /// Lee, si existe, una hoja de reemplazo por mes (ej. para probar con una hoja de prueba
+        /// en vez de la real) desde la configuración "OneDrive:SobrescrituraHojas:{mes}".
+        /// </summary>
+        public static Dictionary<int, string> ObtenerSobrescrituraHojas(IConfiguration config)
+        {
+            var resultado = new Dictionary<int, string>();
+            foreach (var hijo in config.GetSection("OneDrive:SobrescrituraHojas").GetChildren())
+            {
+                if (int.TryParse(hijo.Key, out var mes) && !string.IsNullOrWhiteSpace(hijo.Value))
+                {
+                    resultado[mes] = hijo.Value;
+                }
+            }
+            return resultado;
         }
 
         public async Task<ResultadoSincronizacion> SincronizarAsync(byte[] archivo, int anio)
         {
             var resultado = new ResultadoSincronizacion();
             var cabanas = await _db.Cabanas.ToListAsync();
+            var sobrescrituras = ObtenerSobrescrituraHojas(_config);
 
             var reservasPorUbicacion = await _db.Reservas
                 .Where(r => r.ExcelUbicacion != null)
@@ -68,7 +89,23 @@ namespace GestionCabanas.Services
 
             foreach (var hoja in workbook.Worksheets)
             {
-                if (!MesesPorNombre.TryGetValue(Normalizar(hoja.Name), out var mes))
+                int mes;
+                var entradaSobrescritura = sobrescrituras.FirstOrDefault(kv => Normalizar(kv.Value) == Normalizar(hoja.Name));
+                if (!string.IsNullOrEmpty(entradaSobrescritura.Value))
+                {
+                    // Esta hoja es la de prueba configurada para ese mes: usarla en vez de la real.
+                    mes = entradaSobrescritura.Key;
+                }
+                else if (MesesPorNombre.TryGetValue(Normalizar(hoja.Name), out var mesPorNombre))
+                {
+                    if (sobrescrituras.ContainsKey(mesPorNombre))
+                    {
+                        // Hay una hoja de prueba activa para este mes: no tocar la hoja real.
+                        continue;
+                    }
+                    mes = mesPorNombre;
+                }
+                else
                 {
                     continue;
                 }
@@ -346,10 +383,23 @@ namespace GestionCabanas.Services
 
         /// <summary>
         /// Busca, dentro de un libro ya abierto, la hoja cuyo nombre corresponde al mes indicado
-        /// (ej. mes=9 -> hoja "Septiembre"). Se usa tanto para sincronizar como para escribir.
+        /// (ej. mes=9 -> hoja "Septiembre"). Se usa tanto para sincronizar como para escribir. Si
+        /// hay una hoja de prueba configurada para ese mes (ver <see cref="ObtenerSobrescrituraHojas"/>),
+        /// usa esa en vez de la real.
         /// </summary>
-        public static IXLWorksheet? UbicarHojaDelMes(XLWorkbook workbook, int mes)
-            => workbook.Worksheets.FirstOrDefault(h => MesesPorNombre.TryGetValue(Normalizar(h.Name), out var m) && m == mes);
+        public static IXLWorksheet? UbicarHojaDelMes(XLWorkbook workbook, int mes, IReadOnlyDictionary<int, string>? sobrescrituras = null)
+        {
+            if (sobrescrituras is not null && sobrescrituras.TryGetValue(mes, out var nombreHojaPrueba))
+            {
+                var hojaPrueba = workbook.Worksheets.FirstOrDefault(h => Normalizar(h.Name) == Normalizar(nombreHojaPrueba));
+                if (hojaPrueba is not null)
+                {
+                    return hojaPrueba;
+                }
+            }
+
+            return workbook.Worksheets.FirstOrDefault(h => MesesPorNombre.TryGetValue(Normalizar(h.Name), out var m) && m == mes);
+        }
 
         /// <summary>
         /// Busca el bloque (columnas FECHA/NOMBRE/PAGAR y fila de encabezado) de una cabaña dentro

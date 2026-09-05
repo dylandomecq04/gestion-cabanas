@@ -51,7 +51,8 @@ namespace GestionCabanas.Services
                 var bytes = await _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo);
                 using var workbook = new XLWorkbook(new MemoryStream(bytes));
 
-                var hoja = ExcelReservasSyncService.UbicarHojaDelMes(workbook, reserva.FechaDesde.Month);
+                var sobrescrituras = ExcelReservasSyncService.ObtenerSobrescrituraHojas(_config);
+                var hoja = ExcelReservasSyncService.UbicarHojaDelMes(workbook, reserva.FechaDesde.Month, sobrescrituras);
                 if (hoja is null)
                 {
                     return $"No encontré la hoja de \"{reserva.FechaDesde:MMMM}\" en el Excel. Agregala ahí a mano.";
