@@ -24,9 +24,17 @@ namespace GestionCabanas.Areas.Admin.Controllers
             _excelEscritura = excelEscritura;
         }
 
-        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId)
+        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes)
         {
-            var query = _db.Reservas.Include(r => r.Cabana).AsQueryable();
+            var hoy = DateTime.Today;
+            var anioActual = anio ?? hoy.Year;
+            var mesActual = mes ?? hoy.Month;
+            var primerDia = new DateTime(anioActual, mesActual, 1);
+            var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
+
+            var query = _db.Reservas.Include(r => r.Cabana)
+                .Where(r => r.FechaDesde >= primerDia && r.FechaDesde <= ultimoDia)
+                .AsQueryable();
             if (estado.HasValue)
             {
                 query = query.Where(r => r.Estado == estado.Value);
@@ -44,6 +52,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.Busqueda = busqueda;
             ViewBag.CabanaIdFiltro = cabanaId;
             ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
+            ViewBag.Anio = anioActual;
+            ViewBag.Mes = mesActual;
+            ViewBag.PrimerDia = primerDia;
+            ViewBag.MesAnterior = primerDia.AddMonths(-1);
+            ViewBag.MesSiguiente = primerDia.AddMonths(1);
 
             var reservas = await query.OrderBy(r => r.FechaDesde).ThenBy(r => r.Cabana!.Nombre).ToListAsync();
             return View(reservas);
