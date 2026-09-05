@@ -115,12 +115,16 @@
     </div>
     <p class="mb-4 text-xs text-ink-400">Tocá una o varias celdas libres para bloquearlas o ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
 
+    <div id="scroll-arriba" class="scroll-fino mb-1.5 overflow-x-auto overflow-y-hidden">
+        <div id="scroll-arriba-ancho" class="h-px"></div>
+    </div>
+
     <form id="form-tarifas" asp-action="GuardarTarifasCalendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-24">
-        <div class="overflow-x-auto rounded-2.5xl bg-white p-3 shadow-soft ring-1 ring-ink-100">
+        <div id="scroll-tabla" class="scroll-fino overflow-x-auto rounded-2.5xl bg-white p-3 shadow-soft ring-1 ring-ink-100">
             <table class="w-full border-separate text-xs" style="border-spacing: 4px;">
                 <thead>
                     <tr>
-                        <th class="sticky left-0 z-10 min-w-[160px] bg-white px-3 py-2 text-left text-sm font-semibold text-ink-600">Cabaña</th>
+                        <th class="sticky left-0 z-20 min-w-[160px] rounded-lg bg-sand-50 px-3 py-2 text-left text-sm font-semibold text-ink-700 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)]">Cabaña</th>
                         @foreach (var dia in dias)
                         {
                             var clasesHeader = dia.Date == hoy
@@ -139,7 +143,7 @@
                     @foreach (var cabana in cabanas)
                     {
                         <tr>
-                            <td class="sticky left-0 z-10 bg-white px-3 py-2 text-sm font-medium text-ink-800">@cabana.Nombre</td>
+                            <td class="sticky left-0 z-20 rounded-lg bg-sand-50 px-3 py-2 text-sm font-semibold text-ink-800 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)]">@cabana.Nombre</td>
                             @foreach (var dia in dias)
                             {
                                 var reserva = ReservaDeLaCabanaEnElDia(cabana.Id, dia);
@@ -443,8 +447,41 @@
     </div>
 </div>
 
+<style>
+    .scroll-fino::-webkit-scrollbar { height: 10px; }
+    .scroll-fino::-webkit-scrollbar-track { background: transparent; }
+    .scroll-fino::-webkit-scrollbar-thumb { background-color: #d8d2c4; border-radius: 999px; }
+    .scroll-fino::-webkit-scrollbar-thumb:hover { background-color: #c3bba8; }
+    .scroll-fino { scrollbar-width: thin; scrollbar-color: #d8d2c4 transparent; }
+</style>
+
 @section Scripts {
     <script>
+        (function sincronizarScrollCalendario() {
+            const arriba = document.getElementById('scroll-arriba');
+            const anchoArriba = document.getElementById('scroll-arriba-ancho');
+            const tabla = document.getElementById('scroll-tabla');
+            if (!arriba || !anchoArriba || !tabla) return;
+
+            const actualizarAncho = () => { anchoArriba.style.width = tabla.scrollWidth + 'px'; };
+            actualizarAncho();
+            window.addEventListener('resize', actualizarAncho);
+
+            let sincronizando = false;
+            arriba.addEventListener('scroll', () => {
+                if (sincronizando) return;
+                sincronizando = true;
+                tabla.scrollLeft = arriba.scrollLeft;
+                sincronizando = false;
+            });
+            tabla.addEventListener('scroll', () => {
+                if (sincronizando) return;
+                sincronizando = true;
+                arriba.scrollLeft = tabla.scrollLeft;
+                sincronizando = false;
+            });
+        })();
+
         const seleccionDias = new Set();
 
         function alternarSeleccionDia(btn) {
