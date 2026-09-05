@@ -14,12 +14,14 @@ namespace GestionCabanas.Areas.Admin.Controllers
         private readonly ApplicationDbContext _db;
         private readonly DisponibilidadService _disponibilidad;
         private readonly GraphOneDriveService _oneDrive;
+        private readonly ExcelEscrituraService _excelEscritura;
 
-        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad, GraphOneDriveService oneDrive)
+        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad, GraphOneDriveService oneDrive, ExcelEscrituraService excelEscritura)
         {
             _db = db;
             _disponibilidad = disponibilidad;
             _oneDrive = oneDrive;
+            _excelEscritura = excelEscritura;
         }
 
         public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId)
@@ -76,7 +78,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
             _db.Reservas.Add(modelo);
             await _db.SaveChangesAsync();
 
-            TempData["Mensaje"] = "Reserva creada correctamente.";
+            var avisoExcel = await _excelEscritura.EscribirReservaAsync(modelo);
+            TempData["Mensaje"] = avisoExcel is null
+                ? "Reserva creada correctamente."
+                : $"Reserva creada correctamente. {avisoExcel}";
             return RedirectToAction(nameof(Index));
         }
 
@@ -123,7 +128,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
             reserva.Valor = modelo.Valor;
 
             await _db.SaveChangesAsync();
-            TempData["Mensaje"] = "Reserva actualizada correctamente.";
+
+            var avisoExcel = await _excelEscritura.EscribirReservaAsync(reserva);
+            TempData["Mensaje"] = avisoExcel is null
+                ? "Reserva actualizada correctamente."
+                : $"Reserva actualizada correctamente. {avisoExcel}";
             return RedirectToAction(nameof(Index));
         }
 
@@ -145,7 +154,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             reserva.Estado = EstadoReserva.Confirmada;
             await _db.SaveChangesAsync();
-            TempData["Mensaje"] = "Reserva confirmada.";
+
+            var avisoExcel = await _excelEscritura.EscribirReservaAsync(reserva);
+            TempData["Mensaje"] = avisoExcel is null
+                ? "Reserva confirmada."
+                : $"Reserva confirmada. {avisoExcel}";
             return RedirectToAction(nameof(Index));
         }
 
@@ -156,9 +169,12 @@ namespace GestionCabanas.Areas.Admin.Controllers
             var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
             if (reserva is not null)
             {
+                var avisoExcel = await _excelEscritura.LimpiarReservaAsync(reserva);
                 _db.Reservas.Remove(reserva);
                 await _db.SaveChangesAsync();
-                TempData["Mensaje"] = "Reserva eliminada.";
+                TempData["Mensaje"] = avisoExcel is null
+                    ? "Reserva eliminada."
+                    : $"Reserva eliminada. {avisoExcel}";
             }
             return RedirectToAction(nameof(Index));
         }

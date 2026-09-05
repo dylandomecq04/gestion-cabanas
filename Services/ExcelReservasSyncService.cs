@@ -344,6 +344,101 @@ namespace GestionCabanas.Services
             }
         }
 
+        /// <summary>
+        /// Busca, dentro de un libro ya abierto, la hoja cuyo nombre corresponde al mes indicado
+        /// (ej. mes=9 -> hoja "Septiembre"). Se usa tanto para sincronizar como para escribir.
+        /// </summary>
+        public static IXLWorksheet? UbicarHojaDelMes(XLWorkbook workbook, int mes)
+            => workbook.Worksheets.FirstOrDefault(h => MesesPorNombre.TryGetValue(Normalizar(h.Name), out var m) && m == mes);
+
+        /// <summary>
+        /// Busca el bloque (columnas FECHA/NOMBRE/PAGAR y fila de encabezado) de una cabaña dentro
+        /// de una hoja. Devuelve null si no encuentra un bloque con ese nombre de cabaña.
+        /// </summary>
+        public static (int ColFecha, int ColNombre, int? ColPagar, int FilaEncabezado)? UbicarBloqueDeCabana(IXLWorksheet hoja, string nombreCabana)
+        {
+            var usado = hoja.RangeUsed();
+            if (usado is null)
+            {
+                return null;
+            }
+
+            var objetivo = Normalizar(nombreCabana);
+
+            foreach (var celdaFecha in usado.Cells().Where(c => Normalizar(c.GetString()) == "FECHA"))
+            {
+                var fila = celdaFecha.Address.RowNumber;
+                var colFecha = celdaFecha.Address.ColumnNumber;
+
+                int? colNombre = null, colPagar = null;
+                for (var c = colFecha + 1; c <= colFecha + 6; c++)
+                {
+                    var texto = Normalizar(hoja.Cell(fila, c).GetString());
+                    if (texto == "FECHA")
+                    {
+                        break;
+                    }
+                    if (texto == "NOMBRE") colNombre ??= c;
+                    else if (texto == "PAGAR") colPagar ??= c;
+                }
+
+                if (colNombre is null)
+                {
+                    continue;
+                }
+
+                var colFinBloque = colPagar ?? colFecha + 3;
+                string? nombreCabanaBloque = null;
+                for (var r = fila - 1; r >= Math.Max(1, fila - 3) && nombreCabanaBloque is null; r--)
+                {
+                    for (var c = colFecha; c <= colFinBloque; c++)
+                    {
+                        var texto = hoja.Cell(r, c).GetString().Trim();
+                        if (!string.IsNullOrWhiteSpace(texto))
+                        {
+                            nombreCabanaBloque = texto;
+                            break;
+                        }
+                    }
+                }
+
+                if (nombreCabanaBloque is not null && Normalizar(nombreCabanaBloque) == objetivo)
+                {
+                    return (colFecha, colNombre.Value, colPagar, fila);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Busca, dentro de un bloque ya ubicado, la primera fila completamente vacía antes de
+        /// llegar a un "TOTAL" o al final de lo usado en la hoja. Devuelve null si el bloque está
+        /// lleno (no hay fila libre para agregar una reserva nueva sin insertar filas).
+        /// </summary>
+        public static int? BuscarFilaLibreEnBloque(IXLWorksheet hoja, int colFecha, int colNombre, int filaEncabezado)
+        {
+            var usado = hoja.RangeUsed();
+            var ultimaFila = usado?.LastRow().RowNumber() ?? filaEncabezado;
+
+            for (var r = filaEncabezado + 1; r <= ultimaFila; r++)
+            {
+                var textoFecha = hoja.Cell(r, colFecha).GetString().Trim();
+                var textoNombre = hoja.Cell(r, colNombre).GetString().Trim();
+
+                if (Normalizar(textoFecha) == "TOTAL" || Normalizar(textoNombre) == "TOTAL")
+                {
+                    return null;
+                }
+                if (string.IsNullOrWhiteSpace(textoFecha) && string.IsNullOrWhiteSpace(textoNombre))
+                {
+                    return r;
+                }
+            }
+
+            return null;
+        }
+
         private static decimal? LeerDecimal(IXLCell celda)
         {
             if (celda.IsEmpty())

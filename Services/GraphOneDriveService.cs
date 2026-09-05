@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using GestionCabanas.Data;
 using GestionCabanas.Models;
@@ -11,7 +12,7 @@ namespace GestionCabanas.Services
     {
         private const string TokenEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
         private const string AuthorizeEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
-        private const string Scopes = "Files.Read offline_access";
+        private const string Scopes = "Files.ReadWrite offline_access";
 
         private readonly ApplicationDbContext _db;
         private readonly HttpClient _http;
@@ -167,6 +168,50 @@ namespace GestionCabanas.Services
             return json.RootElement.TryGetProperty("lastModifiedDateTime", out var valor)
                 ? valor.GetDateTime()
                 : null;
+        }
+
+        public async Task<(string DriveId, string ItemId)> ObtenerDriveItemAsync(string urlCompartida)
+        {
+            var accessToken = await ObtenerAccessTokenAsync();
+            var shareId = CodificarUrlCompartida(urlCompartida);
+
+            using var solicitud = new HttpRequestMessage(HttpMethod.Get, $"https://graph.microsoft.com/v1.0/shares/{shareId}/driveItem?$select=id,parentReference");
+            solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var respuesta = await _http.SendAsync(solicitud);
+            var cuerpo = await respuesta.Content.ReadAsStringAsync();
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"No se pudo resolver el archivo de OneDrive: {cuerpo}");
+            }
+
+            using var json = JsonDocument.Parse(cuerpo);
+            var itemId = json.RootElement.GetProperty("id").GetString()!;
+            var driveId = json.RootElement.GetProperty("parentReference").GetProperty("driveId").GetString()!;
+            return (driveId, itemId);
+        }
+
+        public async Task EscribirCeldaAsync(string driveId, string itemId, string hoja, string direccion, string? valor)
+        {
+            var accessToken = await ObtenerAccessTokenAsync();
+            var hojaCodificada = Uri.EscapeDataString(hoja);
+
+            // Graph no vacía la celda si se manda "null" (lo interpreta como "no tocar"): para
+            // limpiarla hay que mandar un string vacío explícito.
+            var valorAEnviar = valor ?? string.Empty;
+
+            using var solicitud = new HttpRequestMessage(
+                HttpMethod.Patch,
+                $"https://graph.microsoft.com/v1.0/drives/{driveId}/items/{itemId}/workbook/worksheets('{hojaCodificada}')/range(address='{direccion}')");
+            solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            solicitud.Content = JsonContent.Create(new { values = new[] { new[] { valorAEnviar } } });
+
+            var respuesta = await _http.SendAsync(solicitud);
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"No se pudo escribir en el Excel (hoja \"{hoja}\", celda {direccion}): {detalle}");
+            }
         }
 
         public async Task<byte[]> DescargarArchivoCompartidoAsync(string urlCompartida)

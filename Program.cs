@@ -22,6 +22,7 @@ builder.Services.AddScoped<GestionCabanas.Services.INotificacionEmailService, Ge
 builder.Services.AddDataProtection();
 builder.Services.AddHttpClient<GestionCabanas.Services.GraphOneDriveService>();
 builder.Services.AddScoped<GestionCabanas.Services.ExcelReservasSyncService>();
+builder.Services.AddScoped<GestionCabanas.Services.ExcelEscrituraService>();
 builder.Services.AddHostedService<GestionCabanas.Services.SincronizacionAutomaticaService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
