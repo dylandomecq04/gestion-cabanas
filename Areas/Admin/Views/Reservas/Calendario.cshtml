@@ -38,13 +38,14 @@
     int? syncCreadas = TempData["ResultadoCreadas"] as int?;
     int? syncActualizadas = TempData["ResultadoActualizadas"] as int?;
     int? syncOmitidas = TempData["ResultadoOmitidas"] as int?;
+    int? syncEliminadas = TempData["ResultadoEliminadas"] as int?;
     string? syncDetalleCreadas = TempData["ResultadoDetalleCreadas"] as string;
     string? syncDetalleActualizadas = TempData["ResultadoDetalleActualizadas"] as string;
     string? syncDetalleOmitidas = TempData["ResultadoDetalleOmitidas"] as string;
+    string? syncDetalleEliminadas = TempData["ResultadoDetalleEliminadas"] as string;
     string? syncNoInterpretadas = TempData["ResultadoNoInterpretadas"] as string;
     string? syncCabanasNoEncontradas = TempData["ResultadoCabanasNoEncontradas"] as string;
     string? syncSuperposiciones = TempData["ResultadoSuperposiciones"] as string;
-    string? syncYaNoEstanEnElExcel = TempData["ResultadoYaNoEstanEnElExcel"] as string;
 
     string SyncPlural(int n, string singular, string plural) => $"{n} {(n == 1 ? singular : plural)}";
 }
@@ -355,9 +356,38 @@
                         </div>
                     }
                 </li>
+                <li>
+                    @if (!string.IsNullOrEmpty(syncDetalleEliminadas))
+                    {
+                        <details>
+                            <summary class="flex cursor-pointer list-none items-center gap-2.5 rounded-lg py-1 transition hover:bg-sand-50">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-rose-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                </svg>
+                                @SyncPlural(syncEliminadas ?? 0, "reserva eliminada", "reservas eliminadas")
+                            </summary>
+                            <p class="mt-1 pl-10 text-xs text-ink-400">Ya no estaban en el Excel, así que se borraron del sitio.</p>
+                            <ul class="mt-1 list-disc space-y-0.5 py-1 pl-10 text-xs text-ink-500">
+                                @foreach (var linea in syncDetalleEliminadas.Split(" | "))
+                                {
+                                    <li>@linea</li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    else
+                    {
+                        <div class="flex items-center gap-2.5 py-1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-rose-500">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                            @SyncPlural(syncEliminadas ?? 0, "reserva eliminada", "reservas eliminadas")
+                        </div>
+                    }
+                </li>
             </ul>
 
-            @if (!string.IsNullOrEmpty(syncCabanasNoEncontradas) || !string.IsNullOrEmpty(syncNoInterpretadas) || !string.IsNullOrEmpty(syncSuperposiciones) || !string.IsNullOrEmpty(syncYaNoEstanEnElExcel))
+            @if (!string.IsNullOrEmpty(syncCabanasNoEncontradas) || !string.IsNullOrEmpty(syncNoInterpretadas) || !string.IsNullOrEmpty(syncSuperposiciones))
             {
                 <div class="mt-4 space-y-3 border-t border-ink-100 pt-4">
                     @if (!string.IsNullOrEmpty(syncSuperposiciones))
@@ -370,23 +400,6 @@
                                 <p class="font-medium text-ink-700">Fechas superpuestas en la misma cabaña</p>
                                 <ul class="mt-1 list-disc space-y-0.5 pl-4 text-xs text-ink-500">
                                     @foreach (var linea in syncSuperposiciones.Split(" | "))
-                                    {
-                                        <li>@linea</li>
-                                    }
-                                </ul>
-                            </div>
-                        </div>
-                    }
-                    @if (!string.IsNullOrEmpty(syncYaNoEstanEnElExcel))
-                    {
-                        <div class="flex gap-2.5 text-sm text-ink-600">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="mt-0.5 h-4 w-4 shrink-0 text-amber-500">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                            </svg>
-                            <div>
-                                <p class="font-medium text-ink-700">Ya no están en el Excel</p>
-                                <ul class="mt-1 list-disc space-y-0.5 pl-4 text-xs text-ink-500">
-                                    @foreach (var linea in syncYaNoEstanEnElExcel.Split(" | "))
                                     {
                                         <li>@linea</li>
                                     }

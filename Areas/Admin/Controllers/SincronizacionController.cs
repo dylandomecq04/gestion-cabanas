@@ -111,6 +111,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["ResultadoDetalleOmitidas"] = resultado.DetalleOmitidas.Count > 0
                     ? string.Join(" | ", resultado.DetalleOmitidas)
                     : null;
+                TempData["ResultadoEliminadas"] = resultado.Eliminadas;
+                TempData["ResultadoDetalleEliminadas"] = resultado.DetalleEliminadas.Count > 0
+                    ? string.Join(" | ", resultado.DetalleEliminadas)
+                    : null;
                 TempData["ResultadoNoInterpretadas"] = resultado.NoInterpretadas.Count > 0
                     ? string.Join(" | ", resultado.NoInterpretadas)
                     : null;
@@ -120,11 +124,9 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["ResultadoSuperposiciones"] = resultado.Superposiciones.Count > 0
                     ? string.Join(" | ", resultado.Superposiciones)
                     : null;
-                TempData["ResultadoYaNoEstanEnElExcel"] = resultado.YaNoEstanEnElExcel.Count > 0
-                    ? string.Join(" | ", resultado.YaNoEstanEnElExcel)
-                    : null;
                 TempData["Mensaje"] = $"Sincronización terminada: {Plural(resultado.Creadas, "reserva nueva", "reservas nuevas")}, " +
-                    $"{Plural(resultado.Actualizadas, "actualizada", "actualizadas")}, {Plural(resultado.Omitidas, "sin cambios", "sin cambios")}.";
+                    $"{Plural(resultado.Actualizadas, "actualizada", "actualizadas")}, {Plural(resultado.Omitidas, "sin cambios", "sin cambios")}, " +
+                    $"{Plural(resultado.Eliminadas, "eliminada", "eliminadas")}.";
             }
             catch (Exception ex)
             {

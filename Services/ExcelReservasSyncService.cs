@@ -13,13 +13,14 @@ namespace GestionCabanas.Services
         public int Creadas { get; set; }
         public int Actualizadas { get; set; }
         public int Omitidas { get; set; }
+        public int Eliminadas { get; set; }
         public List<string> DetalleCreadas { get; } = new();
         public List<string> DetalleActualizadas { get; } = new();
         public List<string> DetalleOmitidas { get; } = new();
+        public List<string> DetalleEliminadas { get; } = new();
         public List<string> NoInterpretadas { get; } = new();
         public List<string> CabanasNoEncontradas { get; } = new();
         public List<string> Superposiciones { get; } = new();
-        public List<string> YaNoEstanEnElExcel { get; } = new();
     }
 
     public class ExcelReservasSyncService
@@ -283,7 +284,7 @@ namespace GestionCabanas.Services
                 }
             }
 
-            DetectarFaltantes(resultado, cabanas, reservasPorUbicacion, ubicacionesVistas, anio);
+            EliminarFaltantes(resultado, cabanas, reservasPorUbicacion, ubicacionesVistas, anio);
 
             await _db.SaveChangesAsync();
 
@@ -292,7 +293,7 @@ namespace GestionCabanas.Services
             return resultado;
         }
 
-        private static void DetectarFaltantes(
+        private void EliminarFaltantes(
             ResultadoSincronizacion resultado,
             List<Cabana> cabanas,
             Dictionary<string, Reserva> reservasPorUbicacion,
@@ -313,8 +314,10 @@ namespace GestionCabanas.Services
                 }
 
                 var nombreCabana = cabanas.FirstOrDefault(c => c.Id == reserva.CabanaId)?.Nombre ?? "Cabaña";
-                resultado.YaNoEstanEnElExcel.Add(
+                resultado.DetalleEliminadas.Add(
                     $"{nombreCabana}: {reserva.NombreHuesped} ({reserva.FechaDesde:dd/MM} - {reserva.FechaHasta:dd/MM})");
+                resultado.Eliminadas++;
+                _db.Reservas.Remove(reserva);
             }
         }
 
