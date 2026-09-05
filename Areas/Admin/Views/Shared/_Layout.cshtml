@@ -56,6 +56,48 @@
         @RenderBody()
     </main>
 
+    <div id="modal-confirmacion" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-ink-950/40 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalConfirmacion();">
+        <div class="w-full max-w-sm rounded-2.5xl bg-white p-6 shadow-lift">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-5 w-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                </span>
+                <div class="pt-1.5">
+                    <h3 class="font-display text-base font-semibold text-ink-900">Confirmar acción</h3>
+                    <p id="modal-confirmacion-mensaje" class="mt-1 text-sm text-ink-600"></p>
+                </div>
+            </div>
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" onclick="cerrarModalConfirmacion()" class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-ink-300">Cancelar</button>
+                <button type="button" id="modal-confirmacion-boton" class="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-rose-700">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let __formPendienteConfirmacion = null;
+
+        function confirmarAccion(event, mensaje) {
+            event.preventDefault();
+            __formPendienteConfirmacion = event.target.closest('form');
+            document.getElementById('modal-confirmacion-mensaje').textContent = mensaje;
+            document.getElementById('modal-confirmacion').classList.remove('hidden');
+            return false;
+        }
+
+        function cerrarModalConfirmacion() {
+            document.getElementById('modal-confirmacion').classList.add('hidden');
+            __formPendienteConfirmacion = null;
+        }
+
+        document.getElementById('modal-confirmacion-boton').addEventListener('click', function () {
+            const form = __formPendienteConfirmacion;
+            cerrarModalConfirmacion();
+            if (form) form.submit();
+        });
+    </script>
+
     @if (TempData["Mensaje"] != null)
     {
         <div id="mensaje-flash" class="fixed bottom-5 left-5 z-50 max-w-xs rounded-xl bg-river-50 px-4 py-3 text-sm font-medium text-river-800 shadow-lift ring-1 ring-river-100 transition-opacity duration-700">@TempData["Mensaje"]</div>

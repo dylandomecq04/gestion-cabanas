@@ -57,7 +57,7 @@
                 <div class="group relative overflow-hidden rounded-xl">
                     <img src="~/@foto.RutaArchivo" class="h-24 w-full object-cover" />
                     <form asp-action="EliminarFoto" asp-route-id="@foto.Id" asp-route-cabanaId="@Model.Id" method="post"
-                          class="absolute right-1 top-1" onsubmit="return confirm('¿Eliminar esta foto?');">
+                          class="absolute right-1 top-1" onsubmit="return confirmarAccion(event, '¿Eliminar esta foto?');">
                         <button type="submit" class="flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-soft transition hover:bg-rose-700">&times;</button>
                     </form>
                 </div>
