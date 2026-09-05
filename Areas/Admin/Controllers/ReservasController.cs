@@ -233,7 +233,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
             var reservas = await _db.Reservas
-                .Where(r => r.Estado == EstadoReserva.Confirmada && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
+                .Where(r => r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
                 .ToListAsync();
             var tarifas = await _disponibilidad.ObtenerTarifasEnRangoTodasCabanasAsync(primerDia, ultimoDia);
 

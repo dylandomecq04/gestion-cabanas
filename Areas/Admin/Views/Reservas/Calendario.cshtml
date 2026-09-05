@@ -107,6 +107,7 @@
 
     <div class="mb-1 flex flex-wrap items-center gap-4 text-xs font-medium text-ink-500">
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Pendiente</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
@@ -154,7 +155,12 @@
 
                                 if (reserva is not null)
                                 {
-                                    var infoReserva = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM} (Reservada)";
+                                    var esPendiente = reserva.Estado == EstadoReserva.Pendiente;
+                                    var etiquetaReserva = esPendiente ? "Pendiente" : "Reservada";
+                                    var infoReserva = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM} ({etiquetaReserva})";
+                                    var claseReserva = esPendiente
+                                        ? "bg-amber-200 hover:bg-amber-300 text-amber-900"
+                                        : "bg-green-300 hover:bg-green-400 text-green-900";
                                     <td class="p-0">
                                         <button type="button" onclick="abrirReserva(this)"
                                                 data-cabana-nombre="@cabana.Nombre"
@@ -162,8 +168,8 @@
                                                 data-reserva-id="@reserva.Id"
                                                 data-info-reserva="@infoReserva"
                                                 title="@infoReserva"
-                                                class="day-cell relative flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-bold leading-tight bg-green-300 hover:bg-green-400 text-green-900">
-                                            <span>Reservada</span>
+                                                class="day-cell relative flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-bold leading-tight @claseReserva">
+                                            <span>@etiquetaReserva</span>
                                             <span class="truncate text-xs font-normal opacity-90 max-w-full">@reserva.NombreHuesped</span>
                                             @if (llega is not null)
                                             {
