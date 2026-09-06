@@ -177,7 +177,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id, int? anio, int? mes)
         {
             var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
             if (reserva is not null)
@@ -188,6 +188,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["Mensaje"] = avisoExcel is null
                     ? "Reserva eliminada."
                     : $"Reserva eliminada. {avisoExcel}";
+            }
+
+            if (anio.HasValue && mes.HasValue)
+            {
+                return RedirectToAction(nameof(Calendario), new { anio, mes });
             }
             return RedirectToAction(nameof(Index));
         }
