@@ -157,7 +157,9 @@
                                 {
                                     var esPendiente = reserva.Estado == EstadoReserva.Pendiente;
                                     var etiquetaReserva = esPendiente ? "Pendiente" : "Reservada";
-                                    var infoReserva = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM} ({etiquetaReserva})";
+                                    var pagoTexto = reserva.Pago.HasValue ? "$" + reserva.Pago.Value.ToString("N0") : "-";
+                                    var pagarTexto = reserva.Valor.HasValue ? "$" + reserva.Valor.Value.ToString("N0") : "-";
+                                    var infoReserva = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM} ({etiquetaReserva}) · Pagó: {pagoTexto} — Pagar: {pagarTexto}";
                                     var claseReserva = esPendiente
                                         ? "bg-amber-200 hover:bg-amber-300 text-amber-900"
                                         : "bg-green-300 hover:bg-green-400 text-green-900";
