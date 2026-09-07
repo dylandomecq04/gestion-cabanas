@@ -532,6 +532,33 @@
             actualizarBarraSeleccion();
         }
 
+        function sumarUnDia(fechaTexto) {
+            const [anio, mes, dia] = fechaTexto.split('-').map(Number);
+            const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+            fecha.setUTCDate(fecha.getUTCDate() + 1);
+            return fecha.toISOString().slice(0, 10);
+        }
+
+        // Para poder cargar una reserva que cubra la selección, todos los días elegidos tienen que
+        // ser de la misma cabaña, seguidos (sin huecos) y ninguno puede estar ya bloqueado.
+        function puedeCargarReservaEnSeleccion(btns) {
+            const cabanaId = btns[0].dataset.cabanaId;
+            if (!btns.every(b => b.dataset.cabanaId === cabanaId)) {
+                return false;
+            }
+            if (btns.some(b => b.dataset.bloqueada === 'true')) {
+                return false;
+            }
+
+            const fechas = btns.map(b => b.dataset.fecha).sort();
+            for (let i = 1; i < fechas.length; i++) {
+                if (sumarUnDia(fechas[i - 1]) !== fechas[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         function actualizarBarraSeleccion() {
             const barra = document.getElementById('barra-seleccion');
             const cantidadSeleccion = seleccionDias.size;
@@ -544,10 +571,15 @@
             const btns = idxs.map(idx => document.querySelector(`.dia-editable[data-index="${idx}"]`)).filter(Boolean);
 
             if (idxs.length === 1) {
-                const btn = btns[0];
-                linkCargar.href = '/Admin/Reservas/Create?cabanaId=' + btn.dataset.cabanaId + '&fecha=' + btn.dataset.fecha;
+                document.getElementById('bulk-precio').value = btns[0].dataset.precio ? Number(btns[0].dataset.precio).toLocaleString('es-AR') : '';
+            }
+
+            if (btns.length > 0 && puedeCargarReservaEnSeleccion(btns)) {
+                const fechas = btns.map(b => b.dataset.fecha).sort();
+                const fechaDesde = fechas[0];
+                const fechaHastaExclusiva = sumarUnDia(fechas[fechas.length - 1]);
+                linkCargar.href = '/Admin/Reservas/Create?cabanaId=' + btns[0].dataset.cabanaId + '&fecha=' + fechaDesde + '&fechaHasta=' + fechaHastaExclusiva;
                 linkCargar.classList.remove('hidden');
-                document.getElementById('bulk-precio').value = btn.dataset.precio ? Number(btn.dataset.precio).toLocaleString('es-AR') : '';
             } else {
                 linkCargar.classList.add('hidden');
             }

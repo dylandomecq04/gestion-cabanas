@@ -62,7 +62,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return View(reservas);
         }
 
-        public async Task<IActionResult> Create(int? cabanaId, DateTime? fecha)
+        public async Task<IActionResult> Create(int? cabanaId, DateTime? fecha, DateTime? fechaHasta)
         {
             ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
 
@@ -71,7 +71,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             {
                 CabanaId = cabanaId ?? 0,
                 FechaDesde = fechaDesde,
-                FechaHasta = fechaDesde.AddDays(1)
+                FechaHasta = fechaHasta ?? fechaDesde.AddDays(1)
             });
         }
 
