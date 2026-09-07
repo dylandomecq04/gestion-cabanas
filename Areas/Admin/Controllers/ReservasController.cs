@@ -138,6 +138,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             reserva.FechaDesde = modelo.FechaDesde;
             reserva.FechaHasta = modelo.FechaHasta;
             reserva.Estado = modelo.Estado;
+            reserva.Pago = modelo.Pago;
             reserva.Valor = modelo.Valor;
 
             await _db.SaveChangesAsync();
@@ -260,8 +261,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GuardarTarifasCalendario(int anio, int mes, List<TarifaDiaInput> dias)
         {
-            await _disponibilidad.GuardarTarifasAsync(dias ?? new List<TarifaDiaInput>());
-            TempData["Mensaje"] = "Cambios guardados.";
+            var avisos = await _disponibilidad.GuardarTarifasAsync(dias ?? new List<TarifaDiaInput>());
+            TempData["Mensaje"] = avisos.Count == 0
+                ? "Cambios guardados."
+                : $"Cambios guardados. {string.Join(" ", avisos)}";
             return RedirectToAction(nameof(Calendario), new { anio, mes });
         }
 

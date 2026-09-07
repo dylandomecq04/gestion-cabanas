@@ -73,19 +73,22 @@ namespace GestionCabanas.Services
                         return $"No hay una fila libre para \"{cabana.Nombre}\" en la hoja de \"{reserva.FechaDesde:MMMM}\". Agregala ahí a mano.";
                     }
 
-                    fila = (bloque.Value.ColFecha, bloque.Value.ColNombre, bloque.Value.ColPagar ?? bloque.Value.ColFecha + 3, filaLibre.Value);
+                    fila = (bloque.Value.ColFecha, bloque.Value.ColNombre, bloque.Value.ColPago ?? bloque.Value.ColFecha + 2, bloque.Value.ColPagar ?? bloque.Value.ColFecha + 3, filaLibre.Value);
                 }
 
-                var (colFecha, colNombre, colPagar, numeroFila) = fila.Value;
+                var (colFecha, colNombre, colPago, colPagar, numeroFila) = fila.Value;
                 var direccionFechaCelda = hoja.Cell(numeroFila, colFecha).Address.ToString();
                 var direccionNombreCelda = hoja.Cell(numeroFila, colNombre).Address.ToString();
+                var direccionPagoCelda = hoja.Cell(numeroFila, colPago).Address.ToString();
                 var direccionPagarCelda = hoja.Cell(numeroFila, colPagar).Address.ToString();
 
                 var textoFecha = $"{reserva.FechaDesde.Day} a {reserva.FechaHasta.Day}";
+                var textoPago = reserva.Pago?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
                 var textoPagar = reserva.Valor?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionFechaCelda, textoFecha);
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionNombreCelda, reserva.NombreHuesped);
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagoCelda, textoPago);
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagarCelda, textoPagar);
 
                 reserva.ExcelUbicacion = $"{reserva.FechaDesde.Year}/{hoja.Name}!{direccionFechaCelda}";
@@ -103,7 +106,7 @@ namespace GestionCabanas.Services
         /// actual de su cabaña, devuelve esa ubicación para reusarla. Si no, devuelve null para que
         /// el llamador busque una fila libre nueva.
         /// </summary>
-        private static (int ColFecha, int ColNombre, int ColPagar, int Fila)? ResolverFilaExistente(Reserva reserva, IXLWorksheet hoja, string nombreCabana)
+        private static (int ColFecha, int ColNombre, int ColPago, int ColPagar, int Fila)? ResolverFilaExistente(Reserva reserva, IXLWorksheet hoja, string nombreCabana)
         {
             if (string.IsNullOrEmpty(reserva.ExcelUbicacion) || !reserva.ExcelUbicacion.Contains('!'))
             {
@@ -127,7 +130,7 @@ namespace GestionCabanas.Services
                 return null;
             }
 
-            return (bloque.Value.ColFecha, bloque.Value.ColNombre, bloque.Value.ColPagar ?? bloque.Value.ColFecha + 3, celdaFecha.Address.RowNumber);
+            return (bloque.Value.ColFecha, bloque.Value.ColNombre, bloque.Value.ColPago ?? bloque.Value.ColFecha + 2, bloque.Value.ColPagar ?? bloque.Value.ColFecha + 3, celdaFecha.Address.RowNumber);
         }
 
         /// <summary>
@@ -167,14 +170,17 @@ namespace GestionCabanas.Services
                 var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == reserva.CabanaId);
                 var bloque = cabana is null ? null : ExcelReservasSyncService.UbicarBloqueDeCabana(hoja, cabana.Nombre);
                 var colNombre = bloque?.ColNombre ?? colFecha + 1;
+                var colPago = bloque?.ColPago ?? colFecha + 2;
                 var colPagar = bloque?.ColPagar ?? colFecha + 3;
 
                 var direccionFechaCelda = hoja.Cell(fila, colFecha).Address.ToString();
                 var direccionNombreCelda = hoja.Cell(fila, colNombre).Address.ToString();
+                var direccionPagoCelda = hoja.Cell(fila, colPago).Address.ToString();
                 var direccionPagarCelda = hoja.Cell(fila, colPagar).Address.ToString();
 
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionFechaCelda, null);
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionNombreCelda, null);
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagoCelda, null);
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagarCelda, null);
 
                 return null;
@@ -182,6 +188,125 @@ namespace GestionCabanas.Services
             catch (Exception ex)
             {
                 return $"No se pudo limpiar la celda en el Excel: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Escribe en el Excel un día bloqueado como si fuera una reserva a nombre de "Bloqueada",
+        /// con PAGÓ y PAGAR en 0. Cada día bloqueado ocupa su propia fila de una noche (ej. "5 a 6").
+        /// </summary>
+        public async Task<string?> EscribirBloqueoAsync(TarifaDia tarifa, string nombreCabana)
+        {
+            var urlArchivo = _config["OneDrive:ArchivoUrl"];
+            var conexion = await _oneDrive.ObtenerConexionAsync();
+            if (string.IsNullOrWhiteSpace(urlArchivo) || conexion?.RefreshTokenCifrado is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var (driveId, itemId) = await _oneDrive.ObtenerDriveItemAsync(urlArchivo);
+                var bytes = await _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo);
+                using var workbook = new XLWorkbook(new MemoryStream(bytes));
+
+                var sobrescrituras = ExcelReservasSyncService.ObtenerSobrescrituraHojas(_config);
+                var hoja = ExcelReservasSyncService.UbicarHojaDelMes(workbook, tarifa.Fecha.Month, sobrescrituras);
+                if (hoja is null)
+                {
+                    return $"No encontré la hoja de \"{tarifa.Fecha:MMMM}\" en el Excel para reflejar el bloqueo.";
+                }
+
+                var bloque = ExcelReservasSyncService.UbicarBloqueDeCabana(hoja, nombreCabana);
+                if (bloque is null)
+                {
+                    return $"No encontré el bloque de \"{nombreCabana}\" en la hoja de \"{tarifa.Fecha:MMMM}\" para reflejar el bloqueo.";
+                }
+
+                var filaLibre = ExcelReservasSyncService.BuscarFilaLibreEnBloque(hoja, bloque.Value.ColFecha, bloque.Value.ColNombre, bloque.Value.FilaEncabezado);
+                if (filaLibre is null)
+                {
+                    return $"No hay una fila libre para \"{nombreCabana}\" en la hoja de \"{tarifa.Fecha:MMMM}\" para reflejar el bloqueo.";
+                }
+
+                var colPago = bloque.Value.ColPago ?? bloque.Value.ColFecha + 2;
+                var colPagar = bloque.Value.ColPagar ?? bloque.Value.ColFecha + 3;
+
+                var direccionFechaCelda = hoja.Cell(filaLibre.Value, bloque.Value.ColFecha).Address.ToString();
+                var direccionNombreCelda = hoja.Cell(filaLibre.Value, bloque.Value.ColNombre).Address.ToString();
+                var direccionPagoCelda = hoja.Cell(filaLibre.Value, colPago).Address.ToString();
+                var direccionPagarCelda = hoja.Cell(filaLibre.Value, colPagar).Address.ToString();
+
+                var textoFecha = $"{tarifa.Fecha.Day} a {tarifa.Fecha.AddDays(1).Day}";
+
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionFechaCelda, textoFecha);
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionNombreCelda, "Bloqueada");
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagoCelda, "0");
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagarCelda, "0");
+
+                tarifa.ExcelUbicacion = $"{tarifa.Fecha.Year}/{hoja.Name}!{direccionFechaCelda}";
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return $"No se pudo reflejar el bloqueo en el Excel: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Limpia (sin borrar la fila) la celda de Excel de un día que se desbloqueó en el sitio.
+        /// </summary>
+        public async Task<string?> LimpiarBloqueoAsync(TarifaDia tarifa, string nombreCabana)
+        {
+            var urlArchivo = _config["OneDrive:ArchivoUrl"];
+            var conexion = await _oneDrive.ObtenerConexionAsync();
+            if (string.IsNullOrWhiteSpace(urlArchivo) || conexion?.RefreshTokenCifrado is null)
+            {
+                return null;
+            }
+            if (string.IsNullOrEmpty(tarifa.ExcelUbicacion) || !tarifa.ExcelUbicacion.Contains('!'))
+            {
+                return null;
+            }
+
+            try
+            {
+                var (driveId, itemId) = await _oneDrive.ObtenerDriveItemAsync(urlArchivo);
+                var bytes = await _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo);
+                using var workbook = new XLWorkbook(new MemoryStream(bytes));
+
+                var partes = tarifa.ExcelUbicacion.Split('!', 2);
+                var nombreHoja = partes[0][(partes[0].IndexOf('/') + 1)..];
+                var hoja = workbook.Worksheets.FirstOrDefault(h => h.Name == nombreHoja);
+                if (hoja is null)
+                {
+                    return null;
+                }
+
+                var celdaFecha = hoja.Cell(partes[1]);
+                var fila = celdaFecha.Address.RowNumber;
+                var colFecha = celdaFecha.Address.ColumnNumber;
+
+                var bloque = ExcelReservasSyncService.UbicarBloqueDeCabana(hoja, nombreCabana);
+                var colNombre = bloque?.ColNombre ?? colFecha + 1;
+                var colPago = bloque?.ColPago ?? colFecha + 2;
+                var colPagar = bloque?.ColPagar ?? colFecha + 3;
+
+                var direccionFechaCelda = hoja.Cell(fila, colFecha).Address.ToString();
+                var direccionNombreCelda = hoja.Cell(fila, colNombre).Address.ToString();
+                var direccionPagoCelda = hoja.Cell(fila, colPago).Address.ToString();
+                var direccionPagarCelda = hoja.Cell(fila, colPagar).Address.ToString();
+
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionFechaCelda, null);
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionNombreCelda, null);
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagoCelda, null);
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagarCelda, null);
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return $"No se pudo limpiar el bloqueo en el Excel: {ex.Message}";
             }
         }
     }

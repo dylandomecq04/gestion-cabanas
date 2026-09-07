@@ -123,7 +123,7 @@ namespace GestionCabanas.Services
                     var fila = celdaFecha.Address.RowNumber;
                     var colFecha = celdaFecha.Address.ColumnNumber;
 
-                    int? colNombre = null, colPagar = null;
+                    int? colNombre = null, colPago = null, colPagar = null;
                     for (var c = colFecha + 1; c <= colFecha + 6; c++)
                     {
                         var texto = Normalizar(hoja.Cell(fila, c).GetString());
@@ -132,6 +132,7 @@ namespace GestionCabanas.Services
                             break;
                         }
                         if (texto == "NOMBRE") colNombre ??= c;
+                        else if (texto == "PAGO") colPago ??= c;
                         else if (texto == "PAGAR") colPagar ??= c;
                     }
 
@@ -256,8 +257,17 @@ namespace GestionCabanas.Services
                             fechaHasta = new DateTime(anioHasta, mesHasta, diaHasta);
                         }
 
-                        decimal? pagar = colPagar.HasValue ? LeerDecimal(hoja.Cell(r, colPagar.Value)) : null;
                         var ubicacion = $"{anio}/{hoja.Name}!{hoja.Cell(r, colFecha).Address}";
+
+                        if (Normalizar(textoNombre) == "BLOQUEADA")
+                        {
+                            // Es un bloqueo que el propio sitio escribió (o alguien tipeó a mano):
+                            // no se administra como reserva, así que no lo tocamos acá.
+                            continue;
+                        }
+
+                        decimal? pago = colPago.HasValue ? LeerDecimal(hoja.Cell(r, colPago.Value)) : null;
+                        decimal? pagar = colPagar.HasValue ? LeerDecimal(hoja.Cell(r, colPagar.Value)) : null;
                         ubicacionesVistas.Add(ubicacion);
                         var descripcion = $"{cabana.Nombre}: {textoNombre} ({fechaDesde:dd/MM} - {fechaHasta:dd/MM})";
 
@@ -267,13 +277,15 @@ namespace GestionCabanas.Services
                                 reservaExistente.NombreHuesped != textoNombre ||
                                 reservaExistente.FechaDesde != fechaDesde ||
                                 reservaExistente.FechaHasta != fechaHasta ||
-                                reservaExistente.Valor != pagar)
+                                reservaExistente.Valor != pagar ||
+                                reservaExistente.Pago != pago)
                             {
                                 reservaExistente.CabanaId = cabana.Id;
                                 reservaExistente.NombreHuesped = textoNombre;
                                 reservaExistente.FechaDesde = fechaDesde;
                                 reservaExistente.FechaHasta = fechaHasta;
                                 reservaExistente.Valor = pagar;
+                                reservaExistente.Pago = pago;
                                 resultado.Actualizadas++;
                                 resultado.DetalleActualizadas.Add(descripcion);
                             }
@@ -311,6 +323,7 @@ namespace GestionCabanas.Services
                             CantidadPersonas = 1,
                             Estado = EstadoReserva.Confirmada,
                             Valor = pagar,
+                            Pago = pago,
                             ExcelUbicacion = ubicacion,
                         };
                         _db.Reservas.Add(nueva);
@@ -402,10 +415,10 @@ namespace GestionCabanas.Services
         }
 
         /// <summary>
-        /// Busca el bloque (columnas FECHA/NOMBRE/PAGAR y fila de encabezado) de una cabaña dentro
-        /// de una hoja. Devuelve null si no encuentra un bloque con ese nombre de cabaña.
+        /// Busca el bloque (columnas FECHA/NOMBRE/PAGÓ/PAGAR y fila de encabezado) de una cabaña
+        /// dentro de una hoja. Devuelve null si no encuentra un bloque con ese nombre de cabaña.
         /// </summary>
-        public static (int ColFecha, int ColNombre, int? ColPagar, int FilaEncabezado)? UbicarBloqueDeCabana(IXLWorksheet hoja, string nombreCabana)
+        public static (int ColFecha, int ColNombre, int? ColPago, int? ColPagar, int FilaEncabezado)? UbicarBloqueDeCabana(IXLWorksheet hoja, string nombreCabana)
         {
             var usado = hoja.RangeUsed();
             if (usado is null)
@@ -420,7 +433,7 @@ namespace GestionCabanas.Services
                 var fila = celdaFecha.Address.RowNumber;
                 var colFecha = celdaFecha.Address.ColumnNumber;
 
-                int? colNombre = null, colPagar = null;
+                int? colNombre = null, colPago = null, colPagar = null;
                 for (var c = colFecha + 1; c <= colFecha + 6; c++)
                 {
                     var texto = Normalizar(hoja.Cell(fila, c).GetString());
@@ -429,6 +442,7 @@ namespace GestionCabanas.Services
                         break;
                     }
                     if (texto == "NOMBRE") colNombre ??= c;
+                    else if (texto == "PAGO") colPago ??= c;
                     else if (texto == "PAGAR") colPagar ??= c;
                 }
 
@@ -454,7 +468,7 @@ namespace GestionCabanas.Services
 
                 if (nombreCabanaBloque is not null && Normalizar(nombreCabanaBloque) == objetivo)
                 {
-                    return (colFecha, colNombre.Value, colPagar, fila);
+                    return (colFecha, colNombre.Value, colPago, colPagar, fila);
                 }
             }
 

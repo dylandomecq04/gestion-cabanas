@@ -49,11 +49,22 @@
             <select asp-for="Estado" asp-items="Html.GetEnumSelectList<EstadoReserva>()"
                     class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></select>
         </div>
+        <div></div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label asp-for="Pago" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input type="text" inputmode="numeric" id="pago-display" placeholder="0"
+                   value="@(Model.Pago.HasValue ? Model.Pago.Value.ToString("N0", new System.Globalization.CultureInfo("es-AR")) : "")"
+                   oninput="formatearMiles(this, 'pago-real')"
+                   class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <input type="hidden" asp-for="Pago" id="pago-real" />
+        </div>
         <div>
             <label asp-for="Valor" class="mb-1 block text-sm font-medium text-ink-700"></label>
             <input type="text" inputmode="numeric" id="valor-display" placeholder="0"
                    value="@(Model.Valor.HasValue ? Model.Valor.Value.ToString("N0", new System.Globalization.CultureInfo("es-AR")) : "")"
-                   oninput="formatearMilesValor(this)"
+                   oninput="formatearMiles(this, 'valor-real')"
                    class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
             <input type="hidden" asp-for="Valor" id="valor-real" />
         </div>
@@ -67,10 +78,10 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        function formatearMilesValor(input) {
+        function formatearMiles(input, idCampoReal) {
             const soloDigitos = input.value.replace(/\D/g, '');
             input.value = soloDigitos ? Number(soloDigitos).toLocaleString('es-AR') : '';
-            document.getElementById('valor-real').value = soloDigitos;
+            document.getElementById(idCampoReal).value = soloDigitos;
         }
     </script>
 }

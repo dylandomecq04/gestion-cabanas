@@ -35,6 +35,11 @@ namespace GestionCabanas.Models
         public EstadoReserva Estado { get; set; } = EstadoReserva.Pendiente;
 
         [Range(0, 999999999)]
+        [Display(Name = "Pagó")]
+        public decimal? Pago { get; set; }
+
+        [Range(0, 999999999)]
+        [Display(Name = "Pagar")]
         public decimal? Valor { get; set; }
 
         public DateTime FechaCreacion { get; set; } = DateTime.Now;

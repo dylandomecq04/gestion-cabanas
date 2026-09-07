@@ -7,10 +7,12 @@ namespace GestionCabanas.Services
     public class DisponibilidadService
     {
         private readonly ApplicationDbContext _db;
+        private readonly ExcelEscrituraService _excelEscritura;
 
-        public DisponibilidadService(ApplicationDbContext db)
+        public DisponibilidadService(ApplicationDbContext db, ExcelEscrituraService excelEscritura)
         {
             _db = db;
+            _excelEscritura = excelEscritura;
         }
 
         public async Task<bool> HaySuperposicionAsync(int cabanaId, DateTime desde, DateTime hasta, int? reservaIdExcluir = null)
@@ -77,40 +79,82 @@ namespace GestionCabanas.Services
                 .ToListAsync();
         }
 
-        public async Task GuardarTarifasAsync(IEnumerable<TarifaDiaInput> dias)
+        /// <summary>
+        /// Guarda los cambios de precio/bloqueo del calendario. Cuando un día pasa a estar
+        /// bloqueado (o deja de estarlo) refleja ese cambio en el Excel como si fuera una reserva
+        /// a nombre de "Bloqueada" con PAGÓ y PAGAR en 0, reusando el mismo mecanismo de las
+        /// reservas reales. Devuelve los avisos de Excel que no se pudieron aplicar.
+        /// </summary>
+        public async Task<List<string>> GuardarTarifasAsync(IEnumerable<TarifaDiaInput> dias)
         {
+            var avisos = new List<string>();
+            Dictionary<int, string>? nombresCabanas = null;
+
             foreach (var dia in dias)
             {
                 var existente = await _db.TarifasDias.FirstOrDefaultAsync(t => t.CabanaId == dia.CabanaId && t.Fecha.Date == dia.Fecha.Date);
                 var necesitaFila = dia.Bloqueada || dia.Precio.HasValue;
+                var estabaBloqueada = existente?.Bloqueada ?? false;
 
                 if (!necesitaFila)
                 {
                     if (existente is not null)
                     {
+                        if (estabaBloqueada)
+                        {
+                            nombresCabanas ??= await _db.Cabanas.ToDictionaryAsync(c => c.Id, c => c.Nombre);
+                            if (nombresCabanas.TryGetValue(dia.CabanaId, out var nombreCabana))
+                            {
+                                var aviso = await _excelEscritura.LimpiarBloqueoAsync(existente, nombreCabana);
+                                if (aviso is not null) avisos.Add(aviso);
+                            }
+                        }
                         _db.TarifasDias.Remove(existente);
                     }
                     continue;
                 }
 
+                TarifaDia registro;
                 if (existente is null)
                 {
-                    _db.TarifasDias.Add(new TarifaDia
+                    registro = new TarifaDia
                     {
                         CabanaId = dia.CabanaId,
                         Fecha = dia.Fecha.Date,
                         Precio = dia.Precio,
                         Bloqueada = dia.Bloqueada
-                    });
+                    };
+                    _db.TarifasDias.Add(registro);
                 }
                 else
                 {
-                    existente.Precio = dia.Precio;
-                    existente.Bloqueada = dia.Bloqueada;
+                    registro = existente;
+                    registro.Precio = dia.Precio;
+                    registro.Bloqueada = dia.Bloqueada;
+                }
+
+                if (dia.Bloqueada != estabaBloqueada)
+                {
+                    nombresCabanas ??= await _db.Cabanas.ToDictionaryAsync(c => c.Id, c => c.Nombre);
+                    if (nombresCabanas.TryGetValue(dia.CabanaId, out var nombreCabana))
+                    {
+                        if (dia.Bloqueada)
+                        {
+                            var aviso = await _excelEscritura.EscribirBloqueoAsync(registro, nombreCabana);
+                            if (aviso is not null) avisos.Add(aviso);
+                        }
+                        else
+                        {
+                            var aviso = await _excelEscritura.LimpiarBloqueoAsync(registro, nombreCabana);
+                            if (aviso is not null) avisos.Add(aviso);
+                            registro.ExcelUbicacion = null;
+                        }
+                    }
                 }
             }
 
             await _db.SaveChangesAsync();
+            return avisos;
         }
 
         public async Task<List<TarifaDia>> ObtenerBloqueadasEnRangoAsync(DateTime desde, DateTime hasta, int? cabanaId = null)
