@@ -87,11 +87,11 @@ else
                             <th class="px-5 py-3">Huésped</th>
                             <th class="px-3 py-3">Contacto</th>
                             <th class="px-3 py-3">Fechas</th>
-                            <th class="px-3 py-3">Personas</th>
+                            <th class="px-3 py-3 text-center">Personas</th>
                             <th class="px-3 py-3">Pagó</th>
                             <th class="px-3 py-3">Pagar</th>
                             <th class="px-3 py-3">Estado</th>
-                            <th class="px-5 py-3 text-right">Acciones</th>
+                            <th class="px-5 py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-ink-100">
@@ -101,7 +101,7 @@ else
                                 <td class="px-5 py-3 font-medium text-ink-900">@r.NombreHuesped</td>
                                 <td class="px-3 py-3 text-ink-500">@r.Telefono</td>
                                 <td class="whitespace-nowrap px-3 py-3 text-ink-600">@r.FechaDesde.ToString("dd/MM/yyyy") &ndash; @r.FechaHasta.ToString("dd/MM/yyyy")</td>
-                                <td class="px-3 py-3 text-ink-600">@r.CantidadPersonas</td>
+                                <td class="px-3 py-3 text-center text-ink-600">@r.CantidadPersonas</td>
                                 <td class="px-3 py-3 text-ink-600">@(r.Pago.HasValue ? "$" + r.Pago.Value.ToString("N0") : "-")</td>
                                 <td class="px-3 py-3 text-ink-600">@(r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "-")</td>
                                 <td class="px-3 py-3">
@@ -115,7 +115,7 @@ else
                                     }
                                 </td>
                                 <td class="px-5 py-3">
-                                    <div class="flex justify-end gap-2 whitespace-nowrap">
+                                    <div class="flex justify-center gap-2 whitespace-nowrap">
                                         @if (r.Estado != EstadoReserva.Confirmada)
                                         {
                                             <form asp-action="Confirmar" asp-route-id="@r.Id" method="post">

@@ -159,7 +159,7 @@
                                     var etiquetaReserva = esPendiente ? "Pendiente" : "Reservada";
                                     var pagoTexto = reserva.Pago.HasValue ? "$" + reserva.Pago.Value.ToString("N0") : "-";
                                     var pagarTexto = reserva.Valor.HasValue ? "$" + reserva.Valor.Value.ToString("N0") : "-";
-                                    var infoReserva = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM} ({etiquetaReserva}) · Pagó: {pagoTexto} — Pagar: {pagarTexto}";
+                                    var infoResumen = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM}";
                                     var claseReserva = esPendiente
                                         ? "bg-amber-200 hover:bg-amber-300 text-amber-900"
                                         : "bg-green-300 hover:bg-green-400 text-green-900";
@@ -168,8 +168,12 @@
                                                 data-cabana-nombre="@cabana.Nombre"
                                                 data-fecha-texto="@fechaTexto"
                                                 data-reserva-id="@reserva.Id"
-                                                data-info-reserva="@infoReserva"
-                                                title="@infoReserva"
+                                                data-info-resumen="@infoResumen"
+                                                data-info-estado="@etiquetaReserva"
+                                                data-info-pendiente="@(esPendiente ? "true" : "false")"
+                                                data-info-pago="@pagoTexto"
+                                                data-info-pagar="@pagarTexto"
+                                                title="@infoResumen (@etiquetaReserva)"
                                                 class="day-cell relative flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-bold leading-tight @claseReserva">
                                             <span>@etiquetaReserva</span>
                                             <span class="truncate text-xs font-normal opacity-90 max-w-full">@reserva.NombreHuesped</span>
@@ -458,7 +462,20 @@
                 </svg>
             </button>
         </div>
-        <p id="info-reserva" class="mt-3 rounded-xl bg-sand-50 p-3 text-sm text-ink-600"></p>
+        <div class="mt-3 flex items-center justify-between gap-3 rounded-xl bg-sand-50 px-3.5 py-2.5">
+            <span id="info-reserva-resumen" class="text-sm font-medium text-ink-800"></span>
+            <span id="info-reserva-estado" class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"></span>
+        </div>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+            <div class="rounded-xl bg-sand-50 px-3.5 py-2.5">
+                <div class="text-xs text-ink-400">Pagó</div>
+                <div id="info-reserva-pago" class="text-sm font-semibold text-ink-800"></div>
+            </div>
+            <div class="rounded-xl bg-sand-50 px-3.5 py-2.5">
+                <div class="text-xs text-ink-400">Pagar</div>
+                <div id="info-reserva-pagar" class="text-sm font-semibold text-ink-800"></div>
+            </div>
+        </div>
         <div class="mt-4 flex gap-2">
             <a id="link-editar-reserva" href="#" class="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-ink-200 px-4 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-river-300 hover:text-river-700">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
@@ -672,7 +689,16 @@
 
         function abrirReserva(btn) {
             document.getElementById('modal-reserva-titulo').textContent = btn.dataset.cabanaNombre + ' · ' + btn.dataset.fechaTexto;
-            document.getElementById('info-reserva').textContent = btn.dataset.infoReserva;
+            document.getElementById('info-reserva-resumen').textContent = btn.dataset.infoResumen;
+            document.getElementById('info-reserva-pago').textContent = btn.dataset.infoPago;
+            document.getElementById('info-reserva-pagar').textContent = btn.dataset.infoPagar;
+
+            const esPendiente = btn.dataset.infoPendiente === 'true';
+            const estado = document.getElementById('info-reserva-estado');
+            estado.textContent = btn.dataset.infoEstado;
+            estado.className = 'shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ' +
+                (esPendiente ? 'bg-amber-100 text-amber-700' : 'bg-river-100 text-river-700');
+
             document.getElementById('link-editar-reserva').href = '/Admin/Reservas/Edit/' + btn.dataset.reservaId;
             document.getElementById('input-eliminar-reserva-id').value = btn.dataset.reservaId;
             document.getElementById('modal-reserva').classList.remove('hidden');
