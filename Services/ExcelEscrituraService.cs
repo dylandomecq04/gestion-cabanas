@@ -67,7 +67,7 @@ namespace GestionCabanas.Services
                         return $"No encontré el bloque de \"{cabana.Nombre}\" en la hoja de \"{reserva.FechaDesde:MMMM}\". Agregala ahí a mano.";
                     }
 
-                    var filaLibre = ExcelReservasSyncService.BuscarFilaLibreEnBloque(hoja, bloque.Value.ColFecha, bloque.Value.ColNombre, bloque.Value.FilaEncabezado);
+                    var filaLibre = ExcelReservasSyncService.BuscarFilaLibreEnBloque(hoja, bloque.Value.ColFecha, bloque.Value.ColNombre, bloque.Value.FilaEncabezado, reserva.FechaDesde.Day);
                     if (filaLibre is null)
                     {
                         return $"No hay una fila libre para \"{cabana.Nombre}\" en la hoja de \"{reserva.FechaDesde:MMMM}\". Agregala ahí a mano.";
@@ -224,7 +224,7 @@ namespace GestionCabanas.Services
                     return $"No encontré el bloque de \"{nombreCabana}\" en la hoja de \"{tarifa.Fecha:MMMM}\" para reflejar el bloqueo.";
                 }
 
-                var filaLibre = ExcelReservasSyncService.BuscarFilaLibreEnBloque(hoja, bloque.Value.ColFecha, bloque.Value.ColNombre, bloque.Value.FilaEncabezado);
+                var filaLibre = ExcelReservasSyncService.BuscarFilaLibreEnBloque(hoja, bloque.Value.ColFecha, bloque.Value.ColNombre, bloque.Value.FilaEncabezado, tarifa.Fecha.Day);
                 if (filaLibre is null)
                 {
                     return $"No hay una fila libre para \"{nombreCabana}\" en la hoja de \"{tarifa.Fecha:MMMM}\" para reflejar el bloqueo.";

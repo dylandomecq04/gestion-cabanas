@@ -476,14 +476,21 @@ namespace GestionCabanas.Services
         }
 
         /// <summary>
-        /// Busca, dentro de un bloque ya ubicado, la primera fila completamente vacía antes de
-        /// llegar a un "TOTAL" o al final de lo usado en la hoja. Devuelve null si el bloque está
-        /// lleno (no hay fila libre para agregar una reserva nueva sin insertar filas).
+        /// Busca, dentro de un bloque ya ubicado, una fila libre para escribir una reserva nueva sin
+        /// insertar filas. Si se indica <paramref name="diaDesdeNuevo"/> (el día de inicio de la
+        /// reserva a escribir), intenta mantener el orden cronológico de la planilla: prefiere una
+        /// fila libre que quede físicamente entre la última reserva con día menor o igual y la
+        /// primera con día mayor. Si no hay una fila libre justo en ese lugar (quedaron pegadas), usa
+        /// la primera fila libre del bloque. Devuelve null si el bloque está lleno.
         /// </summary>
-        public static int? BuscarFilaLibreEnBloque(IXLWorksheet hoja, int colFecha, int colNombre, int filaEncabezado)
+        public static int? BuscarFilaLibreEnBloque(IXLWorksheet hoja, int colFecha, int colNombre, int filaEncabezado, int? diaDesdeNuevo = null)
         {
             var usado = hoja.RangeUsed();
             var ultimaFila = usado?.LastRow().RowNumber() ?? filaEncabezado;
+
+            var filasLibres = new List<int>();
+            var filasOcupadas = new List<(int Fila, int Dia)>();
+            var esPrimeraOcupada = true;
 
             for (var r = filaEncabezado + 1; r <= ultimaFila; r++)
             {
@@ -492,15 +499,50 @@ namespace GestionCabanas.Services
 
                 if (Normalizar(textoFecha) == "TOTAL" || Normalizar(textoNombre) == "TOTAL")
                 {
-                    return null;
+                    break;
                 }
                 if (string.IsNullOrWhiteSpace(textoFecha) && string.IsNullOrWhiteSpace(textoNombre))
                 {
-                    return r;
+                    filasLibres.Add(r);
+                    continue;
+                }
+
+                var match = Regex.Match(textoFecha, @"(\d{1,2})\s*al?b?\.?\s*(\d{1,2})", RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    var diaDesdeFila = int.Parse(match.Groups[1].Value);
+                    var diaHastaFila = int.Parse(match.Groups[2].Value);
+                    // Igual que al sincronizar: si es la primera fila del bloque y el "hasta" es
+                    // menor que el "desde" (ej. "31 a 3"), esa reserva arrancó el mes anterior, así
+                    // que a los fines de mantener el orden va antes que cualquier día de este mes.
+                    var diaOrden = (esPrimeraOcupada && diaHastaFila < diaDesdeFila) ? diaDesdeFila - 100 : diaDesdeFila;
+                    filasOcupadas.Add((r, diaOrden));
+                    esPrimeraOcupada = false;
                 }
             }
 
-            return null;
+            if (filasLibres.Count == 0)
+            {
+                return null;
+            }
+            if (!diaDesdeNuevo.HasValue)
+            {
+                return filasLibres[0];
+            }
+
+            var filaPredecesora = filasOcupadas.Where(f => f.Dia <= diaDesdeNuevo.Value).Select(f => (int?)f.Fila).DefaultIfEmpty(null).Max();
+            var filaSucesora = filasOcupadas.Where(f => f.Dia > diaDesdeNuevo.Value).Select(f => (int?)f.Fila).DefaultIfEmpty(null).Min();
+
+            foreach (var libre in filasLibres)
+            {
+                if ((!filaPredecesora.HasValue || libre > filaPredecesora.Value) &&
+                    (!filaSucesora.HasValue || libre < filaSucesora.Value))
+                {
+                    return libre;
+                }
+            }
+
+            return filasLibres[0];
         }
 
         private static decimal? LeerDecimal(IXLCell celda)
