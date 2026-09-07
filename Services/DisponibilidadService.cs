@@ -80,74 +80,136 @@ namespace GestionCabanas.Services
         }
 
         /// <summary>
-        /// Guarda los cambios de precio/bloqueo del calendario. Cuando un día pasa a estar
-        /// bloqueado (o deja de estarlo) refleja ese cambio en el Excel como si fuera una reserva
-        /// a nombre de "Bloqueada" con PAGÓ y PAGAR en 0, reusando el mismo mecanismo de las
-        /// reservas reales. Devuelve los avisos de Excel que no se pudieron aplicar.
+        /// Guarda los cambios de precio/bloqueo del calendario. Cuando el conjunto de días
+        /// bloqueados de una cabaña cambia, reconcilia los RANGOS contiguos de bloqueo (no día por
+        /// día): un tramo de varios días bloqueados seguidos ocupa una sola fila en el Excel, como
+        /// si fuera una reserva a nombre de "Bloqueada" con PAGÓ y PAGAR en 0. Devuelve los avisos
+        /// de Excel que no se pudieron aplicar.
         /// </summary>
         public async Task<List<string>> GuardarTarifasAsync(IEnumerable<TarifaDiaInput> dias)
         {
             var avisos = new List<string>();
-            Dictionary<int, string>? nombresCabanas = null;
-
-            foreach (var dia in dias)
+            var listaDias = dias.ToList();
+            if (listaDias.Count == 0)
             {
-                var existente = await _db.TarifasDias.FirstOrDefaultAsync(t => t.CabanaId == dia.CabanaId && t.Fecha.Date == dia.Fecha.Date);
-                var necesitaFila = dia.Bloqueada || dia.Precio.HasValue;
-                var estabaBloqueada = existente?.Bloqueada ?? false;
+                return avisos;
+            }
 
-                if (!necesitaFila)
+            var fechaMin = listaDias.Min(d => d.Fecha.Date);
+            var fechaMax = listaDias.Max(d => d.Fecha.Date);
+
+            var existentes = await _db.TarifasDias
+                .Where(t => t.Fecha >= fechaMin && t.Fecha <= fechaMax)
+                .ToListAsync();
+            var nombresCabanas = await _db.Cabanas.ToDictionaryAsync(c => c.Id, c => c.Nombre);
+
+            foreach (var grupoCabana in listaDias.GroupBy(d => d.CabanaId))
+            {
+                var cabanaId = grupoCabana.Key;
+                var existentesDelMes = existentes.Where(t => t.CabanaId == cabanaId).ToDictionary(t => t.Fecha.Date, t => t);
+                var bloqueadosAntes = existentesDelMes.Where(kv => kv.Value.Bloqueada).Select(kv => kv.Key).ToHashSet();
+                var bloqueadosDespues = new HashSet<DateTime>(bloqueadosAntes);
+                var registrosPorFecha = new Dictionary<DateTime, TarifaDia>(existentesDelMes);
+
+                foreach (var dia in grupoCabana)
                 {
-                    if (existente is not null)
+                    var fecha = dia.Fecha.Date;
+                    existentesDelMes.TryGetValue(fecha, out var existente);
+                    var necesitaFila = dia.Bloqueada || dia.Precio.HasValue;
+
+                    if (!necesitaFila)
                     {
-                        if (estabaBloqueada)
+                        if (existente is not null)
                         {
-                            nombresCabanas ??= await _db.Cabanas.ToDictionaryAsync(c => c.Id, c => c.Nombre);
-                            if (nombresCabanas.TryGetValue(dia.CabanaId, out var nombreCabana))
-                            {
-                                var aviso = await _excelEscritura.LimpiarBloqueoAsync(existente, nombreCabana);
-                                if (aviso is not null) avisos.Add(aviso);
-                            }
+                            _db.TarifasDias.Remove(existente);
+                            registrosPorFecha.Remove(fecha);
                         }
-                        _db.TarifasDias.Remove(existente);
+                        bloqueadosDespues.Remove(fecha);
+                        continue;
                     }
+
+                    TarifaDia registro;
+                    if (existente is null)
+                    {
+                        registro = new TarifaDia { CabanaId = cabanaId, Fecha = fecha, Precio = dia.Precio, Bloqueada = dia.Bloqueada };
+                        _db.TarifasDias.Add(registro);
+                    }
+                    else
+                    {
+                        registro = existente;
+                        registro.Precio = dia.Precio;
+                        registro.Bloqueada = dia.Bloqueada;
+                    }
+                    registrosPorFecha[fecha] = registro;
+
+                    if (dia.Bloqueada)
+                    {
+                        bloqueadosDespues.Add(fecha);
+                    }
+                    else
+                    {
+                        bloqueadosDespues.Remove(fecha);
+                    }
+                }
+
+                if (bloqueadosAntes.SetEquals(bloqueadosDespues) || !nombresCabanas.TryGetValue(cabanaId, out var nombreCabana))
+                {
                     continue;
                 }
 
-                TarifaDia registro;
-                if (existente is null)
+                var rangosAntes = CalcularRangosBloqueados(bloqueadosAntes);
+                var rangosDespues = CalcularRangosBloqueados(bloqueadosDespues);
+                var rangosAntesSet = rangosAntes.ToHashSet();
+                var rangosDespuesSet = rangosDespues.ToHashSet();
+
+                // Limpiar los rangos viejos que ya no existen tal cual (se acortaron, se estiraron,
+                // se dividieron o se desbloquearon del todo).
+                foreach (var rango in rangosAntes)
                 {
-                    registro = new TarifaDia
+                    if (rangosDespuesSet.Contains(rango))
                     {
-                        CabanaId = dia.CabanaId,
-                        Fecha = dia.Fecha.Date,
-                        Precio = dia.Precio,
-                        Bloqueada = dia.Bloqueada
-                    };
-                    _db.TarifasDias.Add(registro);
-                }
-                else
-                {
-                    registro = existente;
-                    registro.Precio = dia.Precio;
-                    registro.Bloqueada = dia.Bloqueada;
+                        continue;
+                    }
+
+                    var conUbicacion = EnumerarFechas(rango.Inicio, rango.FinExclusivo)
+                        .Select(f => existentesDelMes.TryGetValue(f, out var t) ? t : null)
+                        .FirstOrDefault(t => !string.IsNullOrEmpty(t?.ExcelUbicacion));
+
+                    if (conUbicacion is not null)
+                    {
+                        var aviso = await _excelEscritura.LimpiarBloqueoAsync(conUbicacion, nombreCabana);
+                        if (aviso is not null) avisos.Add(aviso);
+                    }
+
+                    foreach (var f in EnumerarFechas(rango.Inicio, rango.FinExclusivo))
+                    {
+                        if (registrosPorFecha.TryGetValue(f, out var reg))
+                        {
+                            reg.ExcelUbicacion = null;
+                        }
+                    }
                 }
 
-                if (dia.Bloqueada != estabaBloqueada)
+                // Escribir los rangos nuevos que no existían tal cual antes.
+                foreach (var rango in rangosDespues)
                 {
-                    nombresCabanas ??= await _db.Cabanas.ToDictionaryAsync(c => c.Id, c => c.Nombre);
-                    if (nombresCabanas.TryGetValue(dia.CabanaId, out var nombreCabana))
+                    if (rangosAntesSet.Contains(rango) || !registrosPorFecha.TryGetValue(rango.Inicio, out var representante))
                     {
-                        if (dia.Bloqueada)
+                        continue;
+                    }
+
+                    var aviso = await _excelEscritura.EscribirBloqueoAsync(representante, rango.FinExclusivo, nombreCabana);
+                    if (aviso is not null)
+                    {
+                        avisos.Add(aviso);
+                        continue;
+                    }
+
+                    foreach (var f in EnumerarFechas(rango.Inicio, rango.FinExclusivo))
+                    {
+                        if (registrosPorFecha.TryGetValue(f, out var reg))
                         {
-                            var aviso = await _excelEscritura.EscribirBloqueoAsync(registro, nombreCabana);
-                            if (aviso is not null) avisos.Add(aviso);
-                        }
-                        else
-                        {
-                            var aviso = await _excelEscritura.LimpiarBloqueoAsync(registro, nombreCabana);
-                            if (aviso is not null) avisos.Add(aviso);
-                            registro.ExcelUbicacion = null;
+                            reg.ExcelUbicacion = representante.ExcelUbicacion;
                         }
                     }
                 }
@@ -155,6 +217,46 @@ namespace GestionCabanas.Services
 
             await _db.SaveChangesAsync();
             return avisos;
+        }
+
+        /// <summary>
+        /// Agrupa un conjunto de días bloqueados en tramos contiguos (ej. 5,6,7 -> un solo tramo
+        /// del 5 al 8 exclusivo, como el FechaHasta de una reserva).
+        /// </summary>
+        private static List<(DateTime Inicio, DateTime FinExclusivo)> CalcularRangosBloqueados(IEnumerable<DateTime> diasBloqueados)
+        {
+            var rangos = new List<(DateTime, DateTime)>();
+            DateTime? inicio = null;
+            DateTime? anterior = null;
+
+            foreach (var fecha in diasBloqueados.OrderBy(f => f))
+            {
+                if (inicio is null)
+                {
+                    inicio = fecha;
+                }
+                else if (fecha != anterior!.Value.AddDays(1))
+                {
+                    rangos.Add((inicio.Value, anterior.Value.AddDays(1)));
+                    inicio = fecha;
+                }
+                anterior = fecha;
+            }
+
+            if (inicio is not null)
+            {
+                rangos.Add((inicio.Value, anterior!.Value.AddDays(1)));
+            }
+
+            return rangos;
+        }
+
+        private static IEnumerable<DateTime> EnumerarFechas(DateTime inicio, DateTime finExclusivo)
+        {
+            for (var f = inicio; f < finExclusivo; f = f.AddDays(1))
+            {
+                yield return f;
+            }
         }
 
         public async Task<List<TarifaDia>> ObtenerBloqueadasEnRangoAsync(DateTime desde, DateTime hasta, int? cabanaId = null)

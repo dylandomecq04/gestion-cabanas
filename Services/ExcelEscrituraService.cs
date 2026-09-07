@@ -192,10 +192,11 @@ namespace GestionCabanas.Services
         }
 
         /// <summary>
-        /// Escribe en el Excel un día bloqueado como si fuera una reserva a nombre de "Bloqueada",
-        /// con PAGÓ y PAGAR en 0. Cada día bloqueado ocupa su propia fila de una noche (ej. "5 a 6").
+        /// Escribe en el Excel un tramo de días bloqueados seguidos como si fuera una reserva a
+        /// nombre de "Bloqueada", con PAGÓ y PAGAR en 0. Todo el tramo contiguo ocupa una sola fila
+        /// (ej. días 5, 6 y 7 bloqueados -> "5 a 8", igual que el FechaHasta de una reserva).
         /// </summary>
-        public async Task<string?> EscribirBloqueoAsync(TarifaDia tarifa, string nombreCabana)
+        public async Task<string?> EscribirBloqueoAsync(TarifaDia tarifa, DateTime fechaHastaExclusiva, string nombreCabana)
         {
             var urlArchivo = _config["OneDrive:ArchivoUrl"];
             var conexion = await _oneDrive.ObtenerConexionAsync();
@@ -237,7 +238,7 @@ namespace GestionCabanas.Services
                 var direccionPagoCelda = hoja.Cell(filaLibre.Value, colPago).Address.ToString();
                 var direccionPagarCelda = hoja.Cell(filaLibre.Value, colPagar).Address.ToString();
 
-                var textoFecha = $"{tarifa.Fecha.Day} a {tarifa.Fecha.AddDays(1).Day}";
+                var textoFecha = $"{tarifa.Fecha.Day} a {fechaHastaExclusiva.Day}";
 
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionFechaCelda, textoFecha);
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionNombreCelda, "Bloqueada");
