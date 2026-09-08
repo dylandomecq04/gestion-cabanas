@@ -11,7 +11,7 @@
 
 @if (hayPromoActiva)
 {
-    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:hidden">
+    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         @if (promoIzquierda?.Activa == true)
         {
             <partial name="_PromoBanner" model="promoIzquierda" />
@@ -21,23 +21,6 @@
             <partial name="_PromoBanner" model="promoDerecha" />
         }
     </div>
-
-    @if (promoIzquierda?.Activa == true)
-    {
-        <div class="pointer-events-none fixed inset-y-0 left-0 z-30 hidden w-72 items-center 2xl:flex">
-            <div class="pointer-events-auto w-64 pl-4">
-                <partial name="_PromoBanner" model="promoIzquierda" />
-            </div>
-        </div>
-    }
-    @if (promoDerecha?.Activa == true)
-    {
-        <div class="pointer-events-none fixed inset-y-0 right-0 z-30 hidden w-72 items-center 2xl:flex">
-            <div class="pointer-events-auto w-64 pr-4">
-                <partial name="_PromoBanner" model="promoDerecha" />
-            </div>
-        </div>
-    }
 }
 
 <section class="group relative -mx-4 mb-14 flex min-h-screen items-center overflow-hidden rounded-3xl bg-river-800 text-center text-white shadow-lift sm:-mx-6">
@@ -73,7 +56,7 @@
     </div>
 </section>
 
-<div id="cabanas" class="mb-8 flex items-end justify-between">
+<div id="cabanas" class="mb-8 flex scroll-mt-24 items-end justify-between">
     <div>
         <h2 class="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">Nuestras cabañas</h2>
         <p class="mt-1 text-ink-500">Elegí la que mejor se adapte a tu grupo.</p>
@@ -156,5 +139,18 @@
         }
 
         iniciarAutoAvanceHero();
+
+        const irACabanas = function () {
+            const destino = document.getElementById('cabanas');
+            if (destino) destino.scrollIntoView({ behavior: 'instant', block: 'start' });
+        };
+        if (location.hash === '#cabanas') {
+            irACabanas();
+            window.addEventListener('load', irACabanas);
+            setTimeout(irACabanas, 400);
+        }
+        window.addEventListener('hashchange', function () {
+            if (location.hash === '#cabanas') irACabanas();
+        });
     </script>
 }
