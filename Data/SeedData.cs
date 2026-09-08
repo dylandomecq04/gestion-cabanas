@@ -34,7 +34,7 @@ namespace GestionCabanas.Data
                     db.Cabanas.Add(new Cabana
                     {
                         Nombre = nombre,
-                        Descripcion = "Cabaña del complejo Cabañas Sidharta, en El Tigre, a metros del río. Completá la descripción desde el panel de administración.",
+                        Descripcion = null,
                         Capacidad = 4,
                         Activa = true
                     });
