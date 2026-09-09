@@ -52,8 +52,11 @@
             5 cabañas de madera a metros del agua, listas para desconectar en familia o con amigos.
         </p>
         <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <a href="#cabanas" class="rounded-full bg-white px-6 py-3 text-sm font-semibold text-river-800 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">Ver cabañas</a>
-            <a asp-controller="Cabanas" asp-action="Disponibilidad" class="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">Ver disponibilidad</a>
+            <a asp-controller="Cabanas" asp-action="Disponibilidad" class="inline-flex items-center gap-2 rounded-full bg-sand-400 px-7 py-3.5 text-base font-bold text-river-950 shadow-lift transition hover:-translate-y-0.5 hover:bg-sand-300">
+                Reservar
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+            </a>
+            <a href="#cabanas" class="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">Ver cabañas</a>
         </div>
         <div class="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium tracking-wide text-river-100/80">
             <span class="flex items-center gap-1.5">
