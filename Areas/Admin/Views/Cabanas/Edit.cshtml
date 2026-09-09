@@ -12,7 +12,7 @@
     <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data"
           class="space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
         <input type="hidden" asp-for="Id" />
-        <div asp-validation-summary="All" class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 empty:hidden"></div>
+        <div asp-validation-summary="All" class="@(ViewData.ModelState.IsValid ? "hidden" : "rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700")"></div>
 
         <div>
             <label asp-for="Nombre" class="mb-1 block text-sm font-medium text-ink-700"></label>
@@ -27,7 +27,12 @@
             </div>
             <div>
                 <label asp-for="PrecioPorNoche" class="mb-1 block text-sm font-medium text-ink-700">Precio por noche</label>
-                <input asp-for="PrecioPorNoche" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                <div class="flex items-center rounded-xl border border-ink-200 shadow-sm transition focus-within:border-river-400 focus-within:ring-4 focus-within:ring-river-100">
+                    <span class="pl-3.5 text-sm text-ink-400">$</span>
+                    <input id="PrecioPorNoche" name="PrecioPorNoche" inputmode="decimal"
+                           value="@(Model.PrecioPorNoche.HasValue ? Model.PrecioPorNoche.Value.ToString("N0", System.Globalization.CultureInfo.CurrentCulture) : "")"
+                           class="w-full rounded-xl border-0 bg-transparent px-2 py-2.5 text-sm text-ink-900 focus:outline-none focus:ring-0" />
+                </div>
             </div>
         </div>
         <label class="flex items-center gap-2 text-sm font-medium text-ink-700">

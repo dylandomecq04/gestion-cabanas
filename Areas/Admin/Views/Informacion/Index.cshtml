@@ -8,7 +8,7 @@
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <form asp-action="Guardar" method="post" class="space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
-        <div asp-validation-summary="All" class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 empty:hidden"></div>
+        <div asp-validation-summary="All" class="@(ViewData.ModelState.IsValid ? "hidden" : "rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700")"></div>
 
         <div>
             <label asp-for="Direccion" class="mb-1 block text-sm font-medium text-ink-700"></label>
