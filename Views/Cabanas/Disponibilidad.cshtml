@@ -99,7 +99,16 @@
         <h2 class="font-display text-base font-semibold text-ink-900">Reservar para estas fechas</h2>
         <p class="mt-1 text-sm text-ink-500">Elegí el rango en el calendario de arriba (entrada y salida) y completá tus datos.</p>
 
-        <div id="rango-seleccionado" class="mt-3 hidden rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-ink-700 ring-1 ring-ink-100"></div>
+        <div class="mt-3 grid grid-cols-2 gap-3 sm:max-w-sm">
+            <div>
+                <label for="general-desde" class="mb-1 block text-xs font-medium text-ink-500">Entrada</label>
+                <input id="general-desde" type="date" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label for="general-hasta" class="mb-1 block text-xs font-medium text-ink-500">Salida</label>
+                <input id="general-hasta" type="date" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+        </div>
 
         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
@@ -193,7 +202,8 @@
 
         let __generalDesde = '';
         let __generalHasta = '';
-        const __rangoSeleccionado = document.getElementById('rango-seleccionado');
+        const __inputGeneralDesde = document.getElementById('general-desde');
+        const __inputGeneralHasta = document.getElementById('general-hasta');
         const __generalError = document.getElementById('general-error');
 
         function formatearFechaCorta(iso) {
@@ -208,12 +218,8 @@
                 celda.classList.toggle('ring-river-600', !!enRango);
             });
 
-            if (__generalDesde && __generalHasta) {
-                __rangoSeleccionado.classList.remove('hidden');
-                __rangoSeleccionado.textContent = `${formatearFechaCorta(__generalDesde)} → ${formatearFechaCorta(__generalHasta)}`;
-            } else {
-                __rangoSeleccionado.classList.add('hidden');
-            }
+            __inputGeneralDesde.value = __generalDesde;
+            __inputGeneralHasta.value = __generalHasta;
         }
 
         function seleccionarDiaGeneral(btn) {
@@ -231,6 +237,22 @@
 
             actualizarResaltadoGeneral();
         }
+
+        __inputGeneralDesde.addEventListener('change', function () {
+            __generalDesde = __inputGeneralDesde.value;
+            if (__generalHasta && __generalHasta <= __generalDesde) {
+                __generalHasta = '';
+            }
+            actualizarResaltadoGeneral();
+        });
+
+        __inputGeneralHasta.addEventListener('change', function () {
+            __generalHasta = __inputGeneralHasta.value;
+            if (__generalDesde && __generalHasta <= __generalDesde) {
+                __generalDesde = '';
+            }
+            actualizarResaltadoGeneral();
+        });
 
         function mostrarErrorGeneral(mensaje) {
             __generalError.textContent = mensaje;
