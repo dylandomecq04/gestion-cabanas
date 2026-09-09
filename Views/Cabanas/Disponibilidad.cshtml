@@ -25,6 +25,8 @@
     mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
 }
 
+@Html.AntiForgeryToken()
+
 <a asp-controller="Home" asp-action="Index" class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition hover:text-river-700">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
@@ -77,22 +79,55 @@
             else
             {
                 var libres = CabanasLibres(dia.Value);
-                var clases = libres == cabanas.Count
-                    ? "bg-river-100 text-river-700"
-                    : libres == 0
-                        ? "bg-rose-100 text-rose-600"
-                        : "bg-amber-100 text-amber-700";
-                <div title="@libres de @cabanas.Count cabañas libres" class="day-cell flex h-14 flex-col items-center justify-center gap-0.5 rounded-lg text-sm font-semibold leading-none @clases">
-                    <span>@dia.Value.Day</span>
-                    <span class="text-[10px] font-medium leading-none opacity-80">@libres</span>
-                </div>
+                var clases = libres > 0
+                    ? "bg-river-100 text-river-700 hover:bg-river-200"
+                    : "bg-rose-100 text-rose-600 hover:bg-rose-200";
+                <button type="button" onclick="seleccionarDiaGeneral(this)" data-fecha="@dia.Value.ToString("yyyy-MM-dd")"
+                        title="@(libres > 0 ? "Disponible" : "No disponible")"
+                        class="day-cell flex h-14 items-center justify-center rounded-lg text-sm font-semibold leading-none ring-2 ring-inset ring-transparent transition @clases">
+                    @dia.Value.Day
+                </button>
             }
         }
     </div>
     <div class="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink-500">
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Todas libres</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Algunas libres</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Todas ocupadas</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Disponible</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> No disponible</span>
+    </div>
+
+    <div class="mt-6 rounded-2xl border border-ink-100 bg-sand-50 p-5">
+        <h2 class="font-display text-base font-semibold text-ink-900">Reservar para estas fechas</h2>
+        <p class="mt-1 text-sm text-ink-500">Elegí el rango en el calendario de arriba (entrada y salida) y completá tus datos.</p>
+
+        <div id="rango-seleccionado" class="mt-3 hidden rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-ink-700 ring-1 ring-ink-100"></div>
+
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+                <label for="general-nombre" class="mb-1 block text-sm font-medium text-ink-700">Nombre y apellido</label>
+                <input id="general-nombre" type="text" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label for="general-telefono" class="mb-1 block text-sm font-medium text-ink-700">Teléfono</label>
+                <input id="general-telefono" type="tel" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label for="general-personas" class="mb-1 block text-sm font-medium text-ink-700">Cantidad de personas</label>
+                <input id="general-personas" type="number" min="1" max="50" value="2" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+        </div>
+
+        <p id="general-error" class="mt-3 hidden text-sm font-medium text-rose-600"></p>
+
+        <button type="button" onclick="buscarOpcionesGeneral()" class="mt-4 rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+            Reservar
+        </button>
+    </div>
+</div>
+
+<div id="modal-opciones" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm">
+    <div class="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2.5xl bg-white p-7 shadow-lift">
+        <div id="modal-opciones-contenido"></div>
+        <button type="button" onclick="cerrarModalOpciones()" class="mt-5 text-sm font-medium text-ink-400 transition hover:text-ink-600">Cerrar</button>
     </div>
 </div>
 
@@ -154,6 +189,219 @@
                 b.classList.toggle('bg-white', !activo);
                 b.classList.toggle('text-ink-600', !activo);
             });
+        }
+
+        let __generalDesde = '';
+        let __generalHasta = '';
+        const __rangoSeleccionado = document.getElementById('rango-seleccionado');
+        const __generalError = document.getElementById('general-error');
+
+        function formatearFechaCorta(iso) {
+            const [anio, mes, dia] = iso.split('-');
+            return `${dia}/${mes}/${anio}`;
+        }
+
+        function actualizarResaltadoGeneral() {
+            document.querySelectorAll('#tab-general .day-cell[data-fecha]').forEach(function (celda) {
+                const f = celda.dataset.fecha;
+                const enRango = __generalDesde && ((__generalHasta && f >= __generalDesde && f < __generalHasta) || (!__generalHasta && f === __generalDesde));
+                celda.classList.toggle('ring-river-600', !!enRango);
+            });
+
+            if (__generalDesde && __generalHasta) {
+                __rangoSeleccionado.classList.remove('hidden');
+                __rangoSeleccionado.textContent = `${formatearFechaCorta(__generalDesde)} → ${formatearFechaCorta(__generalHasta)}`;
+            } else {
+                __rangoSeleccionado.classList.add('hidden');
+            }
+        }
+
+        function seleccionarDiaGeneral(btn) {
+            const fecha = btn.dataset.fecha;
+
+            if (!__generalDesde || (__generalDesde && __generalHasta)) {
+                __generalDesde = fecha;
+                __generalHasta = '';
+            } else if (fecha <= __generalDesde) {
+                __generalDesde = fecha;
+                __generalHasta = '';
+            } else {
+                __generalHasta = fecha;
+            }
+
+            actualizarResaltadoGeneral();
+        }
+
+        function mostrarErrorGeneral(mensaje) {
+            __generalError.textContent = mensaje;
+            __generalError.classList.remove('hidden');
+        }
+
+        function abrirModalOpciones() {
+            document.getElementById('modal-opciones').classList.remove('hidden');
+            document.getElementById('modal-opciones').classList.add('flex');
+        }
+
+        function cerrarModalOpciones() {
+            document.getElementById('modal-opciones').classList.add('hidden');
+            document.getElementById('modal-opciones').classList.remove('flex');
+        }
+
+        let __ultimaOpcionesBusqueda = [];
+        let __datosHuesped = {};
+
+        async function buscarOpcionesGeneral() {
+            __generalError.classList.add('hidden');
+
+            const nombre = document.getElementById('general-nombre').value.trim();
+            const telefono = document.getElementById('general-telefono').value.trim();
+            const personas = parseInt(document.getElementById('general-personas').value, 10) || 1;
+
+            if (!__generalDesde || !__generalHasta) {
+                mostrarErrorGeneral('Elegí la fecha de entrada y de salida en el calendario.');
+                return;
+            }
+            if (!nombre) {
+                mostrarErrorGeneral('Ingresá tu nombre.');
+                return;
+            }
+            if (!telefono) {
+                mostrarErrorGeneral('Ingresá un teléfono de contacto.');
+                return;
+            }
+
+            __datosHuesped = { nombre, telefono, personas };
+
+            const contenido = document.getElementById('modal-opciones-contenido');
+            contenido.innerHTML = '<p class="text-sm text-ink-500">Buscando disponibilidad...</p>';
+            abrirModalOpciones();
+
+            try {
+                const resp = await fetch(`/Cabanas/BuscarOpciones?desde=${__generalDesde}&hasta=${__generalHasta}&personas=${personas}`);
+                const data = await resp.json();
+
+                if (!data.valido) {
+                    contenido.innerHTML = `<p class="text-sm font-medium text-rose-600">${data.mensaje || 'No pudimos calcular la disponibilidad.'}</p>`;
+                    return;
+                }
+
+                __ultimaOpcionesBusqueda = data.opciones || [];
+                renderizarOpciones(data);
+            } catch (e) {
+                contenido.innerHTML = '<p class="text-sm font-medium text-rose-600">Ocurrió un error buscando disponibilidad. Probá de nuevo.</p>';
+            }
+        }
+
+        function renderizarOpciones(data) {
+            const contenido = document.getElementById('modal-opciones-contenido');
+
+            if (!data.cobreTotal) {
+                const dias = (data.diasSinCobertura || []).map(formatearFechaCorta).join(', ');
+                contenido.innerHTML =
+                    '<h3 class="font-display text-xl font-semibold text-ink-900">No hay disponibilidad completa</h3>' +
+                    `<p class="mt-2 text-sm text-ink-600">${data.mensaje || 'No hay ninguna cabaña libre para todo el rango elegido.'}</p>` +
+                    (dias ? `<p class="mt-3 rounded-xl bg-rose-50 px-4 py-2.5 text-sm text-rose-700">Sin ninguna cabaña libre: ${dias}</p>` : '');
+                return;
+            }
+
+            if (!data.opciones || data.opciones.length === 0) {
+                contenido.innerHTML = '<p class="text-sm text-ink-600">No encontramos ninguna combinación de cabañas para ese rango.</p>';
+                return;
+            }
+
+            const combinada = data.opciones[0].segmentos.length > 1;
+            let html = `<h3 class="font-display text-xl font-semibold text-ink-900">${combinada ? 'Estas fechas requieren combinar cabañas' : 'Opciones disponibles'}</h3>`;
+            html += '<div class="mt-4 space-y-3">';
+
+            data.opciones.forEach((opcion, idx) => {
+                const totalTexto = opcion.total !== null ? `$${Number(opcion.total).toLocaleString('es-AR')}` : 'A consultar';
+                const segmentosHtml = opcion.segmentos.map(s => {
+                    const subtotalTexto = s.subtotal !== null ? `$${Number(s.subtotal).toLocaleString('es-AR')}` : 'a consultar';
+                    return `<div class="flex justify-between gap-3 text-sm text-ink-600">
+                        <span>${formatearFechaCorta(s.desde)} – ${formatearFechaCorta(s.hasta)}: <strong class="text-ink-900">${s.cabanaNombre}</strong></span>
+                        <span>${subtotalTexto}</span>
+                    </div>`;
+                }).join('');
+
+                html += `<div class="rounded-xl border border-ink-100 p-4">
+                    ${segmentosHtml}
+                    <div class="mt-2 flex items-center justify-between border-t border-ink-100 pt-2">
+                        <span class="text-sm font-semibold text-ink-900">Total</span>
+                        <span class="text-lg font-bold text-river-700">${totalTexto}</span>
+                    </div>
+                    <button type="button" onclick="reservarOpcionGeneral(${idx})"
+                            class="mt-3 w-full rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+                        ${opcion.segmentos.length > 1 ? 'Reservar esta combinación' : 'Reservar esta opción'}
+                    </button>
+                </div>`;
+            });
+
+            html += '</div>';
+            contenido.innerHTML = html;
+        }
+
+        async function reservarOpcionGeneral(idx) {
+            const opcion = __ultimaOpcionesBusqueda[idx];
+            if (!opcion) return;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const params = new URLSearchParams();
+            params.append('__RequestVerificationToken', token);
+            params.append('NombreHuesped', __datosHuesped.nombre);
+            params.append('Telefono', __datosHuesped.telefono);
+            params.append('CantidadPersonas', __datosHuesped.personas);
+            opcion.segmentos.forEach((s, i) => {
+                params.append(`Segmentos[${i}].CabanaId`, s.cabanaId);
+                params.append(`Segmentos[${i}].FechaDesde`, s.desde);
+                params.append(`Segmentos[${i}].FechaHasta`, s.hasta);
+            });
+
+            const contenido = document.getElementById('modal-opciones-contenido');
+            contenido.innerHTML = '<p class="text-sm text-ink-500">Enviando tu solicitud...</p>';
+
+            try {
+                const resp = await fetch('/Cabanas/SolicitarOpcion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                });
+                const data = await resp.json();
+
+                if (!data.exito) {
+                    contenido.innerHTML = `<p class="text-sm font-medium text-rose-600">${data.mensaje || 'No pudimos completar la solicitud.'}</p>
+                        <button type="button" onclick="buscarOpcionesGeneral()" class="mt-4 rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">Volver a buscar</button>`;
+                    return;
+                }
+
+                mostrarExitoGeneral(data);
+            } catch (e) {
+                contenido.innerHTML = '<p class="text-sm font-medium text-rose-600">Ocurrió un error enviando la solicitud. Probá de nuevo.</p>';
+            }
+        }
+
+        function mostrarExitoGeneral(data) {
+            const contenido = document.getElementById('modal-opciones-contenido');
+            const totalTexto = data.total !== null ? `$${Number(data.total).toLocaleString('es-AR')}` : 'a consultar';
+            const cabanasTexto = data.cabanas.join(' y ');
+
+            const mensajeWhatsApp = encodeURIComponent(
+                `Hola! Soy ${data.nombreHuesped}. Quiero coordinar mi solicitud de reserva en ${cabanasTexto} ` +
+                `del ${data.desde} al ${data.hasta} para ${data.cantidadPersonas} personas. Valor total aproximado: ${totalTexto}.`
+            );
+
+            contenido.innerHTML = `
+                <div class="text-center">
+                    <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-river-100 text-3xl">✅</div>
+                    <h3 class="font-display text-xl font-semibold text-ink-900">¡Solicitud enviada!</h3>
+                    <p class="mt-2 text-sm text-ink-600">Recibimos tu solicitud para ${cabanasTexto}.</p>
+                    <div class="mt-4 rounded-xl bg-river-50 p-4 text-sm font-medium text-river-800">
+                        ¡Ya casi! Escribinos ahora por WhatsApp para coordinar el pago y confirmar tu reserva cuanto antes.
+                    </div>
+                    <a href="https://wa.me/5491126452644?text=${mensajeWhatsApp}" target="_blank" rel="noopener"
+                       class="mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+                        Escribinos por WhatsApp al 11 2645-2644
+                    </a>
+                </div>`;
         }
     </script>
 }

@@ -291,5 +291,176 @@ namespace GestionCabanas.Services
 
             return total;
         }
+
+        /// <summary>
+        /// Busca, para un rango de fechas y una cantidad de personas, las opciones de reserva
+        /// posibles: cabañas individuales que cubran todo el rango, o -si ninguna lo cubre sola-
+        /// todas las combinaciones válidas que usan la menor cantidad de cabañas posible.
+        /// </summary>
+        public async Task<ResultadoBusquedaDisponibilidad> BuscarOpcionesAsync(DateTime desde, DateTime hasta, int personas)
+        {
+            var resultado = new ResultadoBusquedaDisponibilidad();
+
+            if (hasta <= desde)
+            {
+                resultado.Mensaje = "El rango de fechas no es válido.";
+                return resultado;
+            }
+
+            var noches = (hasta - desde).Days;
+            if (noches > 45)
+            {
+                resultado.Mensaje = "Elegí un rango de hasta 45 noches.";
+                return resultado;
+            }
+
+            var cabanas = await _db.Cabanas
+                .Where(c => c.Activa && c.Capacidad >= personas)
+                .OrderBy(c => c.Nombre)
+                .ToListAsync();
+
+            var fechas = Enumerable.Range(0, noches).Select(i => desde.AddDays(i)).ToList();
+
+            if (cabanas.Count == 0)
+            {
+                resultado.CobreTotal = false;
+                resultado.DiasSinCobertura = fechas;
+                resultado.Mensaje = "Ninguna cabaña tiene capacidad para esa cantidad de personas.";
+                return resultado;
+            }
+
+            var reservas = await ObtenerConfirmadasEnRangoAsync(desde, hasta.AddDays(-1));
+            var bloqueadas = await ObtenerBloqueadasEnRangoAsync(desde, hasta.AddDays(-1));
+
+            bool EstaOcupada(int cabanaId, DateTime dia) => reservas.Any(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
+            bool EstaBloqueada(int cabanaId, DateTime dia) => bloqueadas.Any(b => b.CabanaId == cabanaId && b.Fecha.Date == dia.Date);
+
+            var libre = new bool[cabanas.Count, noches];
+            for (var c = 0; c < cabanas.Count; c++)
+            {
+                for (var n = 0; n < noches; n++)
+                {
+                    libre[c, n] = !EstaOcupada(cabanas[c].Id, fechas[n]) && !EstaBloqueada(cabanas[c].Id, fechas[n]);
+                }
+            }
+
+            var sinCobertura = new List<DateTime>();
+            for (var n = 0; n < noches; n++)
+            {
+                if (!Enumerable.Range(0, cabanas.Count).Any(c => libre[c, n]))
+                {
+                    sinCobertura.Add(fechas[n]);
+                }
+            }
+
+            if (sinCobertura.Count > 0)
+            {
+                resultado.CobreTotal = false;
+                resultado.DiasSinCobertura = sinCobertura;
+                return resultado;
+            }
+
+            List<int> CabanasQueCubren(int inicio, int finExclusivo)
+            {
+                var lista = new List<int>();
+                for (var c = 0; c < cabanas.Count; c++)
+                {
+                    var cubre = true;
+                    for (var n = inicio; n < finExclusivo; n++)
+                    {
+                        if (!libre[c, n])
+                        {
+                            cubre = false;
+                            break;
+                        }
+                    }
+                    if (cubre)
+                    {
+                        lista.Add(c);
+                    }
+                }
+                return lista;
+            }
+
+            var combos = new List<List<(int Ini, int Fin, int CabanaIndex)>>();
+
+            void Generar(int inicio, int tramosRestantes, List<(int Ini, int Fin, int CabanaIndex)> actual)
+            {
+                if (tramosRestantes == 1)
+                {
+                    foreach (var c in CabanasQueCubren(inicio, noches))
+                    {
+                        if (actual.Count > 0 && actual[^1].CabanaIndex == c)
+                        {
+                            continue;
+                        }
+                        combos.Add(new List<(int, int, int)>(actual) { (inicio, noches, c) });
+                    }
+                    return;
+                }
+
+                for (var fin = inicio + 1; fin <= noches - (tramosRestantes - 1); fin++)
+                {
+                    foreach (var c in CabanasQueCubren(inicio, fin))
+                    {
+                        if (actual.Count > 0 && actual[^1].CabanaIndex == c)
+                        {
+                            continue;
+                        }
+                        actual.Add((inicio, fin, c));
+                        Generar(fin, tramosRestantes - 1, actual);
+                        actual.RemoveAt(actual.Count - 1);
+                    }
+                }
+            }
+
+            var maxK = Math.Min(cabanas.Count, noches);
+            for (var k = 1; k <= maxK; k++)
+            {
+                combos.Clear();
+                Generar(0, k, new List<(int, int, int)>());
+                if (combos.Count > 0)
+                {
+                    break;
+                }
+            }
+
+            resultado.CobreTotal = true;
+
+            foreach (var combo in combos)
+            {
+                var opcion = new OpcionReserva();
+                decimal? total = 0;
+
+                foreach (var (ini, fin, cabanaIndex) in combo)
+                {
+                    var cabana = cabanas[cabanaIndex];
+                    var segDesde = desde.AddDays(ini);
+                    var segHasta = desde.AddDays(fin);
+                    var subtotal = await CalcularValorTotalAsync(cabana.Id, segDesde, segHasta, cabana.PrecioPorNoche);
+
+                    opcion.Segmentos.Add(new SegmentoOpcion
+                    {
+                        CabanaId = cabana.Id,
+                        CabanaNombre = cabana.Nombre,
+                        Desde = segDesde,
+                        Hasta = segHasta,
+                        Subtotal = subtotal
+                    });
+
+                    total = total.HasValue && subtotal.HasValue ? total + subtotal : null;
+                }
+
+                opcion.Total = total;
+                resultado.Opciones.Add(opcion);
+            }
+
+            resultado.Opciones = resultado.Opciones
+                .OrderBy(o => o.Total.HasValue ? 0 : 1)
+                .ThenBy(o => o.Total)
+                .ToList();
+
+            return resultado;
+        }
     }
 }
