@@ -47,21 +47,7 @@
     </div>
 </div>
 
-<div class="mb-6 flex flex-wrap gap-2" id="tabs-disponibilidad">
-    <button type="button" onclick="mostrarTabDisponibilidad('general')" data-tab="general"
-            class="tab-btn-disp rounded-full bg-river-700 px-4 py-2 text-sm font-semibold text-white shadow-soft transition">
-        General (@cabanas.Count cabañas)
-    </button>
-    @foreach (var cabana in cabanas)
-    {
-        <button type="button" onclick="mostrarTabDisponibilidad('cabana-@cabana.Id')" data-tab="cabana-@cabana.Id"
-                class="tab-btn-disp rounded-full border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">
-            @cabana.Nombre
-        </button>
-    }
-</div>
-
-<div id="tab-general" class="tab-panel-disp rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+<div id="tab-general" class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
     <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
         <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
     </div>
@@ -140,66 +126,8 @@
     </div>
 </div>
 
-@foreach (var cabana in cabanas)
-{
-    <div id="tab-cabana-@cabana.Id" class="tab-panel-disp hidden rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
-        <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
-            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-        </div>
-        <div class="mt-1 grid grid-cols-7 gap-1">
-            @foreach (var dia in celdas)
-            {
-                if (dia is null)
-                {
-                    <div></div>
-                }
-                else if (dia.Value < hoy)
-                {
-                    <div class="day-cell flex h-14 items-center justify-center rounded-lg bg-ink-50 text-sm text-ink-300">@dia.Value.Day</div>
-                }
-                else if (EstaOcupada(cabana.Id, dia.Value))
-                {
-                    <div class="day-cell flex h-14 items-center justify-center rounded-lg bg-rose-100 text-sm font-medium text-rose-600">@dia.Value.Day</div>
-                }
-                else if (EstaBloqueada(cabana.Id, dia.Value))
-                {
-                    <div class="day-cell flex h-14 items-center justify-center rounded-lg bg-ink-200 text-sm font-medium text-ink-500">@dia.Value.Day</div>
-                }
-                else
-                {
-                    <div class="day-cell flex h-14 items-center justify-center rounded-lg bg-river-100 text-sm font-medium text-river-700">@dia.Value.Day</div>
-                }
-            }
-        </div>
-        <div class="mt-5 flex items-center justify-between">
-            <div class="flex items-center gap-4 text-xs text-ink-500">
-                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Libre</span>
-                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Ocupada</span>
-                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-200"></span> No disponible</span>
-            </div>
-            <a asp-action="Details" asp-route-id="@cabana.Id" class="rounded-full bg-river-700 px-5 py-2 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
-                Ver @cabana.Nombre y reservar
-            </a>
-        </div>
-    </div>
-}
-
 @section Scripts {
     <script>
-        function mostrarTabDisponibilidad(tab) {
-            document.querySelectorAll('.tab-panel-disp').forEach(p => p.classList.toggle('hidden', p.id !== 'tab-' + tab));
-            document.querySelectorAll('.tab-btn-disp').forEach(b => {
-                const activo = b.dataset.tab === tab;
-                b.classList.toggle('bg-river-700', activo);
-                b.classList.toggle('text-white', activo);
-                b.classList.toggle('shadow-soft', activo);
-                b.classList.toggle('border', !activo);
-                b.classList.toggle('border-ink-200', !activo);
-                b.classList.toggle('bg-white', !activo);
-                b.classList.toggle('text-ink-600', !activo);
-            });
-        }
-
         let __generalDesde = '';
         let __generalHasta = '';
         const __inputGeneralDesde = document.getElementById('general-desde');
