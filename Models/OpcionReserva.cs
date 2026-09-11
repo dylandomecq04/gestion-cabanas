@@ -22,4 +22,11 @@ namespace GestionCabanas.Models
         public List<OpcionReserva> Opciones { get; set; } = new();
         public string? Mensaje { get; set; }
     }
+
+    public class ResultadoPrecio
+    {
+        public decimal? Total { get; set; }
+        public bool PromoAplicada { get; set; }
+        public string? EtiquetaPromo { get; set; }
+    }
 }

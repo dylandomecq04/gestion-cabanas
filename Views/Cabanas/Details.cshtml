@@ -3,6 +3,7 @@
     var cabana = (Cabana)ViewBag.Cabana;
     var reservas = (List<Reserva>)ViewBag.Reservas;
     var tarifas = (List<TarifaDia>)ViewBag.Tarifas;
+    var promos = (List<PromoEstadia>)ViewBag.PromosEstadia;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
@@ -15,6 +16,7 @@
     TarifaDia? TarifaDelDia(DateTime dia) => tarifas.FirstOrDefault(t => t.Fecha.Date == dia.Date);
     bool EstaBloqueada(DateTime dia) => TarifaDelDia(dia)?.Bloqueada ?? false;
     decimal? PrecioDelDia(DateTime dia) => TarifaDelDia(dia)?.Precio ?? cabana.PrecioPorNoche;
+    bool EnPromo(DateTime dia) => promos.Any(p => p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
 
     int offset = ((int)primerDia.DayOfWeek + 6) % 7;
     var celdas = new List<DateTime?>();
@@ -196,8 +198,14 @@
                     else
                     {
                         var precioDia = PrecioDelDia(dia.Value);
+                        var enPromoDia = EnPromo(dia.Value);
+                        var clasesPromo = enPromoDia ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-river-100 text-river-700 hover:bg-river-200";
                         <button type="button" onclick="seleccionarDiaCalendario(this)" data-fecha="@dia.Value.ToString("yyyy-MM-dd")"
-                                class="day-cell flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg bg-river-100 text-sm font-semibold leading-tight text-river-700 ring-2 ring-inset ring-transparent transition hover:bg-river-200 sm:text-base">
+                                class="day-cell relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg text-sm font-semibold leading-tight ring-2 ring-inset ring-transparent transition sm:text-base @clasesPromo">
+                            @if (enPromoDia)
+                            {
+                                <span class="absolute -top-1 right-0.5 text-[8px] font-bold uppercase tracking-wide text-amber-600 sm:text-[9px]">Promo</span>
+                            }
                             <span>@dia.Value.Day</span>
                             @if (precioDia.HasValue)
                             {
@@ -209,6 +217,7 @@
             </div>
             <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-500">
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Libre</span>
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Con promoción</span>
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Ocupada</span>
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-200"></span> No disponible</span>
             </div>
@@ -331,12 +340,20 @@
                     __resumenTotal.className = 'rounded-2xl border-2 border-rose-200 bg-rose-50 px-5 py-4 text-center';
                     __resumenTotal.innerHTML = '<p class="text-sm font-semibold text-rose-700">Esas fechas ya no están disponibles para esta cabaña.</p>';
                 } else if (data.total !== null) {
-                    __resumenTotal.className = 'rounded-2xl border-2 border-river-300 bg-river-50 px-5 py-4 text-center shadow-soft';
                     const totalTexto = Number(data.total).toLocaleString('es-AR');
-                    __resumenTotal.innerHTML =
-                        '<p class="text-xs font-semibold uppercase tracking-wide text-river-600">Total estimado</p>' +
-                        '<p class="mt-1 text-3xl font-bold text-river-800">$' + totalTexto + '</p>' +
-                        '<p class="text-xs font-medium text-river-600">' + pluralizar(data.noches, 'noche', 'noches') + '</p>';
+                    if (data.promoAplicada) {
+                        __resumenTotal.className = 'rounded-2xl border-2 border-amber-300 bg-amber-50 px-5 py-4 text-center shadow-soft';
+                        __resumenTotal.innerHTML =
+                            '<p class="text-xs font-semibold uppercase tracking-wide text-amber-700">🎉 ' + (data.etiquetaPromo || 'Promoción') + ' aplicada</p>' +
+                            '<p class="mt-1 text-3xl font-bold text-amber-800">$' + totalTexto + '</p>' +
+                            '<p class="text-xs font-medium text-amber-700">' + pluralizar(data.noches, 'noche', 'noches') + '</p>';
+                    } else {
+                        __resumenTotal.className = 'rounded-2xl border-2 border-river-300 bg-river-50 px-5 py-4 text-center shadow-soft';
+                        __resumenTotal.innerHTML =
+                            '<p class="text-xs font-semibold uppercase tracking-wide text-river-600">Total estimado</p>' +
+                            '<p class="mt-1 text-3xl font-bold text-river-800">$' + totalTexto + '</p>' +
+                            '<p class="text-xs font-medium text-river-600">' + pluralizar(data.noches, 'noche', 'noches') + '</p>';
+                    }
                 } else {
                     __resumenTotal.className = 'rounded-2xl border-2 border-sand-200 bg-sand-100 px-5 py-4 text-center';
                     __resumenTotal.innerHTML = '<p class="text-sm font-medium text-ink-600">' + pluralizar(data.noches, 'noche', 'noches') + ' · consultanos el precio para esas fechas.</p>';

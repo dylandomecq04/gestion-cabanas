@@ -7,5 +7,7 @@ namespace GestionCabanas.Models
         public bool Pasada { get; set; }
         public decimal? Precio { get; set; }
         public bool Bloqueada { get; set; }
+        public bool EnPromo { get; set; }
+        public string? EtiquetaPromo { get; set; }
     }
 }

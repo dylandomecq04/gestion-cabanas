@@ -132,22 +132,31 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 .Where(t => t.CabanaId == id && t.Fecha >= primerDia && t.Fecha <= ultimoDia)
                 .ToListAsync();
 
+            var promos = await _disponibilidad.ObtenerPromosEnRangoAsync(id, primerDia, ultimoDia);
+
             var dias = new List<DiaTarifaVista>();
             for (var fecha = primerDia; fecha <= ultimoDia; fecha = fecha.AddDays(1))
             {
                 var tarifa = tarifas.FirstOrDefault(t => t.Fecha.Date == fecha.Date);
+                var promoDelDia = promos.FirstOrDefault(p => p.FechaDesde.Date <= fecha.Date && p.FechaHasta.Date >= fecha.Date);
                 dias.Add(new DiaTarifaVista
                 {
                     Fecha = fecha,
                     Reservada = reservas.Any(r => r.FechaDesde <= fecha && fecha < r.FechaHasta),
                     Pasada = fecha < hoy,
                     Precio = tarifa?.Precio,
-                    Bloqueada = tarifa?.Bloqueada ?? false
+                    Bloqueada = tarifa?.Bloqueada ?? false,
+                    EnPromo = promoDelDia is not null,
+                    EtiquetaPromo = promoDelDia?.Nombre
                 });
             }
 
             ViewBag.Cabana = cabana;
             ViewBag.Dias = dias;
+            ViewBag.PromosEstadia = await _db.PromosEstadia
+                .Where(p => p.CabanaId == id)
+                .OrderByDescending(p => p.FechaDesde)
+                .ToListAsync();
             ViewBag.PrimerDia = primerDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
             ViewBag.MesSiguiente = primerDia.AddMonths(1);
@@ -175,6 +184,80 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             TempData["Mensaje"] = $"Precios y disponibilidad de \"{cabana.Nombre}\" actualizados.";
             return RedirectToAction(nameof(Tarifas), new { id, anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearPromoEstadia(PromoEstadiaInput modelo, int? anio, int? mes)
+        {
+            var cabanaBase = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == modelo.CabanaId);
+            if (cabanaBase is null)
+            {
+                return NotFound();
+            }
+
+            if (modelo.FechaHasta.Date < modelo.FechaDesde.Date)
+            {
+                TempData["Mensaje"] = "El rango de fechas de la promoción no es válido.";
+                return RedirectToAction(nameof(Tarifas), new { id = modelo.CabanaId, anio, mes });
+            }
+
+            if (!modelo.Precio1Noche.HasValue && !modelo.Precio2Noches.HasValue && !modelo.Precio3Noches.HasValue)
+            {
+                TempData["Mensaje"] = "Cargá al menos un precio (1, 2 o 3 noches) para la promoción.";
+                return RedirectToAction(nameof(Tarifas), new { id = modelo.CabanaId, anio, mes });
+            }
+
+            var cabanaIds = modelo.AplicarATodas
+                ? await _db.Cabanas.Where(c => c.Activa).Select(c => c.Id).ToListAsync()
+                : new List<int> { modelo.CabanaId };
+
+            foreach (var cabanaId in cabanaIds)
+            {
+                _db.PromosEstadia.Add(new PromoEstadia
+                {
+                    CabanaId = cabanaId,
+                    Nombre = modelo.Nombre,
+                    FechaDesde = modelo.FechaDesde.Date,
+                    FechaHasta = modelo.FechaHasta.Date,
+                    Precio1Noche = modelo.Precio1Noche,
+                    Precio2Noches = modelo.Precio2Noches,
+                    Precio3Noches = modelo.Precio3Noches,
+                    Activa = true
+                });
+            }
+
+            await _db.SaveChangesAsync();
+            TempData["Mensaje"] = cabanaIds.Count > 1
+                ? $"Promoción creada para {cabanaIds.Count} cabañas."
+                : "Promoción creada.";
+            return RedirectToAction(nameof(Tarifas), new { id = modelo.CabanaId, anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AlternarPromoEstadia(int id, int cabanaId, int? anio, int? mes)
+        {
+            var promo = await _db.PromosEstadia.FindAsync(id);
+            if (promo is not null)
+            {
+                promo.Activa = !promo.Activa;
+                await _db.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Tarifas), new { id = cabanaId, anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarPromoEstadia(int id, int cabanaId, int? anio, int? mes)
+        {
+            var promo = await _db.PromosEstadia.FindAsync(id);
+            if (promo is not null)
+            {
+                _db.PromosEstadia.Remove(promo);
+                await _db.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Tarifas), new { id = cabanaId, anio, mes });
         }
 
         [HttpPost]

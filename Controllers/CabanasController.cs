@@ -117,10 +117,18 @@ namespace GestionCabanas.Controllers
             }
 
             var disponible = !await _disponibilidad.HaySuperposicionAsync(id, desde.Value, hasta.Value);
-            var total = await _disponibilidad.CalcularValorTotalAsync(id, desde.Value, hasta.Value, cabana.PrecioPorNoche);
+            var detalle = await _disponibilidad.CalcularValorConDetalleAsync(id, desde.Value, hasta.Value, cabana.PrecioPorNoche);
             var noches = (hasta.Value - desde.Value).Days;
 
-            return Json(new { valido = true, disponible, total, noches });
+            return Json(new
+            {
+                valido = true,
+                disponible,
+                total = detalle.Total,
+                noches,
+                promoAplicada = detalle.PromoAplicada,
+                etiquetaPromo = detalle.EtiquetaPromo
+            });
         }
 
         [HttpGet]
@@ -272,6 +280,7 @@ namespace GestionCabanas.Controllers
 
             ViewBag.Reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
             ViewBag.Tarifas = await _disponibilidad.ObtenerTarifasEnRangoAsync(cabanaId, primerDia, ultimoDia);
+            ViewBag.PromosEstadia = await _disponibilidad.ObtenerPromosEnRangoAsync(cabanaId, primerDia, ultimoDia);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);

@@ -2,6 +2,7 @@
     ViewData["Title"] = "Precios y disponibilidad";
     var cabana = (Cabana)ViewBag.Cabana;
     var dias = (List<DiaTarifaVista>)ViewBag.Dias;
+    var promos = (List<PromoEstadia>)ViewBag.PromosEstadia;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
     DateTime mesSiguiente = ViewBag.MesSiguiente;
@@ -33,6 +34,9 @@
         </p>
     </div>
     <div class="flex gap-2">
+        <button type="button" onclick="abrirModalPromo()" class="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-amber-600">
+            + Nueva promoción
+        </button>
         @if (permitirMesAnterior)
         {
             <a asp-action="Tarifas" asp-route-id="@cabana.Id" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month"
@@ -74,7 +78,7 @@
                 {
                     var precioTexto = dia.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
                     var etiqueta = dia.Bloqueada ? "Bloqueada" : (dia.Precio.HasValue ? "$" + dia.Precio.Value.ToString("N0") : precioBaseTexto);
-                    var clases = dia.Bloqueada ? "bg-ink-200 text-ink-500" : "bg-river-50 text-river-700 hover:bg-river-100";
+                    var clases = dia.Bloqueada ? "bg-ink-200 text-ink-500" : (dia.EnPromo ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-river-50 text-river-700 hover:bg-river-100");
 
                     <div class="contents">
                         <button type="button" data-index="@indice"
@@ -82,6 +86,10 @@
                                 data-bloqueada="@(dia.Bloqueada ? "true" : "false")"
                                 onclick="alternarSeleccionDia(this)"
                                 class="dia-editable day-cell relative flex h-12 flex-col items-center justify-center gap-0.5 rounded-lg font-medium ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clases">
+                            @if (dia.EnPromo)
+                            {
+                                <span class="absolute -top-1.5 left-0.5 text-[7px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
+                            }
                             <span class="text-[9px] opacity-70">@dia.Fecha.Day</span>
                             <span class="etiqueta-precio text-[11px] font-bold leading-none">@etiqueta</span>
                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-3.5 w-3.5 items-center justify-center rounded-full bg-river-700 text-[9px] text-white shadow-soft">✓</span>
@@ -97,6 +105,7 @@
 
         <div class="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink-500">
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-1 ring-inset ring-river-200"></span> Disponible (precio base)</span>
+            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Con promoción</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-200"></span> Bloqueada</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Reservada</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-50"></span> Fecha pasada</span>
@@ -110,6 +119,111 @@
         <span class="text-xs text-ink-400">Los cambios se guardan recién cuando tocás este botón.</span>
     </div>
 </form>
+
+<div class="mt-6 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+    <h2 class="mb-1 font-display text-lg font-semibold text-ink-900">Promociones por estadía</h2>
+    <p class="mb-4 text-sm text-ink-500">Precios especiales por cantidad de noches para un rango de fechas. Se aplican automáticamente cuando alguien reserva desde el sitio dentro de ese rango.</p>
+
+    @if (promos.Count == 0)
+    {
+        <p class="text-sm text-ink-400">Todavía no hay promociones para esta cabaña.</p>
+    }
+    else
+    {
+        <div class="space-y-2">
+            @foreach (var promo in promos)
+            {
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink-100 px-4 py-3 text-sm @(promo.Activa ? "bg-amber-50" : "bg-ink-50 opacity-70")">
+                    <div>
+                        <p class="font-semibold text-ink-900">@(string.IsNullOrWhiteSpace(promo.Nombre) ? "Promoción" : promo.Nombre) &middot; @promo.FechaDesde.ToString("dd/MM/yyyy") al @promo.FechaHasta.ToString("dd/MM/yyyy")</p>
+                        <p class="mt-0.5 text-xs text-ink-500">
+                            @(promo.Precio1Noche.HasValue ? "1 noche: $" + promo.Precio1Noche.Value.ToString("N0") : "1 noche: -")
+                            &middot; @(promo.Precio2Noches.HasValue ? "2 noches: $" + promo.Precio2Noches.Value.ToString("N0") : "2 noches: -")
+                            &middot; @(promo.Precio3Noches.HasValue ? "3 noches: $" + promo.Precio3Noches.Value.ToString("N0") : "3 noches: -")
+                            @if (!promo.Activa)
+                            {
+                                <span class="font-semibold text-ink-400"> · Inactiva</span>
+                            }
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <form asp-action="AlternarPromoEstadia" asp-route-id="@promo.Id" asp-route-cabanaId="@cabana.Id" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post">
+                            <button type="submit" class="rounded-full border border-ink-200 px-3.5 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">
+                                @(promo.Activa ? "Desactivar" : "Activar")
+                            </button>
+                        </form>
+                        <form asp-action="EliminarPromoEstadia" asp-route-id="@promo.Id" asp-route-cabanaId="@cabana.Id" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" onsubmit="return confirm('¿Eliminar esta promoción?');">
+                            <button type="submit" class="rounded-full border border-rose-200 px-3.5 py-1.5 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50">
+                                Eliminar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<div id="modal-promo" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-md rounded-2.5xl bg-white p-6 shadow-lift">
+        <h3 class="font-display text-lg font-semibold text-ink-900">Nueva promoción por estadía</h3>
+        <p class="mt-1 text-sm text-ink-500">Definí un precio especial para 1, 2 y/o 3 noches durante un rango de fechas. Podés cargar sólo alguno de los tres.</p>
+
+        <form asp-action="CrearPromoEstadia" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="mt-4 space-y-3">
+            <input type="hidden" name="CabanaId" value="@cabana.Id" />
+
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Nombre (opcional)</label>
+                <input name="Nombre" maxlength="80" placeholder="Ej: Promo temporada baja"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ink-700">Desde</label>
+                    <input type="date" name="FechaDesde" required
+                           class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ink-700">Hasta</label>
+                    <input type="date" name="FechaHasta" required
+                           class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ink-700">1 noche</label>
+                    <input name="Precio1Noche" type="number" min="0" step="1" placeholder="$"
+                           class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ink-700">2 noches</label>
+                    <input name="Precio2Noches" type="number" min="0" step="1" placeholder="$"
+                           class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ink-700">3 noches</label>
+                    <input name="Precio3Noches" type="number" min="0" step="1" placeholder="$"
+                           class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                </div>
+            </div>
+            <p class="text-xs text-ink-400">Para estadías de más de 3 noches se cobran las primeras 3 al precio de "3 noches" y el resto al precio normal.</p>
+
+            <label class="flex items-center gap-2 pt-1 text-sm font-medium text-ink-700">
+                <input type="checkbox" name="AplicarATodas" value="true" class="h-4 w-4 rounded border-ink-300 text-river-600 focus:ring-river-400" />
+                Aplicar esta promoción a todas las cabañas activas
+            </label>
+
+            <div class="mt-2 flex items-center gap-3">
+                <button type="submit" class="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-amber-600">
+                    Quiero la promoción
+                </button>
+                <button type="button" onclick="cerrarModalPromo()" class="rounded-full border border-ink-200 px-4 py-2.5 text-sm font-medium text-ink-600 transition hover:border-ink-300">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 p-4 shadow-lift backdrop-blur">
     <div class="mx-auto flex max-w-4xl flex-wrap items-end gap-3">
@@ -137,6 +251,13 @@
     <script>
         const precioBaseTexto = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(precioBaseTexto));
         const seleccionDias = new Set();
+
+        function abrirModalPromo() {
+            document.getElementById('modal-promo').classList.remove('hidden');
+        }
+        function cerrarModalPromo() {
+            document.getElementById('modal-promo').classList.add('hidden');
+        }
 
         function alternarSeleccionDia(btn) {
             const idx = btn.dataset.index;

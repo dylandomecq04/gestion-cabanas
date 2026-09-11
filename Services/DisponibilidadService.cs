@@ -271,6 +271,80 @@ namespace GestionCabanas.Services
 
         public async Task<decimal?> CalcularValorTotalAsync(int cabanaId, DateTime desde, DateTime hasta, decimal? precioBase)
         {
+            var detalle = await CalcularValorConDetalleAsync(cabanaId, desde, hasta, precioBase);
+            return detalle.Total;
+        }
+
+        /// <summary>
+        /// Calcula el valor total de una estadía y, si corresponde, aplica el paquete de precios
+        /// de una promoción por cantidad de noches (1, 2 o 3) para ese rango. Una promo sólo se
+        /// aplica si cubre TODAS las noches de la estadía. Para estadías de más de 3 noches con
+        /// promo activa, las primeras 3 noches se cobran al precio del paquete de 3 noches y el
+        /// resto a precio normal.
+        /// </summary>
+        public async Task<ResultadoPrecio> CalcularValorConDetalleAsync(int cabanaId, DateTime desde, DateTime hasta, decimal? precioBase)
+        {
+            var resultado = new ResultadoPrecio();
+            if (hasta <= desde)
+            {
+                return resultado;
+            }
+
+            var noches = (hasta - desde).Days;
+            var promo = await BuscarPromoCubriendoAsync(cabanaId, desde, hasta);
+
+            if (promo is not null)
+            {
+                if (noches <= 3)
+                {
+                    var precioPaquete = ObtenerPrecioPaquete(promo, noches);
+                    if (precioPaquete.HasValue)
+                    {
+                        resultado.Total = precioPaquete;
+                        resultado.PromoAplicada = true;
+                        resultado.EtiquetaPromo = EtiquetaPaquete(promo, noches);
+                        return resultado;
+                    }
+                }
+                else if (promo.Precio3Noches.HasValue)
+                {
+                    var totalResto = await SumaDiariaAsync(cabanaId, desde.AddDays(3), hasta, precioBase);
+                    resultado.Total = totalResto.HasValue ? promo.Precio3Noches.Value + totalResto.Value : null;
+                    resultado.PromoAplicada = true;
+                    resultado.EtiquetaPromo = EtiquetaPaquete(promo, 3);
+                    return resultado;
+                }
+            }
+
+            resultado.Total = await SumaDiariaAsync(cabanaId, desde, hasta, precioBase);
+            return resultado;
+        }
+
+        private async Task<PromoEstadia?> BuscarPromoCubriendoAsync(int cabanaId, DateTime desde, DateTime hasta)
+        {
+            var ultimaNoche = hasta.AddDays(-1).Date;
+            return await _db.PromosEstadia
+                .Where(p => p.CabanaId == cabanaId && p.Activa && p.FechaDesde.Date <= desde.Date && p.FechaHasta.Date >= ultimaNoche)
+                .OrderByDescending(p => p.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        private static decimal? ObtenerPrecioPaquete(PromoEstadia promo, int noches) => noches switch
+        {
+            1 => promo.Precio1Noche,
+            2 => promo.Precio2Noches,
+            3 => promo.Precio3Noches,
+            _ => null
+        };
+
+        private static string EtiquetaPaquete(PromoEstadia promo, int noches)
+        {
+            var nochesTexto = noches == 1 ? "1 noche" : $"{noches} noches";
+            return string.IsNullOrWhiteSpace(promo.Nombre) ? $"Promo {nochesTexto}" : $"{promo.Nombre} · {nochesTexto}";
+        }
+
+        private async Task<decimal?> SumaDiariaAsync(int cabanaId, DateTime desde, DateTime hasta, decimal? precioBase)
+        {
             if (hasta <= desde)
             {
                 return null;
@@ -290,6 +364,13 @@ namespace GestionCabanas.Services
             }
 
             return total;
+        }
+
+        public async Task<List<PromoEstadia>> ObtenerPromosEnRangoAsync(int cabanaId, DateTime desde, DateTime hasta)
+        {
+            return await _db.PromosEstadia
+                .Where(p => p.CabanaId == cabanaId && p.Activa && p.FechaDesde <= hasta && p.FechaHasta >= desde)
+                .ToListAsync();
         }
 
         /// <summary>
