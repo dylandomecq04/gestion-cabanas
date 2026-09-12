@@ -3,6 +3,7 @@
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
     var reservas = (List<Reserva>)ViewBag.Reservas;
     var bloqueadas = (List<TarifaDia>)ViewBag.Bloqueadas;
+    var promos = (List<PromoEstadia>)ViewBag.Promos;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
@@ -14,12 +15,16 @@
     bool EstaBloqueada(int cabanaId, DateTime dia) => bloqueadas.Any(b => b.CabanaId == cabanaId && b.Fecha.Date == dia.Date);
     bool NoDisponible(int cabanaId, DateTime dia) => EstaOcupada(cabanaId, dia) || EstaBloqueada(cabanaId, dia);
     int CabanasLibres(DateTime dia) => cabanas.Count(c => !NoDisponible(c.Id, dia));
+    bool CabanaEnPromo(int cabanaId, DateTime dia) => promos.Any(p => p.CabanaId == cabanaId && p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
+    bool DiaConPromoDisponible(DateTime dia) => cabanas.Any(c => !NoDisponible(c.Id, dia) && CabanaEnPromo(c.Id, dia));
 
     int offset = ((int)primerDia.DayOfWeek + 6) % 7;
     var celdas = new List<DateTime?>();
     for (int i = 0; i < offset; i++) celdas.Add(null);
     for (int d = 1; d <= ultimoDia.Day; d++) celdas.Add(primerDia.AddDays(d - 1));
     while (celdas.Count % 7 != 0) celdas.Add(null);
+
+    var hayPromoEsteMes = celdas.Any(d => d.HasValue && d.Value >= hoy && DiaConPromoDisponible(d.Value));
 
     var mesTitulo = primerDia.ToString("MMMM yyyy");
     mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
@@ -65,12 +70,20 @@
             else
             {
                 var libres = CabanasLibres(dia.Value);
-                var clases = libres > 0
-                    ? "bg-river-100 text-river-700 hover:bg-river-200"
-                    : "bg-rose-100 text-rose-600 hover:bg-rose-200";
+                var conPromo = libres > 0 && DiaConPromoDisponible(dia.Value);
+                var clases = conPromo
+                    ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                    : libres > 0
+                        ? "bg-river-100 text-river-700 hover:bg-river-200"
+                        : "bg-rose-100 text-rose-600 hover:bg-rose-200";
+                var titulo = conPromo ? "Disponible · con promoción" : (libres > 0 ? "Disponible" : "No disponible");
                 <button type="button" onclick="seleccionarDiaGeneral(this)" data-fecha="@dia.Value.ToString("yyyy-MM-dd")"
-                        title="@(libres > 0 ? "Disponible" : "No disponible")"
-                        class="day-cell flex h-14 items-center justify-center rounded-lg text-sm font-semibold leading-none ring-2 ring-inset ring-transparent transition @clases">
+                        title="@titulo"
+                        class="day-cell relative flex h-14 flex-col items-center justify-center gap-0 rounded-lg text-sm font-semibold leading-none ring-2 ring-inset ring-transparent transition @clases">
+                    @if (conPromo)
+                    {
+                        <span class="absolute -top-1.5 right-0.5 text-[7px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
+                    }
                     @dia.Value.Day
                 </button>
             }
@@ -78,8 +91,13 @@
     </div>
     <div class="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink-500">
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Disponible</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Con promoción 🎉</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> No disponible</span>
     </div>
+    @if (hayPromoEsteMes)
+    {
+        <p class="mt-3 text-sm font-medium text-amber-700">🎉 ¡Hay días con promoción este mes! Elegilos en el calendario para ver el precio especial.</p>
+    }
 
     <div class="mt-6 rounded-2xl border border-ink-100 bg-sand-50 p-5">
         <h2 class="font-display text-base font-semibold text-ink-900">Reservar para estas fechas</h2>
@@ -267,13 +285,21 @@
                 const totalTexto = opcion.total !== null ? `$${Number(opcion.total).toLocaleString('es-AR')}` : 'A consultar';
                 const segmentosHtml = opcion.segmentos.map(s => {
                     const subtotalTexto = s.subtotal !== null ? `$${Number(s.subtotal).toLocaleString('es-AR')}` : 'a consultar';
+                    const promoHtml = s.promoAplicada
+                        ? `<div class="mt-0.5 text-xs font-semibold text-amber-700">🎉 ${s.etiquetaPromo || 'Promoción'} aplicada</div>`
+                        : '';
                     return `<div class="flex justify-between gap-3 text-sm text-ink-600">
-                        <span>${formatearFechaCorta(s.desde)} – ${formatearFechaCorta(s.hasta)}: <strong class="text-ink-900">${s.cabanaNombre}</strong></span>
+                        <div>
+                            <span>${formatearFechaCorta(s.desde)} – ${formatearFechaCorta(s.hasta)}: <strong class="text-ink-900">${s.cabanaNombre}</strong></span>
+                            ${promoHtml}
+                        </div>
                         <span>${subtotalTexto}</span>
                     </div>`;
                 }).join('');
 
-                html += `<div class="rounded-xl border border-ink-100 p-4">
+                const claseCard = opcion.promoAplicada ? 'rounded-xl border-2 border-amber-300 bg-amber-50 p-4' : 'rounded-xl border border-ink-100 p-4';
+
+                html += `<div class="${claseCard}">
                     ${segmentosHtml}
                     <div class="mt-2 flex items-center justify-between border-t border-ink-100 pt-2">
                         <span class="text-sm font-semibold text-ink-900">Total</span>

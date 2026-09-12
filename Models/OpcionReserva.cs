@@ -7,6 +7,8 @@ namespace GestionCabanas.Models
         public DateTime Desde { get; set; }
         public DateTime Hasta { get; set; }
         public decimal? Subtotal { get; set; }
+        public bool PromoAplicada { get; set; }
+        public string? EtiquetaPromo { get; set; }
     }
 
     public class OpcionReserva

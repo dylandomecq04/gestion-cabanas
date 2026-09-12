@@ -525,7 +525,7 @@ namespace GestionCabanas.Services
                     var cabana = cabanas[cabanaIndex];
                     var segDesde = desde.AddDays(ini);
                     var segHasta = desde.AddDays(fin);
-                    var subtotal = await CalcularValorTotalAsync(cabana.Id, segDesde, segHasta, cabana.PrecioPorNoche);
+                    var detalleSegmento = await CalcularValorConDetalleAsync(cabana.Id, segDesde, segHasta, cabana.PrecioPorNoche);
 
                     opcion.Segmentos.Add(new SegmentoOpcion
                     {
@@ -533,10 +533,12 @@ namespace GestionCabanas.Services
                         CabanaNombre = cabana.Nombre,
                         Desde = segDesde,
                         Hasta = segHasta,
-                        Subtotal = subtotal
+                        Subtotal = detalleSegmento.Total,
+                        PromoAplicada = detalleSegmento.PromoAplicada,
+                        EtiquetaPromo = detalleSegmento.EtiquetaPromo
                     });
 
-                    total = total.HasValue && subtotal.HasValue ? total + subtotal : null;
+                    total = total.HasValue && detalleSegmento.Total.HasValue ? total + detalleSegmento.Total : null;
                 }
 
                 opcion.Total = total;

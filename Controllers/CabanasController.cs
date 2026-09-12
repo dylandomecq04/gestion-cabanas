@@ -155,13 +155,16 @@ namespace GestionCabanas.Controllers
                 opciones = resultado.Opciones.Select(o => new
                 {
                     total = o.Total,
+                    promoAplicada = o.Segmentos.Any(s => s.PromoAplicada),
                     segmentos = o.Segmentos.Select(s => new
                     {
                         cabanaId = s.CabanaId,
                         cabanaNombre = s.CabanaNombre,
                         desde = s.Desde.ToString("yyyy-MM-dd"),
                         hasta = s.Hasta.ToString("yyyy-MM-dd"),
-                        subtotal = s.Subtotal
+                        subtotal = s.Subtotal,
+                        promoAplicada = s.PromoAplicada,
+                        etiquetaPromo = s.EtiquetaPromo
                     })
                 })
             });
@@ -259,10 +262,12 @@ namespace GestionCabanas.Controllers
             var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
             var reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia);
             var bloqueadas = await _disponibilidad.ObtenerBloqueadasEnRangoAsync(primerDia, ultimoDia);
+            var promos = await _disponibilidad.ObtenerPromosEnRangoTodasCabanasAsync(primerDia, ultimoDia);
 
             ViewBag.Cabanas = cabanas;
             ViewBag.Reservas = reservas;
             ViewBag.Bloqueadas = bloqueadas;
+            ViewBag.Promos = promos;
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
