@@ -113,7 +113,7 @@
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Pendiente</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Con promoción</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Con promoción</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
         <span class="flex items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
@@ -204,7 +204,7 @@
                                     var etiquetaPrecio = precioMostrar.HasValue ? "$" + precioMostrar.Value.ToString("N0") : "Sin precio";
                                     var clase = bloqueada
                                         ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                        : (enPromoDia ? "bg-amber-200 text-amber-900 hover:bg-amber-300" : "bg-red-50 text-red-700 hover:bg-red-100");
+                                        : (enPromoDia ? "bg-red-100 text-red-800 hover:bg-red-200" : "bg-red-50 text-red-700 hover:bg-red-100");
 
                                     <td class="p-0">
                                         <button type="button" data-index="@indice"
@@ -218,7 +218,7 @@
                                                 class="dia-editable day-cell relative flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg text-sm font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clase">
                                             @if (enPromoDia)
                                             {
-                                                <span class="absolute -top-1 left-1 text-[9px] font-bold uppercase tracking-wide text-amber-700">Promo</span>
+                                                <span class="absolute -top-1 left-1 text-[9px] font-bold uppercase tracking-wide text-red-700">Promo</span>
                                             }
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
                                             <span class="etiqueta-precio text-xs font-normal leading-tight opacity-70">@etiquetaPrecio</span>
@@ -279,8 +279,8 @@
             <a id="link-cargar-reserva-bulk" href="#" class="hidden h-10 inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-4 text-sm font-semibold text-ink-700 transition hover:border-river-300">
                 ➕ Cargar reserva acá
             </a>
-            <button type="button" onclick="abrirModalPromoDesdeSeleccion()" class="h-10 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-amber-600">
-                🎉 Aplicar promoción
+            <button type="button" onclick="abrirModalPromoDesdeSeleccion()" class="h-10 inline-flex items-center gap-1.5 rounded-full bg-red-500 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-red-600">
+                🎉 Crear promoción
             </button>
             <button type="button" onclick="cancelarSeleccion()" class="h-10 rounded-full border border-ink-200 px-4 text-sm font-medium text-ink-600 transition hover:border-ink-300">
                 Cancelar
@@ -512,8 +512,8 @@
 
 <div id="modal-promo" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalPromo();">
     <div class="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2.5xl bg-white p-6 shadow-lift">
-        <h3 class="font-display text-lg font-semibold text-ink-900">🎉 Aplicar promoción</h3>
-        <p id="promo-rango-texto" class="mt-1 text-sm font-semibold text-amber-700"></p>
+        <h3 class="font-display text-lg font-semibold text-ink-900">🎉 Crear promoción</h3>
+        <p id="promo-rango-texto" class="mt-1 text-sm font-semibold text-red-700"></p>
         <p class="mt-1 text-xs text-ink-500">Definí un precio especial para 1, 2 y/o 3 noches (podés cargar sólo alguno). Elegí a qué cabañas aplicarla.</p>
 
         <form asp-action="CrearPromoEstadia" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="mt-4 space-y-3">
