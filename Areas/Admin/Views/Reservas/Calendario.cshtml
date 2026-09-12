@@ -54,27 +54,27 @@
     string SyncPlural(int n, string singular, string plural) => $"{n} {(n == 1 ? singular : plural)}";
 }
 
-<div class="relative left-1/2 w-screen -translate-x-1/2 px-4 sm:px-8">
-    <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="font-display text-2xl font-semibold text-ink-900">Calendario &middot; @mesTitulo</h1>
+<div class="relative left-1/2 w-screen -translate-x-1/2 px-3 sm:px-8">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <h1 class="font-display text-lg font-semibold text-ink-900 sm:text-2xl">Calendario &middot; @mesTitulo</h1>
         <div class="flex gap-2">
-            <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
-               asp-action="Calendario" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month">&larr; Mes anterior</a>
-            <a class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700"
-               asp-action="Calendario" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month">Mes siguiente &rarr;</a>
+            <a class="rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm"
+               asp-action="Calendario" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month">&larr; <span class="hidden sm:inline">Mes </span>anterior</a>
+            <a class="rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm"
+               asp-action="Calendario" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month"><span class="hidden sm:inline">Mes </span>siguiente &rarr;</a>
         </div>
     </div>
 
     @if (syncConfigurada)
     {
-        <div class="mb-6 flex flex-wrap items-center gap-3">
+        <div class="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
             @if (syncConectada)
             {
                 <form asp-controller="Sincronizacion" asp-action="Sincronizar" method="post" class="flex items-center gap-2">
                     <input type="hidden" name="anio" value="@primerDia.Year" />
                     <input type="hidden" name="mes" value="@primerDia.Month" />
-                    <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-river-700 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 text-emerald-300">
+                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-full bg-river-700 px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0 text-emerald-300">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                         </svg>
                         Sincronizar con Excel
@@ -99,8 +99,8 @@
             else
             {
                 <a asp-controller="Sincronizacion" asp-action="Conectar" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month"
-                   class="inline-flex items-center gap-2 rounded-full border border-river-300 px-4 py-2 text-sm font-semibold text-river-700 transition hover:bg-river-50">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
+                   class="inline-flex items-center gap-1.5 rounded-full border border-river-300 px-3 py-1.5 text-xs font-semibold text-river-700 transition hover:bg-river-50 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
                     </svg>
                     Conectar OneDrive para sincronizar
@@ -109,15 +109,15 @@
         </div>
     }
 
-    <div class="mb-1 flex flex-wrap items-center gap-4 text-xs font-medium text-ink-500">
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Pendiente</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Con promoción</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
-        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
-        <span class="flex items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
-        <span class="flex items-center gap-1.5"><span class="font-bold text-rose-600">↓</span> Sale ese día</span>
+    <div class="scroll-fino mb-1 flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 text-xs font-medium text-ink-500 sm:flex-wrap sm:gap-4 sm:overflow-visible sm:whitespace-normal sm:pb-0">
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Pendiente</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Con promoción</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-rose-600">↓</span> Sale ese día</span>
     </div>
     <p class="mb-4 text-xs text-ink-400">Tocá una o varias celdas libres para bloquearlas o ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
 
@@ -126,11 +126,11 @@
     </div>
 
     <form id="form-tarifas" asp-action="GuardarTarifasCalendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-24">
-        <div id="scroll-tabla" class="scroll-fino overflow-x-auto rounded-2.5xl bg-white p-3 shadow-soft ring-1 ring-ink-100">
-            <table class="w-full border-separate text-xs" style="border-spacing: 4px;">
+        <div id="scroll-tabla" class="scroll-fino overflow-x-auto rounded-2.5xl bg-white p-2 shadow-soft ring-1 ring-ink-100 sm:p-3">
+            <table class="w-full border-separate text-xs [border-spacing:2px] sm:[border-spacing:4px]">
                 <thead>
                     <tr>
-                        <th class="sticky left-0 z-20 min-w-[160px] rounded-lg bg-sand-50 px-3 py-2 text-left text-sm font-semibold text-ink-700 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)]">Cabaña</th>
+                        <th class="sticky left-0 z-20 min-w-[84px] rounded-lg bg-sand-50 px-2 py-1.5 text-left text-xs font-semibold text-ink-700 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)] sm:min-w-[160px] sm:px-3 sm:py-2 sm:text-sm">Cabaña</th>
                         @foreach (var dia in dias)
                         {
                             var clasesHeader = dia.Date == hoy
@@ -138,9 +138,9 @@
                                 : EsFinDeSemana(dia)
                                     ? "bg-sand-100 text-sand-800"
                                     : "text-ink-400";
-                            <th class="min-w-[112px] rounded-lg px-1 py-2.5 text-center font-semibold @clasesHeader">
-                                <div class="text-xs uppercase opacity-80">@diasSemana[IndiceDiaSemana(dia)]</div>
-                                <div class="text-lg">@dia.Day</div>
+                            <th class="min-w-[60px] rounded-lg px-0.5 py-1.5 text-center font-semibold sm:min-w-[112px] sm:px-1 sm:py-2.5 @clasesHeader">
+                                <div class="text-[10px] uppercase opacity-80 sm:text-xs">@diasSemana[IndiceDiaSemana(dia)]</div>
+                                <div class="text-sm sm:text-lg">@dia.Day</div>
                             </th>
                         }
                     </tr>
@@ -149,7 +149,7 @@
                     @foreach (var cabana in cabanas)
                     {
                         <tr>
-                            <td class="sticky left-0 z-20 rounded-lg bg-sand-50 px-3 py-2 text-sm font-semibold text-ink-800 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)]">@cabana.Nombre</td>
+                            <td class="sticky left-0 z-20 rounded-lg bg-sand-50 px-2 py-1.5 text-xs font-semibold text-ink-800 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)] sm:px-3 sm:py-2 sm:text-sm">@cabana.Nombre</td>
                             @foreach (var dia in dias)
                             {
                                 var reserva = ReservaDeLaCabanaEnElDia(cabana.Id, dia);
@@ -179,16 +179,16 @@
                                                 data-info-pago="@pagoTexto"
                                                 data-info-pagar="@pagarTexto"
                                                 title="@infoResumen (@etiquetaReserva)"
-                                                class="day-cell relative flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-bold leading-tight @claseReserva">
+                                                class="day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[11px] font-bold leading-tight sm:h-28 sm:w-28 sm:gap-1 sm:px-1.5 sm:text-sm @claseReserva">
                                             <span>@etiquetaReserva</span>
-                                            <span class="truncate text-xs font-normal opacity-90 max-w-full">@reserva.NombreHuesped</span>
+                                            <span class="truncate text-[9px] font-normal opacity-90 max-w-full sm:text-xs">@reserva.NombreHuesped</span>
                                             @if (llega is not null)
                                             {
-                                                <span title="Ingresa: @llega.NombreHuesped" class="absolute bottom-1 left-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-base font-bold text-river-700 shadow ring-1 ring-ink-200">↑</span>
+                                                <span title="Ingresa: @llega.NombreHuesped" class="absolute bottom-0.5 left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-river-700 shadow ring-1 ring-ink-200 sm:bottom-1 sm:left-1 sm:h-6 sm:w-6 sm:text-base">↑</span>
                                             }
                                             @if (sale is not null)
                                             {
-                                                <span title="Sale: @sale.NombreHuesped" class="absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-base font-bold text-rose-600 shadow ring-1 ring-ink-200">↓</span>
+                                                <span title="Sale: @sale.NombreHuesped" class="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-rose-600 shadow ring-1 ring-ink-200 sm:bottom-1 sm:right-1 sm:h-6 sm:w-6 sm:text-base">↓</span>
                                             }
                                         </button>
                                     </td>
@@ -215,21 +215,21 @@
                                                 data-precio="@precioTexto"
                                                 data-bloqueada="@(bloqueada ? "true" : "false")"
                                                 onclick="alternarSeleccionDia(this)"
-                                                class="dia-editable day-cell relative flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg text-sm font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clase">
+                                                class="dia-editable day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @clase">
                                             @if (enPromoDia)
                                             {
-                                                <span class="absolute -top-1 left-1 text-[9px] font-bold uppercase tracking-wide text-red-700">Promo</span>
+                                                <span class="absolute -top-1 left-1 text-[8px] font-bold uppercase tracking-wide text-red-700 sm:text-[9px]">Promo</span>
                                             }
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
-                                            <span class="etiqueta-precio text-xs font-normal leading-tight opacity-70">@etiquetaPrecio</span>
-                                            <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-river-700 text-sm text-white shadow-soft">✓</span>
+                                            <span class="etiqueta-precio text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@etiquetaPrecio</span>
+                                            <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                             @if (llega is not null)
                                             {
-                                                <span title="Ingresa: @llega.NombreHuesped" class="absolute bottom-1 left-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-base font-bold text-river-700 shadow ring-1 ring-ink-200">↑</span>
+                                                <span title="Ingresa: @llega.NombreHuesped" class="absolute bottom-0.5 left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-river-700 shadow ring-1 ring-ink-200 sm:bottom-1 sm:left-1 sm:h-6 sm:w-6 sm:text-base">↑</span>
                                             }
                                             @if (sale is not null)
                                             {
-                                                <span title="Sale: @sale.NombreHuesped" class="absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-base font-bold text-rose-600 shadow ring-1 ring-ink-200">↓</span>
+                                                <span title="Sale: @sale.NombreHuesped" class="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-rose-600 shadow ring-1 ring-ink-200 sm:bottom-1 sm:right-1 sm:h-6 sm:w-6 sm:text-base">↓</span>
                                             }
                                         </button>
                                         <input type="hidden" name="dias[@indice].CabanaId" value="@cabana.Id" />
@@ -249,43 +249,43 @@
 </div>
 
 <div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 shadow-lift backdrop-blur">
-    <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 py-3">
-        <div id="texto-seleccion" class="whitespace-nowrap rounded-full bg-river-50 px-3.5 py-2 text-sm font-semibold text-river-800">
+    <div class="scroll-fino mx-auto flex max-w-5xl items-center gap-3 overflow-x-auto px-3 py-2.5 sm:flex-wrap sm:gap-4 sm:overflow-visible sm:px-4 sm:py-3">
+        <div id="texto-seleccion" class="shrink-0 whitespace-nowrap rounded-full bg-river-50 px-3 py-1.5 text-xs font-semibold text-river-800 sm:px-3.5 sm:py-2 sm:text-sm">
             0 días seleccionados
         </div>
 
         <div class="hidden h-9 w-px bg-ink-200 sm:block"></div>
 
-        <div class="flex flex-wrap items-end gap-3">
-            <div class="w-28">
+        <div class="flex shrink-0 items-end gap-2 sm:flex-wrap sm:gap-3">
+            <div class="w-20 shrink-0 sm:w-28">
                 <label class="mb-1 block text-xs font-medium text-ink-500">Precio</label>
                 <input id="bulk-precio" type="text" inputmode="numeric" placeholder="Base"
                        oninput="formatearMiles(this)"
-                       class="h-10 w-full rounded-xl border border-ink-200 px-3 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                       class="h-9 w-full rounded-xl border border-ink-200 px-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 sm:h-10 sm:px-3" />
             </div>
-            <div>
+            <div class="shrink-0">
                 <label class="mb-1 block text-xs font-medium text-ink-500">Disponibilidad</label>
-                <div class="flex h-10 items-center gap-1 rounded-xl border border-ink-200 p-1">
+                <div class="flex h-9 items-center gap-1 rounded-xl border border-ink-200 p-1 sm:h-10">
                     <button type="button" id="btn-bloquear" onclick="elegirBloqueo(true)"
-                            class="h-8 rounded-lg px-3 text-sm font-medium text-ink-500 transition hover:bg-rose-50">Bloquear</button>
+                            class="h-7 whitespace-nowrap rounded-lg px-2.5 text-xs font-medium text-ink-500 transition hover:bg-rose-50 sm:h-8 sm:px-3 sm:text-sm">Bloquear</button>
                     <button type="button" id="btn-desbloquear" onclick="elegirBloqueo(false)"
-                            class="h-8 rounded-lg px-3 text-sm font-medium text-ink-500 transition hover:bg-emerald-50">Desbloquear</button>
+                            class="h-7 whitespace-nowrap rounded-lg px-2.5 text-xs font-medium text-ink-500 transition hover:bg-emerald-50 sm:h-8 sm:px-3 sm:text-sm">Desbloquear</button>
                 </div>
                 <input type="hidden" id="bulk-bloqueada" value="false" />
             </div>
         </div>
 
-        <div class="ml-auto flex items-center gap-2">
-            <a id="link-cargar-reserva-bulk" href="#" class="hidden h-10 inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-4 text-sm font-semibold text-ink-700 transition hover:border-river-300">
+        <div class="flex shrink-0 items-center gap-2 sm:ml-auto">
+            <a id="link-cargar-reserva-bulk" href="#" class="hidden h-9 shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-3 text-xs font-semibold text-ink-700 transition hover:border-river-300 sm:h-10 sm:px-4 sm:text-sm">
                 ➕ Cargar reserva acá
             </a>
-            <button type="button" onclick="abrirModalPromoDesdeSeleccion()" class="h-10 inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-violet-700">
+            <button type="button" onclick="abrirModalPromoDesdeSeleccion()" class="h-9 shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-3 text-xs font-semibold text-white shadow-soft transition hover:bg-violet-700 sm:h-10 sm:px-4 sm:text-sm">
                 🎉 Crear promoción
             </button>
-            <button type="button" onclick="cancelarSeleccion()" class="h-10 rounded-full border border-ink-200 px-4 text-sm font-medium text-ink-600 transition hover:border-ink-300">
+            <button type="button" onclick="cancelarSeleccion()" class="h-9 shrink-0 whitespace-nowrap rounded-full border border-ink-200 px-3 text-xs font-medium text-ink-600 transition hover:border-ink-300 sm:h-10 sm:px-4 sm:text-sm">
                 Cancelar
             </button>
-            <button type="button" onclick="aplicarSeleccion()" class="h-10 rounded-full bg-river-700 px-5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
+            <button type="button" onclick="aplicarSeleccion()" class="h-9 shrink-0 whitespace-nowrap rounded-full bg-river-700 px-4 text-xs font-semibold text-white shadow-soft transition hover:bg-river-800 sm:h-10 sm:px-5 sm:text-sm">
                 Aplicar
             </button>
         </div>
