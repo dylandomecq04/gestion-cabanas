@@ -279,7 +279,7 @@
             <a id="link-cargar-reserva-bulk" href="#" class="hidden h-10 inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-4 text-sm font-semibold text-ink-700 transition hover:border-river-300">
                 ➕ Cargar reserva acá
             </a>
-            <button type="button" onclick="abrirModalPromoDesdeSeleccion()" class="h-10 inline-flex items-center gap-1.5 rounded-full bg-red-500 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-red-600">
+            <button type="button" onclick="abrirModalPromoDesdeSeleccion()" class="h-10 inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-violet-700">
                 🎉 Crear promoción
             </button>
             <button type="button" onclick="cancelarSeleccion()" class="h-10 rounded-full border border-ink-200 px-4 text-sm font-medium text-ink-600 transition hover:border-ink-300">
@@ -544,24 +544,24 @@
                           class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
                 <p class="mt-1 text-xs text-ink-400">Se muestra en el cartel de oferta de la página de inicio mientras la promoción esté vigente.</p>
             </div>
-            <div class="grid grid-cols-3 gap-3">
-                <div>
+            <div id="promo-campos-precio" class="grid grid-cols-3 gap-3">
+                <div id="promo-campo-1noche">
                     <label class="mb-1 block text-sm font-medium text-ink-700">1 noche</label>
-                    <input name="Precio1Noche" type="number" min="0" step="1" placeholder="$"
+                    <input id="promo-input-1noche" name="Precio1Noche" type="number" min="0" step="1" placeholder="$"
                            class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
                 </div>
-                <div>
+                <div id="promo-campo-2noches">
                     <label class="mb-1 block text-sm font-medium text-ink-700">2 noches</label>
-                    <input name="Precio2Noches" type="number" min="0" step="1" placeholder="$"
+                    <input id="promo-input-2noches" name="Precio2Noches" type="number" min="0" step="1" placeholder="$"
                            class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
                 </div>
-                <div>
+                <div id="promo-campo-3noches">
                     <label class="mb-1 block text-sm font-medium text-ink-700">3 noches</label>
-                    <input name="Precio3Noches" type="number" min="0" step="1" placeholder="$"
+                    <input id="promo-input-3noches" name="Precio3Noches" type="number" min="0" step="1" placeholder="$"
                            class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
                 </div>
             </div>
-            <p class="text-xs text-ink-400">Para estadías de más de 3 noches se cobran las primeras 3 al precio de "3 noches" y el resto al precio normal.</p>
+            <p id="promo-nota-3noches" class="text-xs text-ink-400">Para estadías de más de 3 noches se cobran las primeras 3 al precio de "3 noches" y el resto al precio normal.</p>
 
             <div class="mt-2 flex items-center gap-3">
                 <button type="submit" class="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-amber-600">
@@ -805,6 +805,7 @@
             const fechaDesde = fechas[0];
             const fechaHasta = fechas[fechas.length - 1];
             const cabanaIdsSeleccionadas = new Set(btns.map(b => b.dataset.cabanaId));
+            const nochesSeleccionadas = new Set(fechas).size;
 
             document.getElementById('promo-fecha-desde').value = fechaDesde;
             document.getElementById('promo-fecha-hasta').value = fechaHasta;
@@ -816,6 +817,19 @@
             document.querySelectorAll('.promo-cabana-check').forEach(function (chk) {
                 chk.checked = cabanaIdsSeleccionadas.has(chk.value);
             });
+
+            // La promo sólo puede cubrir estadías que entren enteras en el rango elegido: si se
+            // seleccionan 1 o 2 noches, los precios de más noches no tienen sentido y se ocultan.
+            [1, 2, 3].forEach(function (n) {
+                const mostrar = nochesSeleccionadas >= 3 || n <= nochesSeleccionadas;
+                const campo = document.getElementById('promo-campo-' + n + (n === 1 ? 'noche' : 'noches'));
+                const input = document.getElementById('promo-input-' + n + (n === 1 ? 'noche' : 'noches'));
+                campo.classList.toggle('hidden', !mostrar);
+                if (!mostrar) {
+                    input.value = '';
+                }
+            });
+            document.getElementById('promo-nota-3noches').classList.toggle('hidden', nochesSeleccionadas < 3);
 
             document.getElementById('modal-promo').classList.remove('hidden');
         }
