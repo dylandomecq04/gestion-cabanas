@@ -23,8 +23,20 @@ public class HomeController : Controller
             .OrderBy(c => c.Nombre)
             .ToListAsync();
 
-        ViewBag.PromoIzquierda = await _db.Promociones.FirstOrDefaultAsync(p => p.Lado == LadoPromocion.Izquierda);
-        ViewBag.PromoDerecha = await _db.Promociones.FirstOrDefaultAsync(p => p.Lado == LadoPromocion.Derecha);
+        var hoy = DateTime.Today;
+        var promosVigentes = await _db.PromosEstadia
+            .Where(p => p.Activa && p.FechaDesde <= hoy && p.FechaHasta >= hoy)
+            .OrderByDescending(p => p.Id)
+            .ToListAsync();
+
+        var promosParaHome = promosVigentes
+            .GroupBy(p => new { p.Nombre, p.Descripcion, p.FechaDesde, p.FechaHasta })
+            .Select(g => g.First())
+            .Take(2)
+            .ToList();
+
+        ViewBag.PromoIzquierda = promosParaHome.ElementAtOrDefault(0);
+        ViewBag.PromoDerecha = promosParaHome.ElementAtOrDefault(1);
 
         return View(cabanas);
     }

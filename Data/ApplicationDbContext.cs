@@ -16,7 +16,6 @@ namespace GestionCabanas.Data
         public DbSet<TarifaDia> TarifasDias => Set<TarifaDia>();
         public DbSet<InformacionSitio> InformacionSitio => Set<InformacionSitio>();
         public DbSet<PreguntaFrecuente> PreguntasFrecuentes => Set<PreguntaFrecuente>();
-        public DbSet<Promocion> Promociones => Set<Promocion>();
         public DbSet<PromoEstadia> PromosEstadia => Set<PromoEstadia>();
         public DbSet<OneDriveConexion> OneDriveConexiones => Set<OneDriveConexion>();
 

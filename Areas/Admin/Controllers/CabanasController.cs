@@ -218,6 +218,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 {
                     CabanaId = cabanaId,
                     Nombre = modelo.Nombre,
+                    Descripcion = modelo.Descripcion,
                     FechaDesde = modelo.FechaDesde.Date,
                     FechaHasta = modelo.FechaHasta.Date,
                     Precio1Noche = modelo.Precio1Noche,

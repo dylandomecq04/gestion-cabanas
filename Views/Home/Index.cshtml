@@ -1,9 +1,9 @@
 @model List<Cabana>
 @{
     ViewData["Title"] = "Cabañas Sidharta";
-    var promoIzquierda = ViewBag.PromoIzquierda as Promocion;
-    var promoDerecha = ViewBag.PromoDerecha as Promocion;
-    var hayPromoActiva = promoIzquierda?.Activa == true || promoDerecha?.Activa == true;
+    var promoIzquierda = ViewBag.PromoIzquierda as PromoEstadia;
+    var promoDerecha = ViewBag.PromoDerecha as PromoEstadia;
+    var hayPromoActiva = promoIzquierda is not null || promoDerecha is not null;
 
     // Fotos de ejemplo para el fondo del hero (temporal, se pueden reemplazar por las reales).
     var heroFotos = new[] { "foto_2.jpg", "foto_3.jpg", "foto_4.jpg", "foto_5.jpg", "foto_6.jpg", "foto_7.jpg", "foto_8.jpg" };
@@ -13,11 +13,11 @@
 {
     <div class="mb-6 overflow-hidden rounded-2.5xl bg-gradient-to-r from-river-600 via-river-700 to-river-800 text-white shadow-lift">
         <div class="flex flex-col divide-y divide-white/15 sm:flex-row sm:divide-x sm:divide-y-0">
-            @if (promoIzquierda?.Activa == true)
+            @if (promoIzquierda is not null)
             {
                 <partial name="_PromoBanner" model="promoIzquierda" />
             }
-            @if (promoDerecha?.Activa == true)
+            @if (promoDerecha is not null)
             {
                 <partial name="_PromoBanner" model="promoDerecha" />
             }

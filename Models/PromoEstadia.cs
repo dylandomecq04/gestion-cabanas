@@ -13,6 +13,10 @@ namespace GestionCabanas.Models
         [Display(Name = "Nombre de la promoción")]
         public string? Nombre { get; set; }
 
+        [StringLength(300)]
+        [Display(Name = "Descripción")]
+        public string? Descripcion { get; set; }
+
         [DataType(DataType.Date)]
         [Display(Name = "Desde")]
         public DateTime FechaDesde { get; set; }

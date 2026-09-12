@@ -136,6 +136,10 @@
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink-100 px-4 py-3 text-sm @(promo.Activa ? "bg-amber-50" : "bg-ink-50 opacity-70")">
                     <div>
                         <p class="font-semibold text-ink-900">@(string.IsNullOrWhiteSpace(promo.Nombre) ? "Promoción" : promo.Nombre) &middot; @promo.FechaDesde.ToString("dd/MM/yyyy") al @promo.FechaHasta.ToString("dd/MM/yyyy")</p>
+                        @if (!string.IsNullOrWhiteSpace(promo.Descripcion))
+                        {
+                            <p class="mt-0.5 text-xs text-ink-500">@promo.Descripcion</p>
+                        }
                         <p class="mt-0.5 text-xs text-ink-500">
                             @(promo.Precio1Noche.HasValue ? "1 noche: $" + promo.Precio1Noche.Value.ToString("N0") : "1 noche: -")
                             &middot; @(promo.Precio2Noches.HasValue ? "2 noches: $" + promo.Precio2Noches.Value.ToString("N0") : "2 noches: -")
@@ -176,6 +180,12 @@
                 <label class="mb-1 block text-sm font-medium text-ink-700">Nombre (opcional)</label>
                 <input name="Nombre" maxlength="80" placeholder="Ej: Promo temporada baja"
                        class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Descripción (opcional)</label>
+                <textarea name="Descripcion" rows="2" maxlength="300" placeholder="Ej: Reservando 3 noches o más, la última corre por nuestra cuenta."
+                          class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+                <p class="mt-1 text-xs text-ink-400">Se muestra en el cartel de oferta de la página de inicio mientras la promoción esté vigente.</p>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>

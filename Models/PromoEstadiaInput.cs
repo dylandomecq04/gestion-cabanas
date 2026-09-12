@@ -9,6 +9,9 @@ namespace GestionCabanas.Models
         [StringLength(80)]
         public string? Nombre { get; set; }
 
+        [StringLength(300)]
+        public string? Descripcion { get; set; }
+
         [Required]
         [DataType(DataType.Date)]
         public DateTime FechaDesde { get; set; }
