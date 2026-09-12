@@ -4,6 +4,7 @@ using GestionCabanas.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 var culturaArgentina = new CultureInfo("es-AR");
@@ -13,8 +14,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+var cadenaConexion = builder.Configuration.GetConnectionString("Default");
+var carpetaBaseDatos = Path.GetDirectoryName(new SqliteConnectionStringBuilder(cadenaConexion).DataSource);
+if (!string.IsNullOrEmpty(carpetaBaseDatos))
+{
+    Directory.CreateDirectory(carpetaBaseDatos);
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+    options.UseSqlite(cadenaConexion));
 
 builder.Services.AddScoped<IPasswordHasher<AdminUsuario>, PasswordHasher<AdminUsuario>>();
 builder.Services.AddScoped<GestionCabanas.Services.DisponibilidadService>();
