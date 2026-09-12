@@ -242,10 +242,12 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 .Where(r => r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
                 .ToListAsync();
             var tarifas = await _disponibilidad.ObtenerTarifasEnRangoTodasCabanasAsync(primerDia, ultimoDia);
+            var promos = await _disponibilidad.ObtenerPromosEnRangoTodasCabanasAsync(primerDia, ultimoDia);
 
             ViewBag.Cabanas = cabanas;
             ViewBag.Reservas = reservas;
             ViewBag.Tarifas = tarifas;
+            ViewBag.Promos = promos;
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
@@ -255,6 +257,55 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.SincronizacionConexion = await _oneDrive.ObtenerConexionAsync();
 
             return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearPromoEstadia(PromoEstadiaMultipleInput modelo, int? anio, int? mes)
+        {
+            if (modelo.CabanaIds is null || modelo.CabanaIds.Count == 0)
+            {
+                TempData["Mensaje"] = "Elegí al menos una cabaña para la promoción.";
+                return RedirectToAction(nameof(Calendario), new { anio, mes });
+            }
+
+            if (modelo.FechaHasta.Date < modelo.FechaDesde.Date)
+            {
+                TempData["Mensaje"] = "El rango de fechas de la promoción no es válido.";
+                return RedirectToAction(nameof(Calendario), new { anio, mes });
+            }
+
+            if (!modelo.Precio1Noche.HasValue && !modelo.Precio2Noches.HasValue && !modelo.Precio3Noches.HasValue)
+            {
+                TempData["Mensaje"] = "Cargá al menos un precio (1, 2 o 3 noches) para la promoción.";
+                return RedirectToAction(nameof(Calendario), new { anio, mes });
+            }
+
+            var cabanaIdsValidos = await _db.Cabanas
+                .Where(c => modelo.CabanaIds.Contains(c.Id))
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            foreach (var cabanaId in cabanaIdsValidos)
+            {
+                _db.PromosEstadia.Add(new PromoEstadia
+                {
+                    CabanaId = cabanaId,
+                    Nombre = modelo.Nombre,
+                    FechaDesde = modelo.FechaDesde.Date,
+                    FechaHasta = modelo.FechaHasta.Date,
+                    Precio1Noche = modelo.Precio1Noche,
+                    Precio2Noches = modelo.Precio2Noches,
+                    Precio3Noches = modelo.Precio3Noches,
+                    Activa = true
+                });
+            }
+
+            await _db.SaveChangesAsync();
+            TempData["Mensaje"] = cabanaIdsValidos.Count > 1
+                ? $"Promoción creada para {cabanaIdsValidos.Count} cabañas."
+                : "Promoción creada.";
+            return RedirectToAction(nameof(Calendario), new { anio, mes });
         }
 
         [HttpPost]

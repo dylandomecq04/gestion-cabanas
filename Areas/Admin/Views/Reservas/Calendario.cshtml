@@ -3,6 +3,7 @@
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
     var reservas = (List<Reserva>)ViewBag.Reservas;
     var tarifas = (List<TarifaDia>)ViewBag.Tarifas;
+    var promos = (List<PromoEstadia>)ViewBag.Promos;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
@@ -22,6 +23,9 @@
 
     TarifaDia? TarifaDeLaCabanaEnElDia(int cabanaId, DateTime dia)
         => tarifas.FirstOrDefault(t => t.CabanaId == cabanaId && t.Fecha.Date == dia.Date);
+
+    bool EnPromo(int cabanaId, DateTime dia)
+        => promos.Any(p => p.CabanaId == cabanaId && p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
 
     bool EsFinDeSemana(DateTime dia) => dia.DayOfWeek == DayOfWeek.Saturday || dia.DayOfWeek == DayOfWeek.Sunday;
 
@@ -109,6 +113,7 @@
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Pendiente</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
+        <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Con promoción</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
         <span class="flex items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
@@ -192,13 +197,14 @@
                                 {
                                     var tarifa = TarifaDeLaCabanaEnElDia(cabana.Id, dia);
                                     var bloqueada = tarifa?.Bloqueada ?? false;
+                                    var enPromoDia = !bloqueada && EnPromo(cabana.Id, dia);
                                     var precioTexto = tarifa?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
                                     var precioMostrar = tarifa?.Precio ?? cabana.PrecioPorNoche;
                                     var etiquetaEstado = bloqueada ? "Bloqueada" : "Disponible";
                                     var etiquetaPrecio = precioMostrar.HasValue ? "$" + precioMostrar.Value.ToString("N0") : "Sin precio";
                                     var clase = bloqueada
                                         ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                        : "bg-red-50 text-red-700 hover:bg-red-100";
+                                        : (enPromoDia ? "bg-amber-200 text-amber-900 hover:bg-amber-300" : "bg-red-50 text-red-700 hover:bg-red-100");
 
                                     <td class="p-0">
                                         <button type="button" data-index="@indice"
@@ -210,6 +216,10 @@
                                                 data-bloqueada="@(bloqueada ? "true" : "false")"
                                                 onclick="alternarSeleccionDia(this)"
                                                 class="dia-editable day-cell relative flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg text-sm font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clase">
+                                            @if (enPromoDia)
+                                            {
+                                                <span class="absolute -top-1 left-1 text-[9px] font-bold uppercase tracking-wide text-amber-700">Promo</span>
+                                            }
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
                                             <span class="etiqueta-precio text-xs font-normal leading-tight opacity-70">@etiquetaPrecio</span>
                                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-river-700 text-sm text-white shadow-soft">✓</span>
@@ -269,6 +279,9 @@
             <a id="link-cargar-reserva-bulk" href="#" class="hidden h-10 inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-4 text-sm font-semibold text-ink-700 transition hover:border-river-300">
                 ➕ Cargar reserva acá
             </a>
+            <button type="button" onclick="abrirModalPromoDesdeSeleccion()" class="h-10 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-amber-600">
+                🎉 Aplicar promoción
+            </button>
             <button type="button" onclick="cancelarSeleccion()" class="h-10 rounded-full border border-ink-200 px-4 text-sm font-medium text-ink-600 transition hover:border-ink-300">
                 Cancelar
             </button>
@@ -497,6 +510,65 @@
     </div>
 </div>
 
+<div id="modal-promo" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalPromo();">
+    <div class="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2.5xl bg-white p-6 shadow-lift">
+        <h3 class="font-display text-lg font-semibold text-ink-900">🎉 Aplicar promoción</h3>
+        <p id="promo-rango-texto" class="mt-1 text-sm font-semibold text-amber-700"></p>
+        <p class="mt-1 text-xs text-ink-500">Definí un precio especial para 1, 2 y/o 3 noches (podés cargar sólo alguno). Elegí a qué cabañas aplicarla.</p>
+
+        <form asp-action="CrearPromoEstadia" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="mt-4 space-y-3">
+            <input type="hidden" id="promo-fecha-desde" name="FechaDesde" />
+            <input type="hidden" id="promo-fecha-hasta" name="FechaHasta" />
+
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Cabañas</label>
+                <div class="grid grid-cols-2 gap-1.5 rounded-xl border border-ink-200 p-2.5">
+                    @foreach (var c in cabanas)
+                    {
+                        <label class="flex items-center gap-1.5 text-sm text-ink-700">
+                            <input type="checkbox" class="promo-cabana-check h-4 w-4 rounded border-ink-300 text-amber-600 focus:ring-amber-400" name="CabanaIds" value="@c.Id" />
+                            @c.Nombre
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Nombre (opcional)</label>
+                <input name="Nombre" maxlength="80" placeholder="Ej: Promo temporada baja"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ink-700">1 noche</label>
+                    <input name="Precio1Noche" type="number" min="0" step="1" placeholder="$"
+                           class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ink-700">2 noches</label>
+                    <input name="Precio2Noches" type="number" min="0" step="1" placeholder="$"
+                           class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ink-700">3 noches</label>
+                    <input name="Precio3Noches" type="number" min="0" step="1" placeholder="$"
+                           class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                </div>
+            </div>
+            <p class="text-xs text-ink-400">Para estadías de más de 3 noches se cobran las primeras 3 al precio de "3 noches" y el resto al precio normal.</p>
+
+            <div class="mt-2 flex items-center gap-3">
+                <button type="submit" class="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-amber-600">
+                    Quiero la promoción
+                </button>
+                <button type="button" onclick="cerrarModalPromo()" class="rounded-full border border-ink-200 px-4 py-2.5 text-sm font-medium text-ink-600 transition hover:border-ink-300">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
     .scroll-fino::-webkit-scrollbar { height: 10px; }
     .scroll-fino::-webkit-scrollbar-track { background: transparent; }
@@ -711,6 +783,39 @@
         function cerrarModalSincronizacion() {
             const modal = document.getElementById('modal-sincronizacion');
             if (modal) modal.classList.add('hidden');
+        }
+
+        function formatearFechaTexto(fechaIso) {
+            const [anio, mes, dia] = fechaIso.split('-');
+            return dia + '/' + mes + '/' + anio;
+        }
+
+        function abrirModalPromoDesdeSeleccion() {
+            const idxs = [...seleccionDias];
+            const btns = idxs.map(idx => document.querySelector(`.dia-editable[data-index="${idx}"]`)).filter(Boolean);
+            if (btns.length === 0) return;
+
+            const fechas = btns.map(b => b.dataset.fecha).sort();
+            const fechaDesde = fechas[0];
+            const fechaHasta = fechas[fechas.length - 1];
+            const cabanaIdsSeleccionadas = new Set(btns.map(b => b.dataset.cabanaId));
+
+            document.getElementById('promo-fecha-desde').value = fechaDesde;
+            document.getElementById('promo-fecha-hasta').value = fechaHasta;
+            document.getElementById('promo-rango-texto').textContent =
+                fechaDesde === fechaHasta
+                    ? 'Para el ' + formatearFechaTexto(fechaDesde)
+                    : 'Del ' + formatearFechaTexto(fechaDesde) + ' al ' + formatearFechaTexto(fechaHasta);
+
+            document.querySelectorAll('.promo-cabana-check').forEach(function (chk) {
+                chk.checked = cabanaIdsSeleccionadas.has(chk.value);
+            });
+
+            document.getElementById('modal-promo').classList.remove('hidden');
+        }
+
+        function cerrarModalPromo() {
+            document.getElementById('modal-promo').classList.add('hidden');
         }
     </script>
 }

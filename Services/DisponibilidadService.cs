@@ -373,6 +373,13 @@ namespace GestionCabanas.Services
                 .ToListAsync();
         }
 
+        public async Task<List<PromoEstadia>> ObtenerPromosEnRangoTodasCabanasAsync(DateTime desde, DateTime hasta)
+        {
+            return await _db.PromosEstadia
+                .Where(p => p.Activa && p.FechaDesde <= hasta && p.FechaHasta >= desde)
+                .ToListAsync();
+        }
+
         /// <summary>
         /// Busca, para un rango de fechas y una cantidad de personas, las opciones de reserva
         /// posibles: cabañas individuales que cubran todo el rango, o -si ninguna lo cubre sola-
