@@ -1,0 +1,59 @@
+@model InicioSitio
+@{
+    ViewData["Title"] = "Inicio del sitio";
+    var fotos = (List<FotoHero>)ViewBag.Fotos;
+}
+
+<h1 class="mb-6 font-display text-2xl font-semibold text-ink-900">Inicio del sitio</h1>
+<p class="mb-6 -mt-4 text-sm text-ink-500">Así se ve la portada pública. Acá podés cambiar el texto y las fotos de fondo.</p>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <form asp-action="Guardar" method="post" enctype="multipart/form-data"
+          class="space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+        <div asp-validation-summary="All" class="@(ViewData.ModelState.IsValid ? "hidden" : "rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700")"></div>
+
+        <div>
+            <label asp-for="TextoEyebrow" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="TextoEyebrow" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <span asp-validation-for="TextoEyebrow" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+        <div>
+            <label asp-for="Titulo" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="Titulo" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <span asp-validation-for="Titulo" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+        <div>
+            <label class="mb-1 block text-sm font-medium text-ink-700">Agregar fotos de fondo</label>
+            <input type="file" name="fotos" multiple accept=".jpg,.jpeg,.png,.webp"
+                   class="block w-full text-sm text-ink-600 file:mr-4 file:rounded-full file:border-0 file:bg-river-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-river-700 hover:file:bg-river-100" />
+            <p class="mt-1 text-xs text-ink-400">Se van rotando solas en la portada. Usá fotos de paisaje o del entorno, no hace falta que sean de las cabañas.</p>
+        </div>
+        <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+            Guardar
+        </button>
+    </form>
+
+    <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+        <h2 class="mb-3 text-sm font-semibold text-ink-700">Fotos de fondo actuales</h2>
+        <div class="grid grid-cols-3 gap-3">
+            @foreach (var foto in fotos)
+            {
+                <div class="group relative overflow-hidden rounded-xl">
+                    <img src="@foto.RutaArchivo" class="h-24 w-full object-cover" />
+                    <form asp-action="EliminarFoto" asp-route-id="@foto.Id" method="post"
+                          class="absolute right-1 top-1" onsubmit="return confirmarAccion(event, '¿Eliminar esta foto?');">
+                        <button type="submit" class="flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-soft transition hover:bg-rose-700">&times;</button>
+                    </form>
+                </div>
+            }
+        </div>
+        @if (!fotos.Any())
+        {
+            <p class="text-sm text-ink-400">Todavía no hay fotos cargadas.</p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

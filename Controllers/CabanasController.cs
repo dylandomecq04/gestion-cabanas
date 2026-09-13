@@ -19,6 +19,17 @@ namespace GestionCabanas.Controllers
             _email = email;
         }
 
+        public async Task<IActionResult> Index()
+        {
+            var cabanas = await _db.Cabanas
+                .Where(c => c.Activa)
+                .Include(c => c.Fotos)
+                .OrderBy(c => c.Nombre)
+                .ToListAsync();
+
+            return View(cabanas);
+        }
+
         public async Task<IActionResult> Details(int id, int? anio, int? mes)
         {
             var cabana = await _db.Cabanas

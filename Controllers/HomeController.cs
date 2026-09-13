@@ -17,12 +17,6 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var cabanas = await _db.Cabanas
-            .Where(c => c.Activa)
-            .Include(c => c.Fotos)
-            .OrderBy(c => c.Nombre)
-            .ToListAsync();
-
         var hoy = DateTime.Today;
         var promosVigentes = await _db.PromosEstadia
             .Where(p => p.Activa && p.FechaDesde <= hoy && p.FechaHasta >= hoy)
@@ -38,7 +32,10 @@ public class HomeController : Controller
         ViewBag.PromoIzquierda = promosParaHome.ElementAtOrDefault(0);
         ViewBag.PromoDerecha = promosParaHome.ElementAtOrDefault(1);
 
-        return View(cabanas);
+        ViewBag.Inicio = await _db.InicioSitio.FirstOrDefaultAsync() ?? new InicioSitio();
+        ViewBag.FotosHero = await _db.FotosHero.OrderBy(f => f.Orden).ToListAsync();
+
+        return View();
     }
 
     public IActionResult Privacy()

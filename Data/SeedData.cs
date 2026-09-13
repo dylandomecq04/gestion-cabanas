@@ -60,6 +60,28 @@ namespace GestionCabanas.Data
                 );
             }
 
+            if (!db.InicioSitio.Any())
+            {
+                db.InicioSitio.Add(new InicioSitio
+                {
+                    TextoEyebrow = "Cabañas Sidharta · Delta Tigre",
+                    Titulo = "Tu escapada a la naturaleza"
+                });
+            }
+
+            if (!db.FotosHero.Any())
+            {
+                var archivosHero = new[]
+                {
+                    "hero-atardecer.jpg", "hero-sendero.webp", "hero-otono.jpg", "hero-arco.webp",
+                    "hero-picnic.jpg", "hero-refugio.webp", "hero-naranjo.webp"
+                };
+                for (var i = 0; i < archivosHero.Length; i++)
+                {
+                    db.FotosHero.Add(new FotoHero { RutaArchivo = $"/images/hero/{archivosHero[i]}", Orden = i });
+                }
+            }
+
             db.SaveChanges();
         }
     }
