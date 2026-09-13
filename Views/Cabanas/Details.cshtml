@@ -369,6 +369,16 @@
             actualizarResumenTotal();
         }
 
+        function siguienteFechaISO(fechaIso) {
+            const [anio, mes, dia] = fechaIso.split('-').map(Number);
+            const fecha = new Date(anio, mes - 1, dia);
+            fecha.setDate(fecha.getDate() + 1);
+            const y = fecha.getFullYear();
+            const m = String(fecha.getMonth() + 1).padStart(2, '0');
+            const d = String(fecha.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
         function seleccionarDiaCalendario(btn) {
             const fecha = btn.dataset.fecha;
             let desde = __inputDesde.value;
@@ -382,6 +392,14 @@
                 hasta = '';
             } else {
                 hasta = fecha;
+            }
+
+            if (desde && !hasta) {
+                const siguiente = siguienteFechaISO(desde);
+                if (siguiente.slice(0, 7) === desde.slice(0, 7) && !document.querySelector(`.day-cell[data-fecha="${siguiente}"]`)) {
+                    // El día siguiente no está libre: es la única noche posible, así que la salida queda predeterminada.
+                    hasta = siguiente;
+                }
             }
 
             __inputDesde.value = desde;
