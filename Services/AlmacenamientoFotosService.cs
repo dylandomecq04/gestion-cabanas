@@ -9,7 +9,7 @@ namespace GestionCabanas.Services
 
         public AlmacenamientoFotosService(IConfiguration configuration)
         {
-            var cadenaConexion = configuration["AzureBlobStorage:ConnectionString"];
+            var cadenaConexion = configuration["AzureBlobStorage:ConnStr"];
             var nombreContenedor = configuration["AzureBlobStorage:ContainerName"];
 
             if (!string.IsNullOrWhiteSpace(cadenaConexion) && !string.IsNullOrWhiteSpace(nombreContenedor))
