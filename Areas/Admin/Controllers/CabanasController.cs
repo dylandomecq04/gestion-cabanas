@@ -84,7 +84,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             cabana.Nombre = modelo.Nombre;
             cabana.Capacidad = modelo.Capacidad;
-            cabana.PrecioPorNoche = modelo.PrecioPorNoche;
             cabana.Activa = modelo.Activa;
 
             await _db.SaveChangesAsync();

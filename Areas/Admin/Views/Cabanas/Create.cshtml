@@ -13,21 +13,10 @@
         <input asp-for="Nombre" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
         <span asp-validation-for="Nombre" class="mt-1 block text-xs font-medium text-rose-600"></span>
     </div>
-    <div class="grid grid-cols-2 gap-4">
-        <div>
-            <label asp-for="Capacidad" class="mb-1 block text-sm font-medium text-ink-700"></label>
-            <input asp-for="Capacidad" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-            <span asp-validation-for="Capacidad" class="mt-1 block text-xs font-medium text-rose-600"></span>
-        </div>
-        <div>
-            <label asp-for="PrecioPorNoche" class="mb-1 block text-sm font-medium text-ink-700">Precio por noche</label>
-            <div class="flex items-center rounded-xl border border-ink-200 shadow-sm transition focus-within:border-river-400 focus-within:ring-4 focus-within:ring-river-100">
-                <span class="pl-3.5 text-sm text-ink-400">$</span>
-                <input id="PrecioPorNoche" name="PrecioPorNoche" inputmode="decimal"
-                       value="@(Model.PrecioPorNoche.HasValue ? Model.PrecioPorNoche.Value.ToString("N0", System.Globalization.CultureInfo.CurrentCulture) : "")"
-                       class="w-full rounded-xl border-0 bg-transparent px-2 py-2.5 text-sm text-ink-900 focus:outline-none focus:ring-0" />
-            </div>
-        </div>
+    <div>
+        <label asp-for="Capacidad" class="mb-1 block text-sm font-medium text-ink-700"></label>
+        <input asp-for="Capacidad" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        <span asp-validation-for="Capacidad" class="mt-1 block text-xs font-medium text-rose-600"></span>
     </div>
     <label class="flex items-center gap-2 text-sm font-medium text-ink-700">
         <input asp-for="Activa" class="h-4 w-4 rounded border-ink-300 text-river-600 focus:ring-river-400" />
