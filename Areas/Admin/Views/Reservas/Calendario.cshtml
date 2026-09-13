@@ -198,7 +198,7 @@
                                     var etiquetaPrecio = precioMostrar.HasValue ? "$" + precioMostrar.Value.ToString("N0") : "Sin precio";
                                     var clase = bloqueada
                                         ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                        : (enPromoDia ? "bg-red-100 text-red-800 hover:bg-red-200" : "bg-red-50 text-red-700 hover:bg-red-100");
+                                        : "bg-red-50 text-red-700 hover:bg-red-100";
 
                                     <td class="p-0">
                                         <button type="button" data-index="@indice"
@@ -209,10 +209,10 @@
                                                 data-precio="@precioTexto"
                                                 data-bloqueada="@(bloqueada ? "true" : "false")"
                                                 onclick="alternarSeleccionDia(this)"
-                                                class="dia-editable day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @clase">
+                                                class="dia-editable day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @clase @(enPromoDia ? "promo-glow" : "")">
                                             @if (enPromoDia)
                                             {
-                                                <span class="absolute -top-1 left-1 text-[10px] font-bold uppercase tracking-wide text-red-700 sm:text-xs">Promo</span>
+                                                <span class="absolute -top-2 left-1 text-[9px] font-bold uppercase tracking-wide text-amber-600 sm:-top-2.5 sm:text-[10px]">Promo</span>
                                             }
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
                                             <span class="etiqueta-precio text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@etiquetaPrecio</span>
@@ -577,6 +577,14 @@
     .scroll-fino::-webkit-scrollbar-thumb { background-color: #d8d2c4; border-radius: 999px; }
     .scroll-fino::-webkit-scrollbar-thumb:hover { background-color: #c3bba8; }
     .scroll-fino { scrollbar-width: thin; scrollbar-color: #d8d2c4 transparent; }
+
+    @@keyframes promoGlow {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.35); }
+        50% { box-shadow: 0 0 0 5px rgba(217, 119, 6, 0.16); }
+    }
+    .promo-glow {
+        animation: promoGlow 2.4s ease-in-out infinite;
+    }
 </style>
 
 @section Scripts {
