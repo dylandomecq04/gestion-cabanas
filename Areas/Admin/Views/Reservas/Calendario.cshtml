@@ -542,18 +542,24 @@
             <div id="promo-campos-precio" class="grid grid-cols-3 gap-3">
                 <div id="promo-campo-1noche">
                     <label class="mb-1 block text-sm font-medium text-ink-700">1 noche</label>
-                    <input id="promo-input-1noche" name="Precio1Noche" type="number" min="0" step="1" placeholder="$"
+                    <input id="promo-input-1noche" type="text" inputmode="numeric" placeholder="$"
+                           oninput="formatearMiles(this, 'promo-real-1noche')"
                            class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                    <input type="hidden" id="promo-real-1noche" name="Precio1Noche" />
                 </div>
                 <div id="promo-campo-2noches">
                     <label class="mb-1 block text-sm font-medium text-ink-700">2 noches</label>
-                    <input id="promo-input-2noches" name="Precio2Noches" type="number" min="0" step="1" placeholder="$"
+                    <input id="promo-input-2noches" type="text" inputmode="numeric" placeholder="$"
+                           oninput="formatearMiles(this, 'promo-real-2noches')"
                            class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                    <input type="hidden" id="promo-real-2noches" name="Precio2Noches" />
                 </div>
                 <div id="promo-campo-3noches">
                     <label class="mb-1 block text-sm font-medium text-ink-700">3 noches</label>
-                    <input id="promo-input-3noches" name="Precio3Noches" type="number" min="0" step="1" placeholder="$"
+                    <input id="promo-input-3noches" type="text" inputmode="numeric" placeholder="$"
+                           oninput="formatearMiles(this, 'promo-real-3noches')"
                            class="w-full rounded-xl border border-ink-200 px-3 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                    <input type="hidden" id="promo-real-3noches" name="Precio3Noches" />
                 </div>
             </div>
             <p id="promo-nota-3noches" class="text-xs text-ink-400">Para estadías de más de 3 noches se cobran las primeras 3 al precio de "3 noches" y el resto al precio normal.</p>
@@ -720,9 +726,12 @@
             actualizarBarraSeleccion();
         }
 
-        function formatearMiles(input) {
+        function formatearMiles(input, idCampoReal) {
             const soloDigitos = input.value.replace(/\D/g, '');
             input.value = soloDigitos ? Number(soloDigitos).toLocaleString('es-AR') : '';
+            if (idCampoReal) {
+                document.getElementById(idCampoReal).value = soloDigitos;
+            }
         }
 
         function aplicarSeleccion() {
@@ -817,11 +826,14 @@
             // seleccionan 1 o 2 noches, los precios de más noches no tienen sentido y se ocultan.
             [1, 2, 3].forEach(function (n) {
                 const mostrar = nochesSeleccionadas >= 3 || n <= nochesSeleccionadas;
-                const campo = document.getElementById('promo-campo-' + n + (n === 1 ? 'noche' : 'noches'));
-                const input = document.getElementById('promo-input-' + n + (n === 1 ? 'noche' : 'noches'));
+                const sufijo = n === 1 ? 'noche' : 'noches';
+                const campo = document.getElementById('promo-campo-' + n + sufijo);
+                const input = document.getElementById('promo-input-' + n + sufijo);
+                const real = document.getElementById('promo-real-' + n + sufijo);
                 campo.classList.toggle('hidden', !mostrar);
                 if (!mostrar) {
                     input.value = '';
+                    real.value = '';
                 }
             });
             document.getElementById('promo-nota-3noches').classList.toggle('hidden', nochesSeleccionadas < 3);
