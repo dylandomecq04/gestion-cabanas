@@ -117,7 +117,7 @@
             <div class="relative mb-6 aspect-[16/10] w-full overflow-hidden rounded-2.5xl bg-sand-100 shadow-soft" id="galeria-imgs">
                 @for (int i = 0; i < fotos.Count; i++)
                 {
-                    <img src="~/@fotos[i].RutaArchivo" alt="@cabana.Nombre"
+                    <img src="@fotos[i].RutaArchivo" alt="@cabana.Nombre"
                          class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 @(i == 0 ? "opacity-100" : "pointer-events-none opacity-0")" />
                 }
 

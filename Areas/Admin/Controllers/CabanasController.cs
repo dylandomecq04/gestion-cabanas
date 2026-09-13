@@ -12,14 +12,14 @@ namespace GestionCabanas.Areas.Admin.Controllers
     public class CabanasController : Controller
     {
         private readonly ApplicationDbContext _db;
-        private readonly IWebHostEnvironment _env;
         private readonly DisponibilidadService _disponibilidad;
+        private readonly AlmacenamientoFotosService _almacenamiento;
 
-        public CabanasController(ApplicationDbContext db, IWebHostEnvironment env, DisponibilidadService disponibilidad)
+        public CabanasController(ApplicationDbContext db, DisponibilidadService disponibilidad, AlmacenamientoFotosService almacenamiento)
         {
             _db = db;
-            _env = env;
             _disponibilidad = disponibilidad;
+            _almacenamiento = almacenamiento;
         }
 
         public async Task<IActionResult> Index()
@@ -101,11 +101,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             var foto = await _db.Fotos.FindAsync(id);
             if (foto is not null)
             {
-                var rutaFisica = Path.Combine(_env.WebRootPath, foto.RutaArchivo.Replace('/', Path.DirectorySeparatorChar));
-                if (System.IO.File.Exists(rutaFisica))
-                {
-                    System.IO.File.Delete(rutaFisica);
-                }
+                await _almacenamiento.EliminarAsync(foto.RutaArchivo);
                 _db.Fotos.Remove(foto);
                 await _db.SaveChangesAsync();
             }
@@ -280,11 +276,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             foreach (var foto in cabana.Fotos)
             {
-                var rutaFisica = Path.Combine(_env.WebRootPath, foto.RutaArchivo.Replace('/', Path.DirectorySeparatorChar));
-                if (System.IO.File.Exists(rutaFisica))
-                {
-                    System.IO.File.Delete(rutaFisica);
-                }
+                await _almacenamiento.EliminarAsync(foto.RutaArchivo);
             }
 
             _db.Cabanas.Remove(cabana);
@@ -300,9 +292,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
             {
                 return;
             }
-
-            var carpeta = Path.Combine(_env.WebRootPath, "uploads", "cabanas", cabanaId.ToString());
-            Directory.CreateDirectory(carpeta);
 
             var ordenActual = await _db.Fotos.Where(f => f.CabanaId == cabanaId).CountAsync();
 
@@ -320,18 +309,15 @@ namespace GestionCabanas.Areas.Admin.Controllers
                     continue;
                 }
 
-                var nombreArchivo = $"{Guid.NewGuid()}{extension}";
-                var rutaFisica = Path.Combine(carpeta, nombreArchivo);
+                var nombreBlob = $"cabanas/{cabanaId}/{Guid.NewGuid()}{extension}";
 
-                using (var stream = new FileStream(rutaFisica, FileMode.Create))
-                {
-                    await archivo.CopyToAsync(stream);
-                }
+                using var stream = archivo.OpenReadStream();
+                var url = await _almacenamiento.SubirAsync(stream, nombreBlob, archivo.ContentType);
 
                 _db.Fotos.Add(new FotoCabana
                 {
                     CabanaId = cabanaId,
-                    RutaArchivo = $"uploads/cabanas/{cabanaId}/{nombreArchivo}",
+                    RutaArchivo = url,
                     Orden = ordenActual++
                 });
             }
