@@ -74,8 +74,9 @@
                     : "bg-rose-100 text-rose-600 hover:bg-rose-200";
                 var titulo = conPromo ? "Disponible · con promoción" : (libres > 0 ? "Disponible" : "No disponible");
                 <button type="button" onclick="seleccionarDiaGeneral(this)" data-fecha="@dia.Value.ToString("yyyy-MM-dd")"
+                        data-clase-base="@clases"
                         title="@titulo"
-                        class="day-cell relative flex h-14 flex-col items-center justify-center gap-0 rounded-lg text-sm font-semibold leading-none ring-2 ring-inset ring-transparent transition @clases @(conPromo ? "promo-glow" : "")">
+                        class="day-cell relative flex h-14 flex-col items-center justify-center gap-0 rounded-lg text-sm font-semibold leading-none transition @clases @(conPromo ? "promo-glow" : "")">
                     @if (conPromo)
                     {
                         <span class="absolute -top-2 right-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
@@ -91,20 +92,19 @@
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> No disponible</span>
     </div>
 
+    <div id="resumen-seleccion" class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-river-100 bg-river-50 px-4 py-3">
+        <div class="flex items-center gap-2 text-sm font-medium text-river-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span id="resumen-seleccion-texto">Tocá un día para elegir la fecha de entrada</span>
+        </div>
+        <button type="button" id="btn-limpiar-seleccion" onclick="limpiarSeleccionGeneral()" class="hidden shrink-0 text-xs font-semibold text-river-600 underline underline-offset-2">Reiniciar</button>
+    </div>
+
     <div class="mt-6 rounded-2xl border border-ink-100 bg-sand-50 p-5">
         <h2 class="font-display text-base font-semibold text-ink-900">Reservar para estas fechas</h2>
-        <p class="mt-1 text-sm text-ink-500">Elegí el rango en el calendario de arriba (entrada y salida) y completá tus datos.</p>
-
-        <div class="mt-3 grid grid-cols-2 gap-3 sm:max-w-sm">
-            <div>
-                <label for="general-desde" class="mb-1 block text-xs font-medium text-ink-500">Entrada</label>
-                <input id="general-desde" type="date" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-            </div>
-            <div>
-                <label for="general-hasta" class="mb-1 block text-xs font-medium text-ink-500">Salida</label>
-                <input id="general-hasta" type="date" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-            </div>
-        </div>
+        <p class="mt-1 text-sm text-ink-500">Completá tus datos para reservar las fechas elegidas arriba.</p>
 
         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
@@ -150,8 +150,6 @@
     <script>
         let __generalDesde = '';
         let __generalHasta = '';
-        const __inputGeneralDesde = document.getElementById('general-desde');
-        const __inputGeneralHasta = document.getElementById('general-hasta');
         const __generalError = document.getElementById('general-error');
 
         function formatearFechaCorta(iso) {
@@ -159,15 +157,65 @@
             return `${dia}/${mes}/${anio}`;
         }
 
+        function formatearFechaLarga(iso) {
+            const [anio, mes, dia] = iso.split('-').map(Number);
+            const fecha = new Date(anio, mes - 1, dia);
+            const texto = fecha.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
+            return texto.charAt(0).toUpperCase() + texto.slice(1);
+        }
+
+        function limpiarClaseSeleccionCelda(celda) {
+            celda.classList.remove('bg-river-700', 'bg-river-300', 'text-white', 'text-river-900', 'rounded-full', 'font-bold', 'ring-4', 'ring-river-200');
+            celda.classList.add('rounded-lg');
+            (celda.dataset.claseBase || '').split(' ').filter(Boolean).forEach(c => celda.classList.add(c));
+        }
+
+        function aplicarClaseSeleccionCelda(celda, tipo) {
+            (celda.dataset.claseBase || '').split(' ').filter(Boolean).forEach(c => celda.classList.remove(c));
+            celda.classList.remove('rounded-lg');
+            if (tipo === 'punta') {
+                celda.classList.add('bg-river-700', 'text-white', 'rounded-full', 'font-bold', 'ring-4', 'ring-river-200');
+            } else {
+                celda.classList.add('bg-river-300', 'text-river-900');
+            }
+        }
+
+        function actualizarResumenSeleccion() {
+            const texto = document.getElementById('resumen-seleccion-texto');
+            const btnLimpiar = document.getElementById('btn-limpiar-seleccion');
+
+            if (!__generalDesde) {
+                texto.innerHTML = 'Tocá un día en el calendario para elegir la <strong>fecha de entrada</strong>';
+                btnLimpiar.classList.add('hidden');
+            } else if (!__generalHasta) {
+                texto.innerHTML = `Entrada: <strong>${formatearFechaLarga(__generalDesde)}</strong> — ahora tocá el día de <strong>salida</strong>`;
+                btnLimpiar.classList.remove('hidden');
+            } else {
+                const msPorDia = 24 * 60 * 60 * 1000;
+                const noches = Math.round((new Date(__generalHasta + 'T00:00:00') - new Date(__generalDesde + 'T00:00:00')) / msPorDia);
+                texto.innerHTML = `<strong>${formatearFechaLarga(__generalDesde)}</strong> → <strong>${formatearFechaLarga(__generalHasta)}</strong> · ${noches} ${noches === 1 ? 'noche' : 'noches'}`;
+                btnLimpiar.classList.remove('hidden');
+            }
+        }
+
         function actualizarResaltadoGeneral() {
             document.querySelectorAll('#tab-general .day-cell[data-fecha]').forEach(function (celda) {
                 const f = celda.dataset.fecha;
-                const enRango = __generalDesde && ((__generalHasta && f >= __generalDesde && f < __generalHasta) || (!__generalHasta && f === __generalDesde));
-                celda.classList.toggle('ring-river-600', !!enRango);
+                limpiarClaseSeleccionCelda(celda);
+                if (__generalDesde && (f === __generalDesde || f === __generalHasta)) {
+                    aplicarClaseSeleccionCelda(celda, 'punta');
+                } else if (__generalDesde && __generalHasta && f > __generalDesde && f < __generalHasta) {
+                    aplicarClaseSeleccionCelda(celda, 'rango');
+                }
             });
 
-            __inputGeneralDesde.value = __generalDesde;
-            __inputGeneralHasta.value = __generalHasta;
+            actualizarResumenSeleccion();
+        }
+
+        function limpiarSeleccionGeneral() {
+            __generalDesde = '';
+            __generalHasta = '';
+            actualizarResaltadoGeneral();
         }
 
         function seleccionarDiaGeneral(btn) {
@@ -185,22 +233,6 @@
 
             actualizarResaltadoGeneral();
         }
-
-        __inputGeneralDesde.addEventListener('change', function () {
-            __generalDesde = __inputGeneralDesde.value;
-            if (__generalHasta && __generalHasta <= __generalDesde) {
-                __generalHasta = '';
-            }
-            actualizarResaltadoGeneral();
-        });
-
-        __inputGeneralHasta.addEventListener('change', function () {
-            __generalHasta = __inputGeneralHasta.value;
-            if (__generalDesde && __generalHasta <= __generalDesde) {
-                __generalDesde = '';
-            }
-            actualizarResaltadoGeneral();
-        });
 
         function mostrarErrorGeneral(mensaje) {
             __generalError.textContent = mensaje;
