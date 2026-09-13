@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using GestionCabanas.Data;
 using GestionCabanas.Models;
 using GestionCabanas.Services;
@@ -15,13 +17,79 @@ namespace GestionCabanas.Areas.Admin.Controllers
         private readonly DisponibilidadService _disponibilidad;
         private readonly GraphOneDriveService _oneDrive;
         private readonly ExcelEscrituraService _excelEscritura;
+        private readonly IConfiguration _config;
 
-        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad, GraphOneDriveService oneDrive, ExcelEscrituraService excelEscritura)
+        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad, GraphOneDriveService oneDrive, ExcelEscrituraService excelEscritura, IConfiguration config)
         {
             _db = db;
             _disponibilidad = disponibilidad;
             _oneDrive = oneDrive;
             _excelEscritura = excelEscritura;
+            _config = config;
+        }
+
+        private static string CalcularFirmaCalendario(List<Reserva> reservas, List<TarifaDia> tarifas, List<PromoEstadia> promos)
+        {
+            var sb = new StringBuilder();
+            foreach (var r in reservas.OrderBy(r => r.Id))
+            {
+                sb.Append(r.Id).Append('|').Append(r.CabanaId).Append('|').Append(r.Estado).Append('|')
+                  .Append(r.FechaDesde.Ticks).Append('|').Append(r.FechaHasta.Ticks).Append('|')
+                  .Append(r.NombreHuesped).Append('|').Append(r.Pago).Append('|').Append(r.Valor).Append(';');
+            }
+            foreach (var t in tarifas.OrderBy(t => t.CabanaId).ThenBy(t => t.Fecha))
+            {
+                sb.Append(t.CabanaId).Append('|').Append(t.Fecha.Ticks).Append('|').Append(t.Precio).Append('|').Append(t.Bloqueada).Append(';');
+            }
+            foreach (var p in promos.OrderBy(p => p.Id))
+            {
+                sb.Append(p.Id).Append('|').Append(p.CabanaId).Append('|').Append(p.FechaDesde.Ticks).Append('|').Append(p.FechaHasta.Ticks).Append('|')
+                  .Append(p.Precio1Noche).Append('|').Append(p.Precio2Noches).Append('|').Append(p.Precio3Noches).Append('|').Append(p.Activa).Append(';');
+            }
+
+            var hash = MD5.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
+            return Convert.ToHexString(hash);
+        }
+
+        private async Task<DateTime?> ObtenerFechaModificacionExcelSilenciosaAsync()
+        {
+            var urlArchivo = _config["OneDrive:ArchivoUrl"];
+            if (string.IsNullOrWhiteSpace(urlArchivo))
+            {
+                return null;
+            }
+
+            try
+            {
+                return await _oneDrive.ObtenerFechaModificacionAsync(urlArchivo);
+            }
+            catch
+            {
+                // Si falla la consulta a Graph (token vencido, etc.) simplemente no se detecta cambio en el Excel esta vez.
+                return null;
+            }
+        }
+
+        public async Task<IActionResult> EstadoCalendario(int? anio, int? mes)
+        {
+            var hoy = DateTime.Today;
+            var primerDia = new DateTime(anio ?? hoy.Year, mes ?? hoy.Month, 1);
+            var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
+
+            var reservas = await _db.Reservas
+                .Where(r => r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
+                .ToListAsync();
+            var tarifas = await _disponibilidad.ObtenerTarifasEnRangoTodasCabanasAsync(primerDia, ultimoDia);
+            var promos = await _disponibilidad.ObtenerPromosEnRangoTodasCabanasAsync(primerDia, ultimoDia);
+
+            var firma = CalcularFirmaCalendario(reservas, tarifas, promos);
+
+            var conexion = await _oneDrive.ObtenerConexionAsync();
+            var excelModificado = conexion?.RefreshTokenCifrado is not null
+                ? await ObtenerFechaModificacionExcelSilenciosaAsync()
+                : null;
+
+            return Json(new { firma, excelModificado });
         }
 
         public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes)
@@ -254,7 +322,13 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.MesSiguiente = primerDia.AddMonths(1);
 
             ViewBag.SincronizacionConfigurada = _oneDrive.EstaConfigurado;
-            ViewBag.SincronizacionConexion = await _oneDrive.ObtenerConexionAsync();
+            var conexion = await _oneDrive.ObtenerConexionAsync();
+            ViewBag.SincronizacionConexion = conexion;
+
+            ViewBag.FirmaCalendario = CalcularFirmaCalendario(reservas, tarifas, promos);
+            ViewBag.ExcelModificado = conexion?.RefreshTokenCifrado is not null
+                ? await ObtenerFechaModificacionExcelSilenciosaAsync()
+                : null;
 
             return View();
         }
