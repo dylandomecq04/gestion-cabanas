@@ -305,7 +305,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             var primerDia = new DateTime(anio ?? hoy.Year, mes ?? hoy.Month, 1);
             var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
 
-            var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
+            var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Id).ToListAsync();
             var reservas = await _db.Reservas
                 .Where(r => r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
                 .ToListAsync();
