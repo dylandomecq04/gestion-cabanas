@@ -5,8 +5,8 @@
     var promoDerecha = ViewBag.PromoDerecha as PromoEstadia;
     var hayPromoActiva = promoIzquierda is not null || promoDerecha is not null;
 
-    // Fotos de ejemplo para el fondo del hero (temporal, se pueden reemplazar por las reales).
-    var heroFotos = new[] { "foto_2.jpg", "foto_3.jpg", "foto_4.jpg", "foto_5.jpg", "foto_6.jpg", "foto_7.jpg", "foto_8.jpg" };
+    // Fotos de paisaje y naturaleza del entorno para el fondo del hero.
+    var heroFotos = new[] { "hero-atardecer.jpg", "hero-sendero.webp", "hero-otono.jpg", "hero-arco.webp", "hero-picnic.jpg", "hero-refugio.webp", "hero-naranjo.webp" };
 }
 
 @if (hayPromoActiva)
@@ -48,29 +48,12 @@
     <div class="relative mx-auto max-w-2xl px-6 py-16 sm:px-10">
         <p class="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-river-100">Cabañas Sidharta &middot; El Tigre, Delta del Paraná</p>
         <h1 class="font-display text-4xl font-semibold sm:text-5xl md:text-6xl">Tu escapada frente al río</h1>
-        <p class="mx-auto mt-4 max-w-xl text-base text-river-50/90 sm:text-lg">
-            5 cabañas de madera a metros del agua, listas para desconectar en familia o con amigos.
-        </p>
         <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a asp-controller="Cabanas" asp-action="Disponibilidad" class="inline-flex items-center gap-2 rounded-full bg-sand-400 px-7 py-3.5 text-base font-bold text-river-950 shadow-lift transition hover:-translate-y-0.5 hover:bg-sand-300">
                 Reservar
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
             </a>
             <a href="#cabanas" class="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">Ver cabañas</a>
-        </div>
-        <div class="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium tracking-wide text-river-100/80">
-            <span class="flex items-center gap-1.5">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                A metros del agua
-            </span>
-            <span class="flex items-center gap-1.5">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                5 cabañas de madera
-            </span>
-            <span class="flex items-center gap-1.5">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                Ideal en familia o con amigos
-            </span>
         </div>
     </div>
 </section>

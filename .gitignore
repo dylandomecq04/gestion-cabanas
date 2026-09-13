@@ -6,4 +6,3 @@ obj/
 *.db-shm
 *.db-wal
 wwwroot/uploads/
-wwwroot/images/hero/
