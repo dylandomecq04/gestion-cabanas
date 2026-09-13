@@ -85,12 +85,12 @@ else
                     <thead class="border-b border-ink-100 bg-ink-50/60 text-xs font-semibold uppercase tracking-wide text-ink-500">
                         <tr>
                             <th class="px-5 py-3">Huésped</th>
-                            <th class="px-3 py-3">Contacto</th>
                             <th class="px-3 py-3">Fechas</th>
                             <th class="px-3 py-3 text-center">Personas</th>
                             <th class="px-3 py-3">Pagó</th>
                             <th class="px-3 py-3">Pagar</th>
                             <th class="px-3 py-3">Estado</th>
+                            <th class="px-3 py-3">Contacto</th>
                             <th class="px-5 py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -99,7 +99,6 @@ else
                         {
                             <tr class="transition hover:bg-sand-50/60">
                                 <td class="px-5 py-3 font-medium text-ink-900">@r.NombreHuesped</td>
-                                <td class="px-3 py-3 text-ink-500">@r.Telefono</td>
                                 <td class="whitespace-nowrap px-3 py-3 text-ink-600">@r.FechaDesde.ToString("dd/MM/yyyy") &ndash; @r.FechaHasta.ToString("dd/MM/yyyy")</td>
                                 <td class="px-3 py-3 text-center text-ink-600">@r.CantidadPersonas</td>
                                 <td class="px-3 py-3 text-ink-600">@(r.Pago.HasValue ? "$" + r.Pago.Value.ToString("N0") : "-")</td>
@@ -114,6 +113,7 @@ else
                                         <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Pendiente</span>
                                     }
                                 </td>
+                                <td class="px-3 py-3 text-ink-500">@r.Telefono</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-center gap-2 whitespace-nowrap">
                                         @if (r.Estado != EstadoReserva.Confirmada)
