@@ -843,22 +843,40 @@
             const anio = @primerDia.Year;
             const mes = @primerDia.Month;
             const syncConectada = @(syncConectada ? "true" : "false");
-            let firmaActual = @Html.Raw(Json.Serialize((string)ViewBag.FirmaCalendario));
-            let excelModificadoActual = @Html.Raw(Json.Serialize(((DateTime?)ViewBag.ExcelModificado)?.ToString("o")));
+            const firmaActual = @Html.Raw(Json.Serialize((string)ViewBag.FirmaCalendario));
+            let excelModificadoConocido = @Html.Raw(Json.Serialize(((DateTime?)ViewBag.ExcelModificado)?.ToString("o")));
+
+            function hayInteraccionAbierta() {
+                const abiertos = ['modal-reserva', 'modal-promo', 'modal-sincronizacion'].some(id => {
+                    const el = document.getElementById(id);
+                    return el && !el.classList.contains('hidden');
+                });
+                if (abiertos) return true;
+                const barraSeleccion = document.getElementById('barra-seleccion');
+                return !!barraSeleccion && !barraSeleccion.classList.contains('hidden');
+            }
+
+            async function obtenerEstado() {
+                const resp = await fetch(`@Url.Action("EstadoCalendario", "Reservas")?anio=${anio}&mes=${mes}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                return resp.ok ? await resp.json() : null;
+            }
 
             async function verificarCambios() {
-                let datos;
+                if (hayInteraccionAbierta()) return;
+
+                let estado;
                 try {
-                    const resp = await fetch(`@Url.Action("EstadoCalendario", "Reservas")?anio=${anio}&mes=${mes}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                    if (!resp.ok) return;
-                    datos = await resp.json();
+                    estado = await obtenerEstado();
                 } catch {
                     return;
                 }
+                if (!estado) return;
 
-                const huboCambioSitio = datos.firma !== firmaActual;
-                const huboCambioExcel = syncConectada && datos.excelModificado !== excelModificadoActual;
-                if (!huboCambioSitio && !huboCambioExcel) return;
+                // El "modificado" del Excel puede cambiar solo (co-autoría/autoguardado) sin que
+                // haya datos nuevos: se sincroniza en silencio, pero recién se recarga la página
+                // si eso cambió algo realmente visible en el calendario (la firma).
+                const huboCambioExcel = syncConectada && estado.excelModificado !== excelModificadoConocido;
+                excelModificadoConocido = estado.excelModificado;
 
                 if (huboCambioExcel) {
                     const form = document.getElementById('form-sincronizar');
@@ -871,10 +889,19 @@
                             body.set('__RequestVerificationToken', token);
                             await fetch(form.action, { method: 'POST', body });
                         } catch {
-                            // Si falla la sincronización silenciosa, igual recargamos para reflejar lo que haya en el sitio.
+                            // Si falla la sincronización silenciosa, igual chequeamos la firma más abajo.
                         }
                     }
+
+                    try {
+                        estado = await obtenerEstado();
+                    } catch {
+                        return;
+                    }
+                    if (!estado) return;
                 }
+
+                if (estado.firma === firmaActual || hayInteraccionAbierta()) return;
 
                 window.location.reload();
             }
