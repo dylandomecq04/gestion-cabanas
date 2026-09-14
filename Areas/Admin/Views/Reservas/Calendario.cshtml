@@ -263,7 +263,10 @@
                                                 <span class="absolute -top-2 left-1 text-[9px] font-bold uppercase tracking-wide text-amber-600 sm:-top-2.5 sm:text-[10px]">Promo</span>
                                             }
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
-                                            <span class="etiqueta-precio text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@etiquetaPrecio</span>
+                                            @if (!yaPaso)
+                                            {
+                                                <span class="etiqueta-precio text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@etiquetaPrecio</span>
+                                            }
                                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                             @if (llega is not null)
                                             {
