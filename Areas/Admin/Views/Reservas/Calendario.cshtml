@@ -134,7 +134,7 @@
                                 : EsFinDeSemana(dia)
                                     ? "bg-sand-100 text-sand-800"
                                     : "text-ink-400";
-                            <th class="min-w-[60px] rounded-lg px-0.5 py-1.5 text-center font-semibold sm:min-w-[112px] sm:px-1 sm:py-2.5 @clasesHeader">
+                            <th id="@(dia.Date == hoy ? "col-hoy" : null)" class="min-w-[60px] rounded-lg px-0.5 py-1.5 text-center font-semibold sm:min-w-[112px] sm:px-1 sm:py-2.5 @clasesHeader">
                                 <div class="text-[10px] uppercase opacity-80 sm:text-xs">@diasSemana[IndiceDiaSemana(dia)]</div>
                                 <div class="text-sm sm:text-lg">@dia.Day</div>
                             </th>
@@ -669,6 +669,17 @@
                 arriba.scrollLeft = tabla.scrollLeft;
                 sincronizando = false;
             });
+        })();
+
+        (function centrarScrollEnHoy() {
+            const tabla = document.getElementById('scroll-tabla');
+            const arriba = document.getElementById('scroll-arriba');
+            const columnaHoy = document.getElementById('col-hoy');
+            if (!tabla || !columnaHoy) return;
+
+            const offset = columnaHoy.offsetLeft - (tabla.clientWidth / 2) + (columnaHoy.offsetWidth / 2);
+            tabla.scrollLeft = Math.max(0, offset);
+            if (arriba) arriba.scrollLeft = tabla.scrollLeft;
         })();
 
         const seleccionDias = new Set();
