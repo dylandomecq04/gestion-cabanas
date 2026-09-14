@@ -123,7 +123,7 @@
 
     <form id="form-tarifas" asp-action="GuardarTarifasCalendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-24">
         <div id="scroll-tabla" class="scroll-fino overflow-x-auto rounded-2.5xl bg-white p-2 shadow-soft ring-1 ring-ink-100 sm:p-3">
-            <table class="w-full border-separate text-xs [border-spacing:2px] sm:[border-spacing:4px]">
+            <table class="w-full border-separate text-xs [border-spacing:2px_7px] sm:[border-spacing:4px_10px]">
                 <thead>
                     <tr>
                         <th class="sticky left-0 z-20 min-w-[84px] rounded-lg bg-sand-50 px-2 py-1.5 text-left text-xs font-semibold text-ink-700 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)] sm:min-w-[160px] sm:px-3 sm:py-2 sm:text-sm">Cabaña</th>
@@ -142,10 +142,16 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var cabana in cabanas)
+                    @for (var iCabana = 0; iCabana < cabanas.Count; iCabana++)
                     {
+                        var cabana = cabanas[iCabana];
+                        var filaClara = iCabana % 2 == 0;
+                        var bgFila = filaClara ? "bg-white" : "bg-sand-50/60";
+                        var claseBordeFila = "border-b border-ink-100";
                         <tr>
-                            <td class="sticky left-0 z-20 rounded-lg bg-sand-50 px-2 py-1.5 text-xs font-semibold text-ink-800 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)] sm:px-3 sm:py-2 sm:text-sm">@cabana.Nombre</td>
+                            <td class="sticky left-0 z-20 align-top @bgFila px-2 py-2 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)] @claseBordeFila sm:px-3 sm:py-2.5">
+                                <span class="inline-flex items-center rounded-full bg-sand-100 px-2.5 py-1 text-xs font-semibold text-ink-800 ring-1 ring-sand-200 sm:px-3 sm:text-sm">@cabana.Nombre</span>
+                            </td>
                             @foreach (var dia in dias)
                             {
                                 var reservasDia = ReservasDeLaCabanaEnElDia(cabana.Id, dia);
