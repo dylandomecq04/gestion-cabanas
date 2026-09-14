@@ -107,7 +107,7 @@
 
     <div class="scroll-fino mb-1 flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 text-xs font-medium text-ink-500 sm:flex-wrap sm:gap-4 sm:overflow-visible sm:whitespace-normal sm:pb-0">
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
-        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Solicitud</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-sky-200"></span> Solicitud</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100 ring-1 ring-ink-200"></span> Sin reservar</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
@@ -169,7 +169,7 @@
                                     var pagarTexto = reserva.Valor.HasValue ? "$" + reserva.Valor.Value.ToString("N0") : "-";
                                     var infoResumen = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM}";
                                     var claseReserva = esPendiente
-                                        ? "bg-amber-200 hover:bg-amber-300 text-amber-900"
+                                        ? "bg-sky-200 hover:bg-sky-300 text-sky-900"
                                         : "bg-green-300 hover:bg-green-400 text-green-900";
                                     <td class="p-0">
                                         <div class="relative">
@@ -218,7 +218,7 @@
                                                 var pagarTexto = reserva.Valor.HasValue ? "$" + reserva.Valor.Value.ToString("N0") : "-";
                                                 var infoResumen = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM}";
                                                 var claseReserva = esPendiente
-                                                    ? "bg-amber-200 hover:bg-amber-300 text-amber-900"
+                                                    ? "bg-sky-200 hover:bg-sky-300 text-sky-900"
                                                     : "bg-green-300 hover:bg-green-400 text-green-900";
                                                 <button type="button" onclick="abrirReserva(this)"
                                                         data-cabana-nombre="@cabana.Nombre"
@@ -850,7 +850,7 @@
             const estado = document.getElementById('info-reserva-estado');
             estado.textContent = btn.dataset.infoEstado;
             estado.className = 'shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ' +
-                (esPendiente ? 'bg-amber-100 text-amber-700' : 'bg-river-100 text-river-700');
+                (esPendiente ? 'bg-sky-100 text-sky-700' : 'bg-river-100 text-river-700');
 
             document.getElementById('link-editar-reserva').href = '/Admin/Reservas/Edit/' + btn.dataset.reservaId;
             document.getElementById('input-eliminar-reserva-id').value = btn.dataset.reservaId;
