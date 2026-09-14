@@ -108,6 +108,7 @@
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Pendiente</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100 ring-1 ring-ink-200"></span> Sin reservar</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
@@ -193,13 +194,16 @@
                                     var bloqueada = tarifa?.Bloqueada ?? false;
                                     var promoDelDia = PromoDeLaCabanaEnElDia(cabana.Id, dia);
                                     var enPromoDia = !bloqueada && promoDelDia is not null;
+                                    var yaPaso = !bloqueada && dia.Date < hoy;
                                     var precioTexto = tarifa?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
                                     var precioMostrar = tarifa?.Precio ?? cabana.PrecioPorNoche;
-                                    var etiquetaEstado = bloqueada ? "Bloqueada" : "Disponible";
+                                    var etiquetaEstado = bloqueada ? "Bloqueada" : yaPaso ? "Sin reservar" : "Disponible";
                                     var etiquetaPrecio = precioMostrar.HasValue ? "$" + precioMostrar.Value.ToString("N0") : "Sin precio";
                                     var clase = bloqueada
                                         ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                        : "bg-red-50 text-red-700 hover:bg-red-100";
+                                        : yaPaso
+                                            ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                            : "bg-red-50 text-red-700 hover:bg-red-100";
 
                                     <td class="p-0">
                                         <button type="button" data-index="@indice"
@@ -738,16 +742,20 @@
                 btn.dataset.bloqueada = bloqueada ? 'true' : 'false';
                 document.querySelector(`input[name="dias[${idx}].Bloqueada"]`).value = bloqueada ? 'true' : 'false';
 
-                btn.classList.remove('bg-green-100', 'text-green-700', 'hover:bg-green-200', 'bg-red-50', 'text-red-700', 'hover:bg-red-100');
+                const yaPaso = !bloqueada && btn.dataset.fecha < new Date().toISOString().slice(0, 10);
+
+                btn.classList.remove('bg-green-100', 'text-green-700', 'hover:bg-green-200', 'bg-red-50', 'text-red-700', 'hover:bg-red-100', 'bg-amber-100', 'text-amber-800', 'hover:bg-amber-200');
                 if (bloqueada) {
                     btn.classList.add('bg-green-100', 'text-green-700', 'hover:bg-green-200');
+                } else if (yaPaso) {
+                    btn.classList.add('bg-amber-100', 'text-amber-800', 'hover:bg-amber-200');
                 } else {
                     btn.classList.add('bg-red-50', 'text-red-700', 'hover:bg-red-100');
                 }
 
                 const etiquetaEstado = btn.querySelector('.etiqueta-estado');
                 if (etiquetaEstado) {
-                    etiquetaEstado.textContent = bloqueada ? 'Bloqueada' : 'Disponible';
+                    etiquetaEstado.textContent = bloqueada ? 'Bloqueada' : (yaPaso ? 'Sin reservar' : 'Disponible');
                 }
             });
 
