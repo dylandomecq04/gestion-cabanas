@@ -159,6 +159,7 @@
                                 var sale = ReservaQueSaleEseDia(cabana.Id, dia);
                                 var fechaAttr = dia.ToString("yyyy-MM-dd");
                                 var fechaTexto = dia.ToString("dd/MM/yyyy");
+                                var promoDelDia = PromoDeLaCabanaEnElDia(cabana.Id, dia);
 
                                 if (reservasDia.Count == 1)
                                 {
@@ -172,28 +173,38 @@
                                         ? "bg-amber-200 hover:bg-amber-300 text-amber-900"
                                         : "bg-green-300 hover:bg-green-400 text-green-900";
                                     <td class="p-0">
-                                        <button type="button" onclick="abrirReserva(this)"
-                                                data-cabana-nombre="@cabana.Nombre"
-                                                data-fecha-texto="@fechaTexto"
-                                                data-reserva-id="@reserva.Id"
-                                                data-info-resumen="@infoResumen"
-                                                data-info-estado="@etiquetaReserva"
-                                                data-info-pendiente="@(esPendiente ? "true" : "false")"
-                                                data-info-pago="@pagoTexto"
-                                                data-info-pagar="@pagarTexto"
-                                                title="@infoResumen (@etiquetaReserva)"
-                                                class="day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[11px] font-bold leading-tight sm:h-28 sm:w-28 sm:gap-1 sm:px-1.5 sm:text-sm @claseReserva">
-                                            <span>@etiquetaReserva</span>
-                                            <span class="truncate text-[9px] font-normal opacity-90 max-w-full sm:text-xs">@reserva.NombreHuesped</span>
-                                            @if (llega is not null)
+                                        <div class="relative">
+                                            <button type="button" onclick="abrirReserva(this)"
+                                                    data-cabana-nombre="@cabana.Nombre"
+                                                    data-fecha-texto="@fechaTexto"
+                                                    data-reserva-id="@reserva.Id"
+                                                    data-info-resumen="@infoResumen"
+                                                    data-info-estado="@etiquetaReserva"
+                                                    data-info-pendiente="@(esPendiente ? "true" : "false")"
+                                                    data-info-pago="@pagoTexto"
+                                                    data-info-pagar="@pagarTexto"
+                                                    title="@infoResumen (@etiquetaReserva)"
+                                                    class="day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[11px] font-bold leading-tight sm:h-28 sm:w-28 sm:gap-1 sm:px-1.5 sm:text-sm @claseReserva">
+                                                <span>@etiquetaReserva</span>
+                                                <span class="truncate text-[9px] font-normal opacity-90 max-w-full sm:text-xs">@reserva.NombreHuesped</span>
+                                                @if (llega is not null)
+                                                {
+                                                    <span title="Ingresa: @llega.NombreHuesped" class="absolute bottom-0.5 left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-river-700 shadow ring-1 ring-ink-200 sm:bottom-1 sm:left-1 sm:h-6 sm:w-6 sm:text-base">↑</span>
+                                                }
+                                                @if (sale is not null)
+                                                {
+                                                    <span title="Sale: @sale.NombreHuesped" class="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-rose-600 shadow ring-1 ring-ink-200 sm:bottom-1 sm:right-1 sm:h-6 sm:w-6 sm:text-base">↓</span>
+                                                }
+                                            </button>
+                                            @if (promoDelDia is not null)
                                             {
-                                                <span title="Ingresa: @llega.NombreHuesped" class="absolute bottom-0.5 left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-river-700 shadow ring-1 ring-ink-200 sm:bottom-1 sm:left-1 sm:h-6 sm:w-6 sm:text-base">↑</span>
+                                                <button type="button" onclick="event.stopPropagation(); eliminarPromoDesdeCelda(@promoDelDia.Id)"
+                                                        title="Eliminar la promoción de estos días"
+                                                        class="absolute -top-2 left-1 z-10 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow transition hover:bg-amber-600 sm:-top-2.5 sm:text-[10px]">
+                                                    Promo ✕
+                                                </button>
                                             }
-                                            @if (sale is not null)
-                                            {
-                                                <span title="Sale: @sale.NombreHuesped" class="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-rose-600 shadow ring-1 ring-ink-200 sm:bottom-1 sm:right-1 sm:h-6 sm:w-6 sm:text-base">↓</span>
-                                            }
-                                        </button>
+                                        </div>
                                     </td>
                                 }
                                 else if (reservasDia.Count > 1)
@@ -233,6 +244,14 @@
                                             {
                                                 <span title="Sale: @sale.NombreHuesped" class="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-rose-600 shadow ring-1 ring-ink-200 sm:bottom-1 sm:right-1 sm:h-6 sm:w-6 sm:text-base">↓</span>
                                             }
+                                            @if (promoDelDia is not null)
+                                            {
+                                                <button type="button" onclick="event.stopPropagation(); eliminarPromoDesdeCelda(@promoDelDia.Id)"
+                                                        title="Eliminar la promoción de estos días"
+                                                        class="absolute -top-2 left-1 z-10 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow transition hover:bg-amber-600 sm:-top-2.5 sm:text-[10px]">
+                                                    Promo ✕
+                                                </button>
+                                            }
                                         </div>
                                     </td>
                                 }
@@ -240,7 +259,6 @@
                                 {
                                     var tarifa = TarifaDeLaCabanaEnElDia(cabana.Id, dia);
                                     var bloqueada = tarifa?.Bloqueada ?? false;
-                                    var promoDelDia = PromoDeLaCabanaEnElDia(cabana.Id, dia);
                                     var enPromoDia = !bloqueada && promoDelDia is not null;
                                     var yaPaso = !bloqueada && dia.Date < hoy;
                                     var precioTexto = tarifa?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
@@ -784,6 +802,20 @@
                 contenedor.appendChild(input);
             });
             document.getElementById('btn-eliminar-promo').classList.toggle('hidden', idsPromo.length === 0);
+        }
+
+        // Permite borrar la promo de una celda que tiene una reserva encima (donde no se
+        // puede seleccionar el día para el borrado en lote porque el clic abre la reserva).
+        function eliminarPromoDesdeCelda(promoId) {
+            if (!confirm('¿Eliminar la promoción de estos días? No se puede deshacer.')) return;
+            const inputs = document.getElementById('eliminar-promo-inputs');
+            inputs.innerHTML = '';
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids';
+            input.value = promoId;
+            inputs.appendChild(input);
+            document.getElementById('form-eliminar-promo').submit();
         }
 
         function actualizarBotonBloqueo(bloquear) {
