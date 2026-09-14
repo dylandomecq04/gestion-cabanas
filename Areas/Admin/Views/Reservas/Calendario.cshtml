@@ -107,7 +107,7 @@
 
     <div class="scroll-fino mb-1 flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 text-xs font-medium text-ink-500 sm:flex-wrap sm:gap-4 sm:overflow-visible sm:whitespace-normal sm:pb-0">
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
-        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Pendiente</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Solicitud</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100 ring-1 ring-ink-200"></span> Sin reservar</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
@@ -165,7 +165,7 @@
                                 {
                                     var reserva = reservasDia[0];
                                     var esPendiente = reserva.Estado == EstadoReserva.Pendiente;
-                                    var etiquetaReserva = esPendiente ? "Pendiente" : "Reservada";
+                                    var etiquetaReserva = esPendiente ? "Solicitud" : "Reservada";
                                     var pagoTexto = reserva.Pago.HasValue ? "$" + reserva.Pago.Value.ToString("N0") : "-";
                                     var pagarTexto = reserva.Valor.HasValue ? "$" + reserva.Valor.Value.ToString("N0") : "-";
                                     var infoResumen = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM}";
@@ -214,7 +214,7 @@
                                             @foreach (var reserva in reservasDia)
                                             {
                                                 var esPendiente = reserva.Estado == EstadoReserva.Pendiente;
-                                                var etiquetaReserva = esPendiente ? "Pendiente" : "Reservada";
+                                                var etiquetaReserva = esPendiente ? "Solicitud" : "Reservada";
                                                 var pagoTexto = reserva.Pago.HasValue ? "$" + reserva.Pago.Value.ToString("N0") : "-";
                                                 var pagarTexto = reserva.Valor.HasValue ? "$" + reserva.Valor.Value.ToString("N0") : "-";
                                                 var infoResumen = $"{reserva.NombreHuesped} — {reserva.FechaDesde:dd/MM} al {reserva.FechaHasta:dd/MM}";
