@@ -110,12 +110,11 @@
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-200"></span> Solicitud</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100 ring-1 ring-ink-200"></span> Sin reservar</span>
-        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-100 ring-1 ring-ink-200"></span> Bloqueada</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-rose-600">↓</span> Sale ese día</span>
     </div>
-    <p class="mb-4 text-xs text-ink-400">Tocá una o varias celdas libres para bloquearlas o ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
+    <p class="mb-4 text-xs text-ink-400">Tocá una o varias celdas libres para ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
 
     <div id="scroll-arriba" class="scroll-fino mb-1.5 overflow-x-auto overflow-y-hidden">
         <div id="scroll-arriba-ancho" class="h-px"></div>
@@ -258,18 +257,15 @@
                                 else
                                 {
                                     var tarifa = TarifaDeLaCabanaEnElDia(cabana.Id, dia);
-                                    var bloqueada = tarifa?.Bloqueada ?? false;
-                                    var enPromoDia = !bloqueada && promoDelDia is not null;
-                                    var yaPaso = !bloqueada && dia.Date < hoy;
+                                    var enPromoDia = promoDelDia is not null;
+                                    var yaPaso = dia.Date < hoy;
                                     var precioTexto = tarifa?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
                                     var precioMostrar = tarifa?.Precio ?? cabana.PrecioPorNoche;
-                                    var etiquetaEstado = bloqueada ? "Bloqueada" : yaPaso ? "Sin reservar" : "Disponible";
+                                    var etiquetaEstado = yaPaso ? "Sin reservar" : "Disponible";
                                     var etiquetaPrecio = precioMostrar.HasValue ? "$" + precioMostrar.Value.ToString("N0") : "Sin precio";
-                                    var clase = bloqueada
-                                        ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                        : yaPaso
-                                            ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                                            : "bg-red-50 text-red-700 hover:bg-red-100";
+                                    var clase = yaPaso
+                                        ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                        : "bg-red-50 text-red-700 hover:bg-red-100";
 
                                     <td class="p-0">
                                         <button type="button" data-index="@indice"
@@ -278,7 +274,6 @@
                                                 data-fecha="@fechaAttr"
                                                 data-fecha-texto="@fechaTexto"
                                                 data-precio="@precioTexto"
-                                                data-bloqueada="@(bloqueada ? "true" : "false")"
                                                 data-promo-id="@(enPromoDia ? promoDelDia!.Id.ToString() : "")"
                                                 onclick="alternarSeleccionDia(this)"
                                                 class="dia-editable day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @clase @(enPromoDia ? "promo-glow" : "")">
@@ -304,7 +299,6 @@
                                         <input type="hidden" name="dias[@indice].CabanaId" value="@cabana.Id" />
                                         <input type="hidden" name="dias[@indice].Fecha" value="@fechaAttr" />
                                         <input type="hidden" name="dias[@indice].Precio" value="@precioTexto" />
-                                        <input type="hidden" name="dias[@indice].Bloqueada" value="@(bloqueada ? "true" : "false")" />
                                     </td>
                                     indice++;
                                 }
@@ -331,11 +325,6 @@
                 <input id="bulk-precio" type="text" inputmode="numeric" placeholder="Base"
                        oninput="formatearMiles(this)"
                        class="h-9 w-full rounded-xl border border-ink-200 px-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 sm:h-10 sm:px-3" />
-            </div>
-            <div class="shrink-0">
-                <label class="mb-1 block text-xs font-medium text-transparent select-none">&nbsp;</label>
-                <button type="button" id="btn-bloqueo" title=""
-                        class="h-9 w-9 shrink-0 rounded-xl text-base text-white shadow-sm transition sm:h-10 sm:w-10"></button>
             </div>
         </div>
 
@@ -738,13 +727,10 @@
         }
 
         // Para poder cargar una reserva que cubra la selección, todos los días elegidos tienen que
-        // ser de la misma cabaña, seguidos (sin huecos) y ninguno puede estar ya bloqueado.
+        // ser de la misma cabaña y seguidos (sin huecos).
         function puedeCargarReservaEnSeleccion(btns) {
             const cabanaId = btns[0].dataset.cabanaId;
             if (!btns.every(b => b.dataset.cabanaId === cabanaId)) {
-                return false;
-            }
-            if (btns.some(b => b.dataset.bloqueada === 'true')) {
                 return false;
             }
 
@@ -782,14 +768,6 @@
                 linkCargar.classList.add('hidden');
             }
 
-            if (btns.length > 0) {
-                // El botón siempre ofrece la acción contraria al estado actual: si todos los
-                // días seleccionados ya están bloqueados, ofrece desbloquear; si no (todos
-                // desbloqueados, o una mezcla de ambos), ofrece bloquear.
-                const todosBloqueados = btns.every(b => b.dataset.bloqueada === 'true');
-                actualizarBotonBloqueo(!todosBloqueados);
-            }
-
             actualizarBotonEliminarPromo(btns);
         }
 
@@ -818,47 +796,6 @@
             input.value = promoId;
             inputs.appendChild(input);
             mostrarConfirmacion('¿Eliminar la promoción de estos días? No se puede deshacer.', document.getElementById('form-eliminar-promo'));
-        }
-
-        function actualizarBotonBloqueo(bloquear) {
-            const btn = document.getElementById('btn-bloqueo');
-            btn.textContent = bloquear ? '🔒' : '🔓';
-            btn.title = bloquear ? 'Bloquear' : 'Desbloquear';
-            btn.onclick = () => aplicarBloqueo(bloquear);
-            btn.classList.toggle('bg-rose-600', bloquear);
-            btn.classList.toggle('hover:bg-rose-700', bloquear);
-            btn.classList.toggle('bg-emerald-600', !bloquear);
-            btn.classList.toggle('hover:bg-emerald-700', !bloquear);
-        }
-
-        // Bloquear/desbloquear se aplica al instante al tocar el botón, sin pasar por "Aplicar".
-        function aplicarBloqueo(bloqueada) {
-            seleccionDias.forEach(idx => {
-                const btn = document.querySelector(`.dia-editable[data-index="${idx}"]`);
-                if (!btn) return;
-
-                btn.dataset.bloqueada = bloqueada ? 'true' : 'false';
-                document.querySelector(`input[name="dias[${idx}].Bloqueada"]`).value = bloqueada ? 'true' : 'false';
-
-                const yaPaso = !bloqueada && btn.dataset.fecha < new Date().toISOString().slice(0, 10);
-
-                btn.classList.remove('bg-green-100', 'text-green-700', 'hover:bg-green-200', 'bg-red-50', 'text-red-700', 'hover:bg-red-100', 'bg-amber-100', 'text-amber-800', 'hover:bg-amber-200');
-                if (bloqueada) {
-                    btn.classList.add('bg-green-100', 'text-green-700', 'hover:bg-green-200');
-                } else if (yaPaso) {
-                    btn.classList.add('bg-amber-100', 'text-amber-800', 'hover:bg-amber-200');
-                } else {
-                    btn.classList.add('bg-red-50', 'text-red-700', 'hover:bg-red-100');
-                }
-
-                const etiquetaEstado = btn.querySelector('.etiqueta-estado');
-                if (etiquetaEstado) {
-                    etiquetaEstado.textContent = bloqueada ? 'Bloqueada' : (yaPaso ? 'Sin reservar' : 'Disponible');
-                }
-            });
-
-            cancelarSeleccion();
-            document.getElementById('form-tarifas').requestSubmit();
         }
 
         function cancelarSeleccion() {

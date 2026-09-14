@@ -45,7 +45,7 @@
 </div>
 
 <p class="mb-4 text-sm text-ink-500">
-    Tocá uno o varios días para seleccionarlos (podés elegir varios a la vez) y después ponerles precio o bloquearlos juntos.
+    Tocá uno o varios días para seleccionarlos (podés elegir varios a la vez) y después ponerles precio juntos.
 </p>
 
 <form id="form-tarifas" asp-action="GuardarTarifas" asp-route-id="@cabana.Id" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-24">
@@ -74,13 +74,12 @@
                 else
                 {
                     var precioTexto = dia.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
-                    var etiqueta = dia.Bloqueada ? "Bloqueada" : (dia.Precio.HasValue ? "$" + dia.Precio.Value.ToString("N0") : precioBaseTexto);
-                    var clases = dia.Bloqueada ? "bg-ink-200 text-ink-500" : (dia.EnPromo ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-river-50 text-river-700 hover:bg-river-100");
+                    var etiqueta = dia.Precio.HasValue ? "$" + dia.Precio.Value.ToString("N0") : precioBaseTexto;
+                    var clases = dia.EnPromo ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-river-50 text-river-700 hover:bg-river-100";
 
                     <div class="contents">
                         <button type="button" data-index="@indice"
                                 data-precio="@precioTexto"
-                                data-bloqueada="@(dia.Bloqueada ? "true" : "false")"
                                 onclick="alternarSeleccionDia(this)"
                                 class="dia-editable day-cell relative flex h-12 flex-col items-center justify-center gap-0.5 rounded-lg font-medium ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clases">
                             @if (dia.EnPromo)
@@ -93,7 +92,6 @@
                         </button>
                         <input type="hidden" name="dias[@indice].Fecha" value="@dia.Fecha.ToString("yyyy-MM-dd")" />
                         <input type="hidden" name="dias[@indice].Precio" value="@precioTexto" />
-                        <input type="hidden" name="dias[@indice].Bloqueada" value="@(dia.Bloqueada ? "true" : "false")" />
                     </div>
                     indice++;
                 }
@@ -103,7 +101,6 @@
         <div class="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink-500">
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-1 ring-inset ring-river-200"></span> Disponible (precio base)</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Con promoción</span>
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-200"></span> Bloqueada</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Reservada</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-50"></span> Fecha pasada</span>
         </div>
@@ -174,10 +171,6 @@
                    oninput="formatearMiles(this)"
                    class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
         </div>
-        <label class="flex items-center gap-2 pb-2 text-sm font-medium text-ink-700">
-            <input id="bulk-bloqueada" type="checkbox" class="h-4 w-4 rounded border-ink-300 text-rose-600 focus:ring-rose-400" />
-            Bloquear
-        </label>
         <button type="button" onclick="aplicarSeleccion()" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
             Aplicar a seleccionados
         </button>
@@ -228,7 +221,6 @@
             });
             seleccionDias.clear();
             document.getElementById('bulk-precio').value = '';
-            document.getElementById('bulk-bloqueada').checked = false;
             actualizarBarraSeleccion();
         }
 
@@ -239,28 +231,20 @@
 
         function aplicarSeleccion() {
             const precioTexto = document.getElementById('bulk-precio').value.replace(/\D/g, '');
-            const bloqueada = document.getElementById('bulk-bloqueada').checked;
 
             seleccionDias.forEach(idx => {
                 const btn = document.querySelector(`.dia-editable[data-index="${idx}"]`);
                 if (!btn) return;
 
                 btn.dataset.precio = precioTexto;
-                btn.dataset.bloqueada = bloqueada ? 'true' : 'false';
-
                 document.querySelector(`input[name="dias[${idx}].Precio"]`).value = precioTexto;
-                document.querySelector(`input[name="dias[${idx}].Bloqueada"]`).value = bloqueada ? 'true' : 'false';
 
-                btn.classList.remove('bg-ink-200', 'text-ink-500', 'bg-river-50', 'text-river-700', 'hover:bg-river-100');
-                if (bloqueada) {
-                    btn.classList.add('bg-ink-200', 'text-ink-500');
-                } else {
-                    btn.classList.add('bg-river-50', 'text-river-700', 'hover:bg-river-100');
-                }
+                btn.classList.remove('bg-ink-200', 'text-ink-500');
+                btn.classList.add('bg-river-50', 'text-river-700', 'hover:bg-river-100');
 
                 const etiqueta = btn.querySelector('.etiqueta-precio');
                 if (etiqueta) {
-                    etiqueta.textContent = bloqueada ? 'Bloqueada' : (precioTexto ? '$' + Number(precioTexto).toLocaleString('es-AR') : precioBaseTexto);
+                    etiqueta.textContent = precioTexto ? '$' + Number(precioTexto).toLocaleString('es-AR') : precioBaseTexto;
                 }
             });
 

@@ -2,7 +2,6 @@
     ViewData["Title"] = "Disponibilidad";
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
     var reservas = (List<Reserva>)ViewBag.Reservas;
-    var bloqueadas = (List<TarifaDia>)ViewBag.Bloqueadas;
     var promos = (List<PromoEstadia>)ViewBag.Promos;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
@@ -11,9 +10,7 @@
     bool permitirMesAnterior = ViewBag.PermitirMesAnterior;
     var hoy = DateTime.Today;
 
-    bool EstaOcupada(int cabanaId, DateTime dia) => reservas.Any(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
-    bool EstaBloqueada(int cabanaId, DateTime dia) => bloqueadas.Any(b => b.CabanaId == cabanaId && b.Fecha.Date == dia.Date);
-    bool NoDisponible(int cabanaId, DateTime dia) => EstaOcupada(cabanaId, dia) || EstaBloqueada(cabanaId, dia);
+    bool NoDisponible(int cabanaId, DateTime dia) => reservas.Any(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
     int CabanasLibres(DateTime dia) => cabanas.Count(c => !NoDisponible(c.Id, dia));
     bool CabanaEnPromo(int cabanaId, DateTime dia) => promos.Any(p => p.CabanaId == cabanaId && p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
     bool DiaConPromoDisponible(DateTime dia) => cabanas.Any(c => !NoDisponible(c.Id, dia) && CabanaEnPromo(c.Id, dia));

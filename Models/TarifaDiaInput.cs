@@ -5,6 +5,5 @@ namespace GestionCabanas.Models
         public int CabanaId { get; set; }
         public DateTime Fecha { get; set; }
         public decimal? Precio { get; set; }
-        public bool Bloqueada { get; set; }
     }
 }

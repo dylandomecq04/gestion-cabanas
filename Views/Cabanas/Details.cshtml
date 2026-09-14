@@ -14,7 +14,6 @@
 
     bool EstaOcupado(DateTime dia) => reservas.Any(r => r.FechaDesde <= dia && dia < r.FechaHasta);
     TarifaDia? TarifaDelDia(DateTime dia) => tarifas.FirstOrDefault(t => t.Fecha.Date == dia.Date);
-    bool EstaBloqueada(DateTime dia) => TarifaDelDia(dia)?.Bloqueada ?? false;
     decimal? PrecioDelDia(DateTime dia) => TarifaDelDia(dia)?.Precio ?? cabana.PrecioPorNoche;
     bool EnPromo(DateTime dia) => promos.Any(p => p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
 
@@ -191,10 +190,6 @@
                     {
                         <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-rose-100 text-sm font-semibold text-rose-600 sm:text-base">@dia.Value.Day</div>
                     }
-                    else if (EstaBloqueada(dia.Value))
-                    {
-                        <div class="day-cell flex aspect-square items-center justify-center rounded-lg bg-ink-200 text-sm font-semibold text-ink-500 sm:text-base">@dia.Value.Day</div>
-                    }
                     else
                     {
                         var precioDia = PrecioDelDia(dia.Value);
@@ -219,7 +214,6 @@
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Libre</span>
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Con promoción</span>
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Ocupada</span>
-                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-200"></span> No disponible</span>
             </div>
             <a asp-action="Disponibilidad" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-river-700 hover:gap-2">
                 Ver disponibilidad general de las 5 cabañas

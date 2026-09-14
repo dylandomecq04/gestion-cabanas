@@ -272,12 +272,10 @@ namespace GestionCabanas.Controllers
 
             var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
             var reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia);
-            var bloqueadas = await _disponibilidad.ObtenerBloqueadasEnRangoAsync(primerDia, ultimoDia);
             var promos = await _disponibilidad.ObtenerPromosEnRangoTodasCabanasAsync(primerDia, ultimoDia);
 
             ViewBag.Cabanas = cabanas;
             ViewBag.Reservas = reservas;
-            ViewBag.Bloqueadas = bloqueadas;
             ViewBag.Promos = promos;
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;

@@ -259,13 +259,6 @@ namespace GestionCabanas.Services
 
                         var ubicacion = $"{anio}/{hoja.Name}!{hoja.Cell(r, colFecha).Address}";
 
-                        if (Normalizar(textoNombre) == "BLOQUEADA")
-                        {
-                            // Es un bloqueo que el propio sitio escribió (o alguien tipeó a mano):
-                            // no se administra como reserva, así que no lo tocamos acá.
-                            continue;
-                        }
-
                         decimal? pago = colPago.HasValue ? LeerDecimal(hoja.Cell(r, colPago.Value)) : null;
                         decimal? pagar = colPagar.HasValue ? LeerDecimal(hoja.Cell(r, colPagar.Value)) : null;
                         ubicacionesVistas.Add(ubicacion);

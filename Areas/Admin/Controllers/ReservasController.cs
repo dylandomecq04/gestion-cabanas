@@ -39,7 +39,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             }
             foreach (var t in tarifas.OrderBy(t => t.CabanaId).ThenBy(t => t.Fecha))
             {
-                sb.Append(t.CabanaId).Append('|').Append(t.Fecha.Ticks).Append('|').Append(t.Precio).Append('|').Append(t.Bloqueada).Append(';');
+                sb.Append(t.CabanaId).Append('|').Append(t.Fecha.Ticks).Append('|').Append(t.Precio).Append(';');
             }
             foreach (var p in promos.OrderBy(p => p.Id))
             {
@@ -269,39 +269,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AlternarBloqueo(int cabanaId, DateTime fecha, int? anio, int? mes)
-        {
-            var existente = await _db.TarifasDias.FirstOrDefaultAsync(t => t.CabanaId == cabanaId && t.Fecha.Date == fecha.Date);
-
-            if (existente is not null && existente.Bloqueada)
-            {
-                if (existente.Precio.HasValue)
-                {
-                    existente.Bloqueada = false;
-                }
-                else
-                {
-                    _db.TarifasDias.Remove(existente);
-                }
-                TempData["Mensaje"] = "Día desbloqueado.";
-            }
-            else if (existente is not null)
-            {
-                existente.Bloqueada = true;
-                TempData["Mensaje"] = "Día bloqueado.";
-            }
-            else
-            {
-                _db.TarifasDias.Add(new TarifaDia { CabanaId = cabanaId, Fecha = fecha.Date, Bloqueada = true });
-                TempData["Mensaje"] = "Día bloqueado.";
-            }
-
-            await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Calendario), new { anio, mes });
-        }
-
         public async Task<IActionResult> Calendario(int? anio, int? mes)
         {
             var hoy = DateTime.Today;
@@ -406,10 +373,8 @@ namespace GestionCabanas.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GuardarTarifasCalendario(int anio, int mes, List<TarifaDiaInput> dias)
         {
-            var avisos = await _disponibilidad.GuardarTarifasAsync(dias ?? new List<TarifaDiaInput>());
-            TempData["Mensaje"] = avisos.Count == 0
-                ? "Cambios guardados."
-                : $"Cambios guardados. {string.Join(" ", avisos)}";
+            await _disponibilidad.GuardarTarifasAsync(dias ?? new List<TarifaDiaInput>());
+            TempData["Mensaje"] = "Cambios guardados.";
             return RedirectToAction(nameof(Calendario), new { anio, mes });
         }
 

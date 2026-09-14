@@ -15,8 +15,6 @@ namespace GestionCabanas.Models
         [Range(0, 999999999)]
         public decimal? Precio { get; set; }
 
-        public bool Bloqueada { get; set; }
-
         [StringLength(200)]
         public string? ExcelUbicacion { get; set; }
     }
