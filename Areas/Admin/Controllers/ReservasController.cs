@@ -385,6 +385,22 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarPromoCalendario(List<int> ids, int? anio, int? mes)
+        {
+            if (ids is not null && ids.Count > 0)
+            {
+                var promosAEliminar = await _db.PromosEstadia.Where(p => ids.Contains(p.Id)).ToListAsync();
+                _db.PromosEstadia.RemoveRange(promosAEliminar);
+                await _db.SaveChangesAsync();
+                TempData["Mensaje"] = promosAEliminar.Count > 1
+                    ? $"{promosAEliminar.Count} promociones eliminadas."
+                    : "Promoción eliminada.";
+            }
+            return RedirectToAction(nameof(Calendario), new { anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> GuardarTarifasCalendario(int anio, int mes, List<TarifaDiaInput> dias)
         {
             var avisos = await _disponibilidad.GuardarTarifasAsync(dias ?? new List<TarifaDiaInput>());
