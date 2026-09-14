@@ -25,51 +25,50 @@
     </div>
 </div>
 
-<p class="mb-4 text-sm text-ink-500">
-    Definí el precio de lunes a viernes, el de sábado y el de domingo para todo @mesTitulo. Dejá un campo vacío para no tocar esos días; los días ya reservados no se modifican.
-    Para cambiar un día puntual, hacelo desde el <a asp-area="Admin" asp-controller="Reservas" asp-action="Calendario" class="font-medium text-river-700 underline underline-offset-2">Calendario</a>.
-</p>
-
-<div class="space-y-4">
-    @foreach (var cabana in cabanas)
-    {
-        var precioBaseTexto = cabana.PrecioPorNoche.HasValue ? "$" + cabana.PrecioPorNoche.Value.ToString("N0") : "sin definir";
-        <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
-            <h2 class="mb-3 font-display text-lg font-semibold text-ink-900">
-                @cabana.Nombre
-                <span class="ml-1 text-sm font-normal text-ink-400">precio base: @precioBaseTexto</span>
-            </h2>
-            <form asp-action="AplicarPreciosPorDiaSemana" asp-route-id="@cabana.Id" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post"
-                  class="grid grid-cols-1 gap-4 sm:grid-cols-4 sm:items-end">
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-ink-700">Lunes a viernes</label>
-                    <input type="text" inputmode="numeric" placeholder="$"
-                           oninput="formatearMilesConReal(this, 'precio-semana-real-@cabana.Id')"
-                           class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                    <input type="hidden" id="precio-semana-real-@cabana.Id" name="precioSemana" />
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-ink-700">Sábado</label>
-                    <input type="text" inputmode="numeric" placeholder="$"
-                           oninput="formatearMilesConReal(this, 'precio-sabado-real-@cabana.Id')"
-                           class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                    <input type="hidden" id="precio-sabado-real-@cabana.Id" name="precioSabado" />
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-ink-700">Domingo</label>
-                    <input type="text" inputmode="numeric" placeholder="$"
-                           oninput="formatearMilesConReal(this, 'precio-domingo-real-@cabana.Id')"
-                           class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                    <input type="hidden" id="precio-domingo-real-@cabana.Id" name="precioDomingo" />
-                </div>
-                <div>
-                    <button type="submit" class="w-full rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 sm:w-auto">
-                        Aplicar
-                    </button>
-                </div>
-            </form>
+<div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+    <form asp-action="AplicarPreciosPorDiaSemana" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post">
+        <div class="mb-5">
+            <label class="mb-2 block text-sm font-medium text-ink-700">Cabañas</label>
+            <div class="flex flex-wrap gap-2">
+                @foreach (var cabana in cabanas)
+                {
+                    <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-700 transition hover:border-river-300">
+                        <input type="checkbox" name="cabanaIds" value="@cabana.Id"
+                               class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
+                        @cabana.Nombre
+                    </label>
+                }
+            </div>
         </div>
-    }
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-4 sm:items-end">
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Lunes a viernes</label>
+                <input type="text" inputmode="numeric" placeholder="$"
+                       oninput="formatearMilesConReal(this, 'precio-semana-real')"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                <input type="hidden" id="precio-semana-real" name="precioSemana" />
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Sábado</label>
+                <input type="text" inputmode="numeric" placeholder="$"
+                       oninput="formatearMilesConReal(this, 'precio-sabado-real')"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                <input type="hidden" id="precio-sabado-real" name="precioSabado" />
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-ink-700">Domingo</label>
+                <input type="text" inputmode="numeric" placeholder="$"
+                       oninput="formatearMilesConReal(this, 'precio-domingo-real')"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                <input type="hidden" id="precio-domingo-real" name="precioDomingo" />
+            </div>
+            <div>
+                <button type="submit" class="w-full rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 sm:w-auto">
+                    Aplicar
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
 
 @section Scripts {

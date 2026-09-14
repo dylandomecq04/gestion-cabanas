@@ -157,7 +157,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
                     Reservada = reservas.Any(r => r.FechaDesde <= fecha && fecha < r.FechaHasta),
                     Pasada = fecha < hoy,
                     Precio = tarifa?.Precio,
-                    Bloqueada = tarifa?.Bloqueada ?? false,
                     EnPromo = promoDelDia is not null,
                     EtiquetaPromo = promoDelDia?.Nombre
                 });
@@ -214,12 +213,12 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AplicarPreciosPorDiaSemana(int id, int anio, int mes, decimal? precioSemana, decimal? precioSabado, decimal? precioDomingo)
+        public async Task<IActionResult> AplicarPreciosPorDiaSemana(List<int> cabanaIds, int anio, int mes, decimal? precioSemana, decimal? precioSabado, decimal? precioDomingo)
         {
-            var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == id);
-            if (cabana is null)
+            if (cabanaIds is null || cabanaIds.Count == 0)
             {
-                return NotFound();
+                TempData["Mensaje"] = "Seleccioná al menos una cabaña para aplicar los precios.";
+                return RedirectToAction(nameof(Precios), new { anio, mes });
             }
 
             if (!precioSemana.HasValue && !precioSabado.HasValue && !precioDomingo.HasValue)
@@ -228,52 +227,55 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Precios), new { anio, mes });
             }
 
+            var cabanas = await _db.Cabanas.Where(c => cabanaIds.Contains(c.Id)).ToListAsync();
+            if (cabanas.Count == 0)
+            {
+                return NotFound();
+            }
+
             var primerDia = new DateTime(anio, mes, 1);
             var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
             var hoy = DateTime.Today;
 
             var reservas = await _db.Reservas
-                .Where(r => r.CabanaId == id && r.Estado == EstadoReserva.Confirmada && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
+                .Where(r => cabanaIds.Contains(r.CabanaId) && r.Estado == EstadoReserva.Confirmada && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
                 .ToListAsync();
-
-            var bloqueadas = await _db.TarifasDias
-                .Where(t => t.CabanaId == id && t.Fecha >= primerDia && t.Fecha <= ultimoDia && t.Bloqueada)
-                .Select(t => t.Fecha.Date)
-                .ToListAsync();
-            var bloqueadasSet = bloqueadas.ToHashSet();
 
             var dias = new List<TarifaDiaInput>();
-            for (var fecha = primerDia; fecha <= ultimoDia; fecha = fecha.AddDays(1))
+            foreach (var cabana in cabanas)
             {
-                if (fecha < hoy || reservas.Any(r => r.FechaDesde <= fecha && fecha < r.FechaHasta))
+                for (var fecha = primerDia; fecha <= ultimoDia; fecha = fecha.AddDays(1))
                 {
-                    continue;
+                    if (fecha < hoy || reservas.Any(r => r.CabanaId == cabana.Id && r.FechaDesde <= fecha && fecha < r.FechaHasta))
+                    {
+                        continue;
+                    }
+
+                    decimal? precio = fecha.DayOfWeek switch
+                    {
+                        DayOfWeek.Saturday => precioSabado,
+                        DayOfWeek.Sunday => precioDomingo,
+                        _ => precioSemana
+                    };
+
+                    if (!precio.HasValue)
+                    {
+                        continue;
+                    }
+
+                    dias.Add(new TarifaDiaInput
+                    {
+                        CabanaId = cabana.Id,
+                        Fecha = fecha,
+                        Precio = precio
+                    });
                 }
-
-                decimal? precio = fecha.DayOfWeek switch
-                {
-                    DayOfWeek.Saturday => precioSabado,
-                    DayOfWeek.Sunday => precioDomingo,
-                    _ => precioSemana
-                };
-
-                if (!precio.HasValue)
-                {
-                    continue;
-                }
-
-                dias.Add(new TarifaDiaInput
-                {
-                    CabanaId = id,
-                    Fecha = fecha,
-                    Precio = precio,
-                    Bloqueada = bloqueadasSet.Contains(fecha.Date)
-                });
             }
 
             await _disponibilidad.GuardarTarifasAsync(dias);
 
-            TempData["Mensaje"] = $"Precios de \"{cabana.Nombre}\" actualizados para {primerDia:MMMM yyyy}.";
+            var nombres = string.Join(", ", cabanas.Select(c => c.Nombre));
+            TempData["Mensaje"] = $"Precios de {nombres} actualizados para {primerDia:MMMM yyyy}.";
             return RedirectToAction(nameof(Precios), new { anio, mes });
         }
 
