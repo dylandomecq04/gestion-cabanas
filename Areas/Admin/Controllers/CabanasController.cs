@@ -95,6 +95,23 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarcarPortada(int id, int cabanaId)
+        {
+            var foto = await _db.Fotos.FindAsync(id);
+            if (foto is not null && foto.CabanaId == cabanaId)
+            {
+                var ordenMinimo = await _db.Fotos.Where(f => f.CabanaId == cabanaId).MinAsync(f => (int?)f.Orden) ?? 0;
+                if (foto.Orden != ordenMinimo)
+                {
+                    foto.Orden = ordenMinimo - 1;
+                    await _db.SaveChangesAsync();
+                }
+            }
+            return RedirectToAction(nameof(Edit), new { id = cabanaId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> EliminarFoto(int id, int cabanaId)
         {
             var foto = await _db.Fotos.FindAsync(id);
