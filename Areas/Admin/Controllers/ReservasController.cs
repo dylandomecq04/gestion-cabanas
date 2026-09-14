@@ -100,13 +100,12 @@ namespace GestionCabanas.Areas.Admin.Controllers
             var primerDia = new DateTime(anioActual, mesActual, 1);
             var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
 
+            var estadoEfectivo = estado ?? EstadoReserva.Confirmada;
+
             var query = _db.Reservas.Include(r => r.Cabana)
                 .Where(r => r.FechaDesde >= primerDia && r.FechaDesde <= ultimoDia)
+                .Where(r => r.Estado == estadoEfectivo)
                 .AsQueryable();
-            if (estado.HasValue)
-            {
-                query = query.Where(r => r.Estado == estado.Value);
-            }
             if (!string.IsNullOrWhiteSpace(busqueda))
             {
                 query = query.Where(r => EF.Functions.Like(r.NombreHuesped, $"%{busqueda}%"));
@@ -116,7 +115,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 query = query.Where(r => r.CabanaId == cabanaId.Value);
             }
 
-            ViewBag.EstadoFiltro = estado;
+            ViewBag.EstadoFiltro = estadoEfectivo;
             ViewBag.Busqueda = busqueda;
             ViewBag.CabanaIdFiltro = cabanaId;
             ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
