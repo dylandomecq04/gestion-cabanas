@@ -95,19 +95,19 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MarcarPortada(int id, int cabanaId)
+        public async Task<IActionResult> ReordenarFotos(int cabanaId, [FromForm] List<int> idsFotos)
         {
-            var foto = await _db.Fotos.FindAsync(id);
-            if (foto is not null && foto.CabanaId == cabanaId)
+            var fotos = await _db.Fotos.Where(f => f.CabanaId == cabanaId).ToListAsync();
+            for (var i = 0; i < idsFotos.Count; i++)
             {
-                var ordenMinimo = await _db.Fotos.Where(f => f.CabanaId == cabanaId).MinAsync(f => (int?)f.Orden) ?? 0;
-                if (foto.Orden != ordenMinimo)
+                var foto = fotos.FirstOrDefault(f => f.Id == idsFotos[i]);
+                if (foto is not null)
                 {
-                    foto.Orden = ordenMinimo - 1;
-                    await _db.SaveChangesAsync();
+                    foto.Orden = i;
                 }
             }
-            return RedirectToAction(nameof(Edit), new { id = cabanaId });
+            await _db.SaveChangesAsync();
+            return Ok();
         }
 
         [HttpPost]

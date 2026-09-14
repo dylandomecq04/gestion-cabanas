@@ -41,25 +41,16 @@
 
     <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
         <h2 class="mb-3 text-sm font-semibold text-ink-700">Fotos actuales</h2>
-        <p class="mb-3 text-xs text-ink-400">La foto de portada es la que se muestra primero en el sitio público.</p>
-        <div class="grid grid-cols-3 gap-3">
-            @{ var fotoPortada = Model.Fotos.OrderBy(f => f.Orden).FirstOrDefault(); }
-            @foreach (var foto in Model.Fotos.OrderBy(f => f.Orden))
+        <p class="mb-3 text-xs text-ink-400">Arrastrá las fotos para ordenarlas. La primera es la portada que se muestra en el sitio público.</p>
+        <form id="form-reordenar-fotos" asp-action="ReordenarFotos" asp-route-cabanaId="@Model.Id" method="post"></form>
+        <div id="fotos-grid" class="grid grid-cols-3 gap-3">
+            @{ var fotosOrdenadas = Model.Fotos.OrderBy(f => f.Orden).ToList(); }
+            @for (var i = 0; i < fotosOrdenadas.Count; i++)
             {
-                var esPortada = foto.Id == fotoPortada?.Id;
-                <div class="group relative overflow-hidden rounded-xl">
-                    <img src="@foto.RutaArchivo" class="h-24 w-full object-cover" />
-                    @if (esPortada)
-                    {
-                        <span class="absolute left-1 top-1 rounded-full bg-river-700 px-2 py-0.5 text-[10px] font-semibold text-white shadow-soft">Portada</span>
-                    }
-                    else
-                    {
-                        <form asp-action="MarcarPortada" asp-route-id="@foto.Id" asp-route-cabanaId="@Model.Id" method="post"
-                              class="absolute left-1 top-1">
-                            <button type="submit" class="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink-700 shadow-soft transition hover:bg-white">Marcar portada</button>
-                        </form>
-                    }
+                var foto = fotosOrdenadas[i];
+                <div class="foto-item relative cursor-grab overflow-hidden rounded-xl active:cursor-grabbing" draggable="true" data-id="@foto.Id">
+                    <img src="@foto.RutaArchivo" draggable="false" class="h-24 w-full select-none object-cover" />
+                    <span class="badge-portada absolute left-1 top-1 rounded-full bg-river-700 px-2 py-0.5 text-[10px] font-semibold text-white shadow-soft @(i == 0 ? "" : "hidden")">Portada</span>
                     <form asp-action="EliminarFoto" asp-route-id="@foto.Id" asp-route-cabanaId="@Model.Id" method="post"
                           class="absolute right-1 top-1" onsubmit="return confirmarAccion(event, '¿Eliminar esta foto?');">
                         <button type="submit" class="flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-soft transition hover:bg-rose-700">&times;</button>
@@ -76,4 +67,67 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const grid = document.getElementById('fotos-grid');
+            if (!grid) return;
+
+            let arrastrada = null;
+
+            function actualizarBadgePortada() {
+                grid.querySelectorAll('.badge-portada').forEach((badge, i) => badge.classList.toggle('hidden', i !== 0));
+            }
+
+            async function guardarOrden() {
+                const form = document.getElementById('form-reordenar-fotos');
+                const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (!token) return;
+
+                const body = new URLSearchParams();
+                body.set('__RequestVerificationToken', token);
+                grid.querySelectorAll('.foto-item').forEach(item => body.append('idsFotos', item.dataset.id));
+
+                try {
+                    await fetch(form.action, { method: 'POST', body });
+                } catch {
+                    // Si falla, el orden vuelve a sincronizarse al recargar la página.
+                }
+            }
+
+            grid.addEventListener('dragstart', function (e) {
+                arrastrada = e.target.closest('.foto-item');
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => arrastrada?.classList.add('opacity-40'), 0);
+            });
+
+            grid.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                const item = e.target.closest('.foto-item');
+                if (!item || !arrastrada || item === arrastrada) return;
+
+                const rect = item.getBoundingClientRect();
+                let antes;
+                if (e.clientY < rect.top + 4) {
+                    antes = true;
+                } else if (e.clientY > rect.bottom - 4) {
+                    antes = false;
+                } else {
+                    antes = e.clientX < rect.left + rect.width / 2;
+                }
+                item.parentNode.insertBefore(arrastrada, antes ? item : item.nextSibling);
+                actualizarBadgePortada();
+            });
+
+            grid.addEventListener('drop', function (e) {
+                e.preventDefault();
+            });
+
+            grid.addEventListener('dragend', function () {
+                arrastrada?.classList.remove('opacity-40');
+                arrastrada = null;
+                actualizarBadgePortada();
+                guardarOrden();
+            });
+        })();
+    </script>
 }
