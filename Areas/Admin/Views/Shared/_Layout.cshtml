@@ -81,11 +81,15 @@
     <script>
         let __formPendienteConfirmacion = null;
 
-        function confirmarAccion(event, mensaje) {
-            event.preventDefault();
-            __formPendienteConfirmacion = event.target.closest('form');
+        function mostrarConfirmacion(mensaje, form) {
+            __formPendienteConfirmacion = form;
             document.getElementById('modal-confirmacion-mensaje').textContent = mensaje;
             document.getElementById('modal-confirmacion').classList.remove('hidden');
+        }
+
+        function confirmarAccion(event, mensaje) {
+            event.preventDefault();
+            mostrarConfirmacion(mensaje, event.target.closest('form'));
             return false;
         }
 

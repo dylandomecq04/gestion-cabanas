@@ -807,7 +807,6 @@
         // Permite borrar la promo de una celda que tiene una reserva encima (donde no se
         // puede seleccionar el día para el borrado en lote porque el clic abre la reserva).
         function eliminarPromoDesdeCelda(promoId) {
-            if (!confirm('¿Eliminar la promoción de estos días? No se puede deshacer.')) return;
             const inputs = document.getElementById('eliminar-promo-inputs');
             inputs.innerHTML = '';
             const input = document.createElement('input');
@@ -815,7 +814,7 @@
             input.name = 'ids';
             input.value = promoId;
             inputs.appendChild(input);
-            document.getElementById('form-eliminar-promo').submit();
+            mostrarConfirmacion('¿Eliminar la promoción de estos días? No se puede deshacer.', document.getElementById('form-eliminar-promo'));
         }
 
         function actualizarBotonBloqueo(bloquear) {
