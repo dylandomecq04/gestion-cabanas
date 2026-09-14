@@ -677,7 +677,9 @@
             const columnaHoy = document.getElementById('col-hoy');
             if (!tabla || !columnaHoy) return;
 
-            const offset = columnaHoy.offsetLeft - (tabla.clientWidth / 2) + (columnaHoy.offsetWidth / 2);
+            const columnaNombres = tabla.querySelector('thead th');
+            const anchoColumnaNombres = columnaNombres ? columnaNombres.offsetWidth : 0;
+            const offset = columnaHoy.offsetLeft - anchoColumnaNombres;
             tabla.scrollLeft = Math.max(0, offset);
             if (arriba) arriba.scrollLeft = tabla.scrollLeft;
         })();
