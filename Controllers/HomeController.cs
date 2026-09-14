@@ -19,8 +19,8 @@ public class HomeController : Controller
     {
         var hoy = DateTime.Today;
         var promosVigentes = await _db.PromosEstadia
-            .Where(p => p.Activa && p.FechaDesde <= hoy && p.FechaHasta >= hoy)
-            .OrderByDescending(p => p.Id)
+            .Where(p => p.Activa && p.FechaHasta >= hoy)
+            .OrderBy(p => p.FechaDesde)
             .ToListAsync();
 
         var promosParaHome = promosVigentes
