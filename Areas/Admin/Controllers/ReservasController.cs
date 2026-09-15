@@ -158,7 +158,9 @@ namespace GestionCabanas.Areas.Admin.Controllers
             _db.Reservas.Add(modelo);
             await _db.SaveChangesAsync();
 
-            var avisoExcel = await _excelEscritura.EscribirReservaAsync(modelo);
+            string? avisoExcel = modelo.Estado == EstadoReserva.Confirmada
+                ? await _excelEscritura.EscribirReservaAsync(modelo)
+                : null;
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva creada correctamente."
                 : $"Reserva creada correctamente. {avisoExcel}";
@@ -212,7 +214,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             await _db.SaveChangesAsync();
 
-            var avisoExcel = await _excelEscritura.EscribirReservaAsync(reserva, anterior);
+            string? avisoExcel = reserva.Estado == EstadoReserva.Confirmada
+                ? await _excelEscritura.EscribirReservaAsync(reserva, anterior)
+                : anterior.Estado == EstadoReserva.Confirmada
+                    ? await _excelEscritura.LimpiarReservaAsync(reserva)
+                    : null;
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva actualizada correctamente."
                 : $"Reserva actualizada correctamente. {avisoExcel}";
