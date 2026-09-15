@@ -23,7 +23,7 @@ namespace GestionCabanas.Services
         // quedó sin reservar.
         public const string ColorReservado = "#C6EFCE";
         public const string ColorLiberado = "#FFC7CE";
-        public const string ColorPasadoSinReservar = "#FFEB9C";
+        public const string ColorPasadoSinReservar = "#FFF2CC";
 
         // Columna del calendario de disponibilidad (A a E) de cada cabaña, en el orden fijo del Excel.
         private static readonly Dictionary<string, int> ColumnaCalendarioPorCabana = new()
