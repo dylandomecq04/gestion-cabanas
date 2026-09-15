@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using GestionCabanas.Data;
 using GestionCabanas.Models;
 using GestionCabanas.Services;
@@ -250,7 +251,67 @@ namespace GestionCabanas.Areas.Admin.Controllers
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva confirmada."
                 : $"Reserva confirmada. {avisoExcel}";
+
+            var conflictos = await ObtenerConflictosAsync(reserva);
+            if (conflictos.Count > 0)
+            {
+                TempData["ConflictosJson"] = JsonSerializer.Serialize(conflictos);
+            }
+
             return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// Busca, entre las solicitudes pendientes de la misma cabaña que se superponen con las
+        /// fechas recién confirmadas, cuáles quedaron en conflicto y qué cabañas alternativas
+        /// (con su precio) están libres para ofrecer como reemplazo.
+        /// </summary>
+        private async Task<List<ConflictoSolicitud>> ObtenerConflictosAsync(Reserva reservaConfirmada)
+        {
+            var solicitudesEnConflicto = await _db.Reservas
+                .Where(r => r.Id != reservaConfirmada.Id &&
+                            r.CabanaId == reservaConfirmada.CabanaId &&
+                            r.Estado == EstadoReserva.Pendiente &&
+                            r.FechaDesde < reservaConfirmada.FechaHasta &&
+                            r.FechaHasta > reservaConfirmada.FechaDesde)
+                .OrderBy(r => r.FechaDesde)
+                .ToListAsync();
+
+            var conflictos = new List<ConflictoSolicitud>();
+            foreach (var solicitud in solicitudesEnConflicto)
+            {
+                var alternativas = await _disponibilidad.ObtenerCabanasAlternativasAsync(
+                    solicitud.FechaDesde, solicitud.FechaHasta, solicitud.CabanaId, solicitud.CantidadPersonas);
+
+                conflictos.Add(new ConflictoSolicitud
+                {
+                    ReservaId = solicitud.Id,
+                    NombreHuesped = solicitud.NombreHuesped,
+                    FechaDesde = solicitud.FechaDesde,
+                    FechaHasta = solicitud.FechaHasta,
+                    Valor = solicitud.Valor,
+                    Alternativas = alternativas
+                });
+            }
+
+            return conflictos;
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MoverCabana(int id, int nuevaCabanaId)
+        {
+            var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
+            if (reserva is null)
+            {
+                return NotFound();
+            }
+
+            reserva.CabanaId = nuevaCabanaId;
+            await _db.SaveChangesAsync();
+
+            TempData["Mensaje"] = "Solicitud movida a otra cabaña.";
+            return RedirectToAction(nameof(Index), new { estado = EstadoReserva.Pendiente });
         }
 
         [HttpPost]

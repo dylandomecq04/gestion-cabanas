@@ -225,6 +225,33 @@ namespace GestionCabanas.Services
         }
 
         /// <summary>
+        /// Cabañas activas (excluyendo una en particular) sin superposición con reservas
+        /// confirmadas en el rango dado, con capacidad suficiente. Se usa para ofrecer
+        /// alternativas cuando dos solicitudes compiten por la misma cabaña y fecha.
+        /// </summary>
+        public async Task<List<CabanaAlternativa>> ObtenerCabanasAlternativasAsync(DateTime desde, DateTime hasta, int cabanaIdExcluir, int personas)
+        {
+            var cabanas = await _db.Cabanas
+                .Where(c => c.Activa && c.Id != cabanaIdExcluir && c.Capacidad >= personas)
+                .OrderBy(c => c.Nombre)
+                .ToListAsync();
+
+            var resultado = new List<CabanaAlternativa>();
+            foreach (var cabana in cabanas)
+            {
+                if (await HaySuperposicionAsync(cabana.Id, desde, hasta))
+                {
+                    continue;
+                }
+
+                var precio = await CalcularValorTotalAsync(cabana.Id, desde, hasta, cabana.PrecioPorNoche);
+                resultado.Add(new CabanaAlternativa { CabanaId = cabana.Id, Nombre = cabana.Nombre, Precio = precio });
+            }
+
+            return resultado;
+        }
+
+        /// <summary>
         /// Busca, para un rango de fechas y una cantidad de personas, las opciones de reserva
         /// posibles: cabañas individuales que cubran todo el rango, o -si ninguna lo cubre sola-
         /// todas las combinaciones válidas que usan la menor cantidad de cabañas posible.
