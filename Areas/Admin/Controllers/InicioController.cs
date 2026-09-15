@@ -75,6 +75,24 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarFotos(List<int> ids)
+        {
+            if (ids is { Count: > 0 })
+            {
+                var fotos = await _db.FotosHero.Where(f => ids.Contains(f.Id)).ToListAsync();
+                foreach (var foto in fotos)
+                {
+                    await _almacenamiento.EliminarAsync(foto.RutaArchivo);
+                }
+                _db.FotosHero.RemoveRange(fotos);
+                await _db.SaveChangesAsync();
+                TempData["Mensaje"] = fotos.Count == 1 ? "Se eliminó 1 foto." : $"Se eliminaron {fotos.Count} fotos.";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
         private async Task GuardarFotosAsync(List<IFormFile>? fotos)
         {
             if (fotos is null || fotos.Count == 0)
