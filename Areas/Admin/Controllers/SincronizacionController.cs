@@ -136,6 +136,22 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return VolverAlCalendario(anio, mes);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SolicitarRepintado(int anio, int? mes)
+        {
+            var conexion = await _oneDrive.ObtenerConexionAsync();
+            if (conexion?.RefreshTokenCifrado is null)
+            {
+                TempData["Mensaje"] = "Todavía no conectaste tu cuenta de OneDrive.";
+                return VolverAlCalendario(anio, mes);
+            }
+
+            await _oneDrive.SolicitarRepintadoAsync(anio);
+            TempData["Mensaje"] = $"Se programó repintar el calendario {anio} en el Excel. Se hace en segundo plano (puede tardar varios minutos) la próxima vez que se revise la sincronización.";
+            return VolverAlCalendario(anio, mes);
+        }
+
         private static string Plural(int cantidad, string singular, string plural)
             => $"{cantidad} {(cantidad == 1 ? singular : plural)}";
     }

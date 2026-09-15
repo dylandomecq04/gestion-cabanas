@@ -66,6 +66,34 @@ namespace GestionCabanas.Services
                 _logger.LogWarning(ex, "No se pudo completar el marcado de días pasados en el Excel.");
             }
 
+            if (conexion.RepintadoPendienteAnio.HasValue)
+            {
+                var anioRepintar = conexion.RepintadoPendienteAnio.Value;
+                try
+                {
+                    var avisoRepintado = await excelEscritura.RepintarCalendarioAsync(anioRepintar);
+                    if (avisoRepintado is not null)
+                    {
+                        _logger.LogWarning("No se pudo repintar el calendario {Anio} en el Excel: {Aviso}", anioRepintar, avisoRepintado);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Se repintó el calendario {Anio} en el Excel.", anioRepintar);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "No se pudo completar el repintado del calendario {Anio} en el Excel.", anioRepintar);
+                }
+                finally
+                {
+                    // Se limpia siempre, haya salido bien o mal, para no reintentar en cada pasada
+                    // (cada intento son potencialmente cientos de llamadas a Graph).
+                    conexion.RepintadoPendienteAnio = null;
+                    await db.SaveChangesAsync(stoppingToken);
+                }
+            }
+
             try
             {
                 var modificado = await oneDrive.ObtenerFechaModificacionAsync(urlArchivo);

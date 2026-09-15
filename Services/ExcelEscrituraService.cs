@@ -331,5 +331,120 @@ namespace GestionCabanas.Services
                 return $"No se pudo marcar los días pasados en el Excel: {ex.Message}";
             }
         }
+
+        /// <summary>
+        /// Repinta todo el calendario de disponibilidad (columnas A a E) de un año completo, en
+        /// todas las hojas de mes que encuentre en el libro: verde en los días con una reserva
+        /// confirmada, amarillo en los días ya pasados sin ninguna, y sin tocar los días futuros sin
+        /// reservar. Pensado para dejar sincronizado de una vez lo que ya estaba cargado antes de
+        /// tener este coloreado automático. Agrupa los días consecutivos del mismo color de cada
+        /// cabaña en una sola llamada a Graph para no hacer una por día.
+        /// </summary>
+        public async Task<string?> RepintarCalendarioAsync(int anio)
+        {
+            var urlArchivo = _config["OneDrive:ArchivoUrl"];
+            var conexion = await _oneDrive.ObtenerConexionAsync();
+            if (string.IsNullOrWhiteSpace(urlArchivo) || conexion?.RefreshTokenCifrado is null)
+            {
+                return "Todavía no conectaste tu cuenta de OneDrive.";
+            }
+
+            try
+            {
+                var inicioAnio = new DateTime(anio, 1, 1);
+                var finAnioExclusivo = new DateTime(anio + 1, 1, 1);
+                var hoy = DateTime.Today;
+
+                var cabanas = await _db.Cabanas.ToListAsync();
+                var reservasConfirmadas = await _db.Reservas
+                    .Where(r => r.Estado == EstadoReserva.Confirmada && r.FechaDesde < finAnioExclusivo && r.FechaHasta > inicioAnio)
+                    .ToListAsync();
+
+                var (driveId, itemId) = await _oneDrive.ObtenerDriveItemAsync(urlArchivo);
+                var bytes = await _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo);
+                using var workbook = new XLWorkbook(new MemoryStream(bytes));
+                var sobrescrituras = ExcelReservasSyncService.ObtenerSobrescrituraHojas(_config);
+
+                for (var mes = 1; mes <= 12; mes++)
+                {
+                    var hoja = ExcelReservasSyncService.UbicarHojaDelMes(workbook, mes, sobrescrituras);
+                    if (hoja is null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var cabana in cabanas)
+                    {
+                        if (!ColumnaCalendarioPorCabana.TryGetValue(ExcelReservasSyncService.Normalizar(cabana.Nombre), out var columna))
+                        {
+                            continue;
+                        }
+
+                        await ColorearMesCabanaAsync(driveId, itemId, hoja, columna, anio, mes, cabana.Id, reservasConfirmadas, hoy);
+                    }
+                }
+
+                if (anio == hoy.Year && (conexion.UltimoDiaColoreado is null || conexion.UltimoDiaColoreado < hoy.AddDays(-1)))
+                {
+                    conexion.UltimoDiaColoreado = hoy.AddDays(-1);
+                }
+
+                await _db.SaveChangesAsync();
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return $"No se pudo repintar el calendario del Excel: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Recorre los días de un mes para una cabaña y pinta cada tramo de días consecutivos que
+        /// comparten color en una sola llamada (en vez de una por día), para que repintar el año
+        /// entero no implique miles de llamadas a Graph.
+        /// </summary>
+        private async Task ColorearMesCabanaAsync(
+            string driveId,
+            string itemId,
+            IXLWorksheet hoja,
+            int columna,
+            int anio,
+            int mes,
+            int cabanaId,
+            List<Reserva> reservasConfirmadas,
+            DateTime hoy)
+        {
+            var diasEnMes = DateTime.DaysInMonth(anio, mes);
+            string? colorTramo = null;
+            var inicioTramo = 1;
+
+            async Task CerrarTramoAsync(int filaHasta)
+            {
+                if (colorTramo is null)
+                {
+                    return;
+                }
+                var direccion = inicioTramo == filaHasta
+                    ? hoja.Cell(inicioTramo, columna).Address.ToString()
+                    : $"{hoja.Cell(inicioTramo, columna).Address}:{hoja.Cell(filaHasta, columna).Address}";
+                await _oneDrive.EscribirColorCeldaAsync(driveId, itemId, hoja.Name, direccion, colorTramo);
+            }
+
+            for (var dia = 1; dia <= diasEnMes; dia++)
+            {
+                var fecha = new DateTime(anio, mes, dia);
+                var ocupada = reservasConfirmadas.Any(r => r.CabanaId == cabanaId && r.FechaDesde <= fecha && fecha < r.FechaHasta);
+                var colorDia = ocupada ? ColorReservado : (fecha < hoy ? ColorPasadoSinReservar : null);
+
+                if (colorDia != colorTramo)
+                {
+                    await CerrarTramoAsync(dia - 1);
+                    colorTramo = colorDia;
+                    inicioTramo = dia;
+                }
+            }
+
+            await CerrarTramoAsync(diasEnMes);
+        }
     }
 }

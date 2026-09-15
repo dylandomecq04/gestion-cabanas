@@ -20,5 +20,12 @@ namespace GestionCabanas.Models
         /// revisaron.
         /// </summary>
         public DateTime? UltimoDiaColoreado { get; set; }
+
+        /// <summary>
+        /// Año pendiente de repintar por completo en el calendario del Excel (columnas A a E),
+        /// pedido a mano desde el sitio. Lo procesa <see cref="Services.SincronizacionAutomaticaService"/>
+        /// en su próxima pasada y lo deja en null cuando termina.
+        /// </summary>
+        public int? RepintadoPendienteAnio { get; set; }
     }
 }

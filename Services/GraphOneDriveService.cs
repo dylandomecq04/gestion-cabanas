@@ -111,8 +111,29 @@ namespace GestionCabanas.Services
             }
         }
 
+        // Cachea el access token en memoria mientras dure la instancia (un scope = una operación,
+        // que puede implicar cientos de llamadas a Graph, ej. al repintar todo el calendario). Evita
+        // pedirle un token nuevo a Microsoft en cada una.
+        private string? _accessTokenCache;
+        private DateTime _accessTokenExpiraUtc;
+
+        public async Task SolicitarRepintadoAsync(int anio)
+        {
+            var conexion = await _db.OneDriveConexiones.FirstOrDefaultAsync();
+            if (conexion is not null)
+            {
+                conexion.RepintadoPendienteAnio = anio;
+                await _db.SaveChangesAsync();
+            }
+        }
+
         private async Task<string> ObtenerAccessTokenAsync()
         {
+            if (_accessTokenCache is not null && DateTime.UtcNow < _accessTokenExpiraUtc)
+            {
+                return _accessTokenCache;
+            }
+
             var conexion = await _db.OneDriveConexiones.FirstOrDefaultAsync();
             if (conexion?.RefreshTokenCifrado is null)
             {
@@ -145,6 +166,10 @@ namespace GestionCabanas.Services
                 conexion.RefreshTokenCifrado = _protector.Protect(nuevoRefresh.GetString() ?? refreshToken);
                 await _db.SaveChangesAsync();
             }
+
+            var expiraEnSegundos = json.RootElement.TryGetProperty("expires_in", out var expiresIn) ? expiresIn.GetInt32() : 3600;
+            _accessTokenCache = accessToken;
+            _accessTokenExpiraUtc = DateTime.UtcNow.AddSeconds(Math.Max(60, expiraEnSegundos - 60));
 
             return accessToken;
         }
