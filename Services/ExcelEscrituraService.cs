@@ -6,12 +6,35 @@ using Microsoft.EntityFrameworkCore;
 namespace GestionCabanas.Services
 {
     /// <summary>
+    /// Estado de una reserva antes de aplicarle cambios, para que <see cref="ExcelEscrituraService"/>
+    /// sepa qué días liberar en el calendario del Excel si la fecha, la cabaña o el estado cambiaron.
+    /// </summary>
+    public record EstadoAnteriorReserva(int CabanaId, DateTime FechaDesde, DateTime FechaHasta, EstadoReserva Estado);
+
+    /// <summary>
     /// Refleja en el Excel los cambios que se hacen sobre una reserva desde el sitio (alta, edición
     /// o baja). Nunca inserta ni borra filas: solo escribe o limpia los valores de una fila que ya
     /// existe en el archivo, para no correr de lugar el resto de las reservas de la hoja.
     /// </summary>
     public class ExcelEscrituraService
     {
+        // Colores de relleno (mismo criterio que el calendario del sitio): verde = reservada,
+        // rojo = se liberó (se eliminó o dejó de estar confirmada), amarillo = pasó el día y
+        // quedó sin reservar.
+        public const string ColorReservado = "#C6EFCE";
+        public const string ColorLiberado = "#FFC7CE";
+        public const string ColorPasadoSinReservar = "#FFEB9C";
+
+        // Columna del calendario de disponibilidad (A a E) de cada cabaña, en el orden fijo del Excel.
+        private static readonly Dictionary<string, int> ColumnaCalendarioPorCabana = new()
+        {
+            [ExcelReservasSyncService.Normalizar("Sidharta 1")] = 1,
+            [ExcelReservasSyncService.Normalizar("Sidharta 2")] = 2,
+            [ExcelReservasSyncService.Normalizar("Sidharta 3")] = 3,
+            [ExcelReservasSyncService.Normalizar("Maia")] = 4,
+            [ExcelReservasSyncService.Normalizar("Sidharta 5")] = 5,
+        };
+
         private readonly ApplicationDbContext _db;
         private readonly GraphOneDriveService _oneDrive;
         private readonly IConfiguration _config;
@@ -30,7 +53,7 @@ namespace GestionCabanas.Services
         /// OneDrive no está lista, devuelve un mensaje explicando por qué no se pudo reflejar
         /// (la reserva igual queda guardada en el sitio).
         /// </summary>
-        public async Task<string?> EscribirReservaAsync(Reserva reserva)
+        public async Task<string?> EscribirReservaAsync(Reserva reserva, EstadoAnteriorReserva? anterior = null)
         {
             var urlArchivo = _config["OneDrive:ArchivoUrl"];
             var conexion = await _oneDrive.ObtenerConexionAsync();
@@ -90,6 +113,30 @@ namespace GestionCabanas.Services
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionNombreCelda, reserva.NombreHuesped);
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagoCelda, textoPago);
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagarCelda, textoPagar);
+
+                // Si antes estaba confirmada con otra cabaña o fechas, esos días quedaron libres.
+                if (anterior is not null && anterior.Estado == EstadoReserva.Confirmada &&
+                    (anterior.CabanaId != reserva.CabanaId || anterior.FechaDesde != reserva.FechaDesde || anterior.FechaHasta != reserva.FechaHasta))
+                {
+                    var cabanaAnterior = anterior.CabanaId == cabana.Id
+                        ? cabana
+                        : await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == anterior.CabanaId);
+                    if (cabanaAnterior is not null)
+                    {
+                        await ColorearDiasAsync(driveId, itemId, workbook, sobrescrituras, cabanaAnterior.Nombre, anterior.FechaDesde, anterior.FechaHasta, ColorLiberado);
+                    }
+                }
+
+                if (reserva.Estado == EstadoReserva.Confirmada)
+                {
+                    await ColorearDiasAsync(driveId, itemId, workbook, sobrescrituras, cabana.Nombre, reserva.FechaDesde, reserva.FechaHasta, ColorReservado);
+                }
+                else if (anterior?.Estado == EstadoReserva.Confirmada &&
+                    anterior.CabanaId == reserva.CabanaId && anterior.FechaDesde == reserva.FechaDesde && anterior.FechaHasta == reserva.FechaHasta)
+                {
+                    // Dejó de estar confirmada sin cambiar de cabaña ni fechas: liberar esos días.
+                    await ColorearDiasAsync(driveId, itemId, workbook, sobrescrituras, cabana.Nombre, reserva.FechaDesde, reserva.FechaHasta, ColorLiberado);
+                }
 
                 reserva.ExcelUbicacion = $"{reserva.FechaDesde.Year}/{hoja.Name}!{direccionFechaCelda}";
                 await _db.SaveChangesAsync();
@@ -183,6 +230,12 @@ namespace GestionCabanas.Services
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagoCelda, null);
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagarCelda, null);
 
+                if (reserva.Estado == EstadoReserva.Confirmada && cabana is not null)
+                {
+                    var sobrescrituras = ExcelReservasSyncService.ObtenerSobrescrituraHojas(_config);
+                    await ColorearDiasAsync(driveId, itemId, workbook, sobrescrituras, cabana.Nombre, reserva.FechaDesde, reserva.FechaHasta, ColorLiberado);
+                }
+
                 return null;
             }
             catch (Exception ex)
@@ -191,5 +244,92 @@ namespace GestionCabanas.Services
             }
         }
 
+        /// <summary>
+        /// Pinta, en el calendario de disponibilidad (columnas A a E), los días de una cabaña entre
+        /// <paramref name="desde"/> (incluido) y <paramref name="hastaExclusiva"/> (excluido, o sea
+        /// sin contar el día de salida) del color indicado. Si la cabaña no tiene columna conocida en
+        /// el calendario, o algún mes de la estadía no tiene hoja en el libro, esos días se saltean.
+        /// </summary>
+        private async Task ColorearDiasAsync(
+            string driveId,
+            string itemId,
+            XLWorkbook workbook,
+            IReadOnlyDictionary<int, string> sobrescrituras,
+            string nombreCabana,
+            DateTime desde,
+            DateTime hastaExclusiva,
+            string colorHex)
+        {
+            if (!ColumnaCalendarioPorCabana.TryGetValue(ExcelReservasSyncService.Normalizar(nombreCabana), out var columna))
+            {
+                return;
+            }
+
+            for (var fecha = desde.Date; fecha < hastaExclusiva.Date; fecha = fecha.AddDays(1))
+            {
+                var hoja = ExcelReservasSyncService.UbicarHojaDelMes(workbook, fecha.Month, sobrescrituras);
+                if (hoja is null)
+                {
+                    continue;
+                }
+
+                var direccion = hoja.Cell(fecha.Day, columna).Address.ToString();
+                await _oneDrive.EscribirColorCeldaAsync(driveId, itemId, hoja.Name, direccion, colorHex);
+            }
+        }
+
+        /// <summary>
+        /// Revisa, día por día desde el último que se procesó hasta ayer, si quedó sin ninguna
+        /// reserva confirmada y lo marca en amarillo en el calendario de disponibilidad (columnas A
+        /// a E). Los días que sí tienen una reserva confirmada se dejan (o se vuelven a dejar) en
+        /// verde, para que el Excel quede consistente aunque algún color anterior no se haya podido
+        /// escribir. No hace nada si no hay OneDrive conectado o si ya está al día.
+        /// </summary>
+        public async Task<string?> MarcarDiasPasadosAsync()
+        {
+            var urlArchivo = _config["OneDrive:ArchivoUrl"];
+            var conexion = await _oneDrive.ObtenerConexionAsync();
+            if (string.IsNullOrWhiteSpace(urlArchivo) || conexion?.RefreshTokenCifrado is null)
+            {
+                return null;
+            }
+
+            var ayer = DateTime.Today.AddDays(-1);
+            var desde = conexion.UltimoDiaColoreado?.AddDays(1) ?? ayer;
+            if (desde > ayer)
+            {
+                return null; // Ya está al día.
+            }
+
+            try
+            {
+                var cabanas = await _db.Cabanas.ToListAsync();
+                var reservasConfirmadas = await _db.Reservas
+                    .Where(r => r.Estado == EstadoReserva.Confirmada && r.FechaHasta > desde && r.FechaDesde <= ayer)
+                    .ToListAsync();
+
+                var (driveId, itemId) = await _oneDrive.ObtenerDriveItemAsync(urlArchivo);
+                var bytes = await _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo);
+                using var workbook = new XLWorkbook(new MemoryStream(bytes));
+                var sobrescrituras = ExcelReservasSyncService.ObtenerSobrescrituraHojas(_config);
+
+                for (var fecha = desde; fecha <= ayer; fecha = fecha.AddDays(1))
+                {
+                    foreach (var cabana in cabanas)
+                    {
+                        var ocupada = reservasConfirmadas.Any(r => r.CabanaId == cabana.Id && r.FechaDesde <= fecha && fecha < r.FechaHasta);
+                        await ColorearDiasAsync(driveId, itemId, workbook, sobrescrituras, cabana.Nombre, fecha, fecha.AddDays(1), ocupada ? ColorReservado : ColorPasadoSinReservar);
+                    }
+                }
+
+                conexion.UltimoDiaColoreado = ayer;
+                await _db.SaveChangesAsync();
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return $"No se pudo marcar los días pasados en el Excel: {ex.Message}";
+            }
+        }
     }
 }

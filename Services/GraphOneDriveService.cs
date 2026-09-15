@@ -214,6 +214,25 @@ namespace GestionCabanas.Services
             }
         }
 
+        public async Task EscribirColorCeldaAsync(string driveId, string itemId, string hoja, string direccion, string colorHex)
+        {
+            var accessToken = await ObtenerAccessTokenAsync();
+            var hojaCodificada = Uri.EscapeDataString(hoja);
+
+            using var solicitud = new HttpRequestMessage(
+                HttpMethod.Patch,
+                $"https://graph.microsoft.com/v1.0/drives/{driveId}/items/{itemId}/workbook/worksheets('{hojaCodificada}')/range(address='{direccion}')/format/fill");
+            solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            solicitud.Content = JsonContent.Create(new { color = colorHex });
+
+            var respuesta = await _http.SendAsync(solicitud);
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"No se pudo pintar la celda en el Excel (hoja \"{hoja}\", celda {direccion}): {detalle}");
+            }
+        }
+
         public async Task<byte[]> DescargarArchivoCompartidoAsync(string urlCompartida)
         {
             var accessToken = await ObtenerAccessTokenAsync();

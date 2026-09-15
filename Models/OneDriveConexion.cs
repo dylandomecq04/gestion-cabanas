@@ -13,5 +13,12 @@ namespace GestionCabanas.Models
         public DateTime? UltimaSincronizacion { get; set; }
 
         public DateTime? UltimaModificacionExcelVista { get; set; }
+
+        /// <summary>
+        /// Último día (inclusive) para el que ya se revisó, en el calendario del Excel, si quedó
+        /// sin reservar y hay que marcarlo en amarillo. Los días posteriores a este todavía no se
+        /// revisaron.
+        /// </summary>
+        public DateTime? UltimoDiaColoreado { get; set; }
     }
 }

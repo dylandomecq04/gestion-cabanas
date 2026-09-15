@@ -199,6 +199,8 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 return NotFound();
             }
 
+            var anterior = new EstadoAnteriorReserva(reserva.CabanaId, reserva.FechaDesde, reserva.FechaHasta, reserva.Estado);
+
             reserva.CabanaId = modelo.CabanaId;
             reserva.NombreHuesped = modelo.NombreHuesped;
             reserva.Telefono = modelo.Telefono;
@@ -210,7 +212,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             await _db.SaveChangesAsync();
 
-            var avisoExcel = await _excelEscritura.EscribirReservaAsync(reserva);
+            var avisoExcel = await _excelEscritura.EscribirReservaAsync(reserva, anterior);
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva actualizada correctamente."
                 : $"Reserva actualizada correctamente. {avisoExcel}";
@@ -233,10 +235,12 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var anterior = new EstadoAnteriorReserva(reserva.CabanaId, reserva.FechaDesde, reserva.FechaHasta, reserva.Estado);
+
             reserva.Estado = EstadoReserva.Confirmada;
             await _db.SaveChangesAsync();
 
-            var avisoExcel = await _excelEscritura.EscribirReservaAsync(reserva);
+            var avisoExcel = await _excelEscritura.EscribirReservaAsync(reserva, anterior);
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva confirmada."
                 : $"Reserva confirmada. {avisoExcel}";

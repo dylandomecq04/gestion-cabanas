@@ -32,6 +32,7 @@ namespace GestionCabanas.Services
             using var scope = _scopeFactory.CreateScope();
             var oneDrive = scope.ServiceProvider.GetRequiredService<GraphOneDriveService>();
             var sync = scope.ServiceProvider.GetRequiredService<ExcelReservasSyncService>();
+            var excelEscritura = scope.ServiceProvider.GetRequiredService<ExcelEscrituraService>();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
@@ -50,6 +51,19 @@ namespace GestionCabanas.Services
             if (conexion?.RefreshTokenCifrado is null)
             {
                 return;
+            }
+
+            try
+            {
+                var avisoColores = await excelEscritura.MarcarDiasPasadosAsync();
+                if (avisoColores is not null)
+                {
+                    _logger.LogWarning("No se pudieron marcar los días pasados en el Excel: {Aviso}", avisoColores);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo completar el marcado de días pasados en el Excel.");
             }
 
             try

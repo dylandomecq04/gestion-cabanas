@@ -557,7 +557,7 @@ namespace GestionCabanas.Services
             return decimal.TryParse(texto, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : null;
         }
 
-        private static string Normalizar(string? texto)
+        internal static string Normalizar(string? texto)
         {
             if (string.IsNullOrWhiteSpace(texto))
             {
