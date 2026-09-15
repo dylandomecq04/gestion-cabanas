@@ -124,6 +124,24 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return RedirectToAction(nameof(Edit), new { id = cabanaId });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarFotos(int cabanaId, List<int> ids)
+        {
+            if (ids is { Count: > 0 })
+            {
+                var fotos = await _db.Fotos.Where(f => f.CabanaId == cabanaId && ids.Contains(f.Id)).ToListAsync();
+                foreach (var foto in fotos)
+                {
+                    await _almacenamiento.EliminarAsync(foto.RutaArchivo);
+                }
+                _db.Fotos.RemoveRange(fotos);
+                await _db.SaveChangesAsync();
+                TempData["Mensaje"] = fotos.Count == 1 ? "Se eliminó 1 foto." : $"Se eliminaron {fotos.Count} fotos.";
+            }
+            return RedirectToAction(nameof(Edit), new { id = cabanaId });
+        }
+
         public async Task<IActionResult> Tarifas(int id, int? anio, int? mes)
         {
             var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == id);

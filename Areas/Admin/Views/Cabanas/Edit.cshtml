@@ -40,30 +40,54 @@
     </form>
 
     <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
-        <h2 class="mb-3 text-sm font-semibold text-ink-700">Fotos actuales</h2>
-        <p class="mb-3 text-xs text-ink-400">Arrastrá las fotos para ordenarlas. La primera es la portada que se muestra en el sitio público.</p>
-        <form id="form-reordenar-fotos" asp-action="ReordenarFotos" asp-route-cabanaId="@Model.Id" method="post"></form>
-        <div id="fotos-grid" class="grid grid-cols-3 gap-3">
-            @{ var fotosOrdenadas = Model.Fotos.OrderBy(f => f.Orden).ToList(); }
-            @for (var i = 0; i < fotosOrdenadas.Count; i++)
+        <div class="mb-1 flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-ink-700">Fotos actuales</h2>
+            @if (Model.Fotos.Any())
             {
-                var foto = fotosOrdenadas[i];
-                <div class="foto-item relative cursor-grab overflow-hidden rounded-xl active:cursor-grabbing" draggable="true" data-id="@foto.Id">
-                    <img src="@foto.RutaArchivo" draggable="false" class="h-24 w-full select-none object-cover" />
-                    <span class="badge-portada absolute left-1 top-1 rounded-full bg-river-700 px-2 py-0.5 text-[10px] font-semibold text-white shadow-soft @(i == 0 ? "" : "hidden")">Portada</span>
-                    <form asp-action="EliminarFoto" asp-route-id="@foto.Id" asp-route-cabanaId="@Model.Id" method="post"
-                          class="absolute right-1 top-1" onsubmit="return confirmarAccion(event, '¿Eliminar esta foto?');">
-                        <button type="submit" class="flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-soft transition hover:bg-rose-700">&times;</button>
-                    </form>
+                <div class="flex items-center gap-3">
+                    <label class="flex items-center gap-1.5 text-xs font-medium text-ink-500">
+                        <input type="checkbox" id="seleccionar-todas-fotos-cabana" onchange="toggleTodasFotosCabana(this)" class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
+                        Seleccionar todo
+                    </label>
+                    <button type="button" id="btn-eliminar-fotos-cabana" onclick="eliminarSeleccionadasFotosCabana()" disabled
+                            class="rounded-full bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
+                        Eliminar seleccionadas (<span id="contador-fotos-cabana">0</span>)
+                    </button>
                 </div>
             }
         </div>
+        <p class="mb-3 text-xs text-ink-400">Arrastrá las fotos para ordenarlas. La primera es la portada que se muestra en el sitio público.</p>
+        <form id="form-reordenar-fotos" asp-action="ReordenarFotos" asp-route-cabanaId="@Model.Id" method="post"></form>
+        <form id="form-eliminar-fotos-cabana" asp-action="EliminarFotos" asp-route-cabanaId="@Model.Id" method="post"
+              onsubmit="return confirmarAccion(event, '¿Eliminar las fotos seleccionadas?');">
+            <div id="fotos-grid" class="grid grid-cols-3 gap-3">
+                @{ var fotosOrdenadas = Model.Fotos.OrderBy(f => f.Orden).ToList(); }
+                @for (var i = 0; i < fotosOrdenadas.Count; i++)
+                {
+                    var foto = fotosOrdenadas[i];
+                    <div class="foto-item relative cursor-grab overflow-hidden rounded-xl active:cursor-grabbing" draggable="true" data-id="@foto.Id">
+                        <img src="@foto.RutaArchivo" draggable="false" class="h-24 w-full select-none object-cover" />
+                        <span class="badge-portada absolute left-1 top-1 rounded-full bg-river-700 px-2 py-0.5 text-[10px] font-semibold text-white shadow-soft @(i == 0 ? "" : "hidden")">Portada</span>
+                        <label class="absolute bottom-1 left-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/80 shadow-soft" draggable="false" onmousedown="event.stopPropagation();">
+                            <input type="checkbox" name="ids" value="@foto.Id" draggable="false" onchange="actualizarSeleccionFotosCabana()" class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
+                        </label>
+                        <button type="button" onclick="eliminarUnaFotoCabana(@foto.Id)"
+                                class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-soft transition hover:bg-rose-700">&times;</button>
+                    </div>
+                }
+            </div>
+        </form>
         @if (!Model.Fotos.Any())
         {
             <p class="text-sm text-ink-400">Todavía no hay fotos cargadas.</p>
         }
     </div>
 </div>
+
+<form id="form-eliminar-una-foto-cabana" asp-action="EliminarFoto" asp-route-cabanaId="@Model.Id" method="post" class="hidden"
+      onsubmit="return confirmarAccion(event, '¿Eliminar esta foto?');">
+    <input type="hidden" id="id-eliminar-una-foto-cabana" name="id" value="" />
+</form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
@@ -129,5 +153,37 @@
                 guardarOrden();
             });
         })();
+
+        function obtenerCheckboxesFotosCabana() {
+            return Array.from(document.querySelectorAll('#form-eliminar-fotos-cabana input[name="ids"]'));
+        }
+
+        function toggleTodasFotosCabana(origen) {
+            obtenerCheckboxesFotosCabana().forEach(function (checkbox) {
+                checkbox.checked = origen.checked;
+            });
+            actualizarSeleccionFotosCabana();
+        }
+
+        function actualizarSeleccionFotosCabana() {
+            var checkboxes = obtenerCheckboxesFotosCabana();
+            var seleccionadas = checkboxes.filter(function (checkbox) { return checkbox.checked; });
+
+            document.getElementById('contador-fotos-cabana').textContent = seleccionadas.length;
+            document.getElementById('btn-eliminar-fotos-cabana').disabled = seleccionadas.length === 0;
+
+            var seleccionarTodas = document.getElementById('seleccionar-todas-fotos-cabana');
+            seleccionarTodas.checked = checkboxes.length > 0 && seleccionadas.length === checkboxes.length;
+            seleccionarTodas.indeterminate = seleccionadas.length > 0 && seleccionadas.length < checkboxes.length;
+        }
+
+        function eliminarSeleccionadasFotosCabana() {
+            document.getElementById('form-eliminar-fotos-cabana').requestSubmit();
+        }
+
+        function eliminarUnaFotoCabana(id) {
+            document.getElementById('id-eliminar-una-foto-cabana').value = id;
+            document.getElementById('form-eliminar-una-foto-cabana').requestSubmit();
+        }
     </script>
 }
