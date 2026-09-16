@@ -21,8 +21,8 @@ namespace GestionCabanas.Services
         // Colores de relleno (mismo criterio que el calendario del sitio): verde = reservada,
         // rojo = se liberó (se eliminó o dejó de estar confirmada), amarillo = pasó el día y
         // quedó sin reservar.
-        public const string ColorReservado = "#C6EFCE";
-        public const string ColorLiberado = "#FFC7CE";
+        public const string ColorReservado = "#E2EFDA";
+        public const string ColorLiberado = "#FCE4D6";
         public const string ColorPasadoSinReservar = "#FFF2CC";
 
         // Columna del calendario de disponibilidad (A a E) de cada cabaña, en el orden fijo del Excel.
