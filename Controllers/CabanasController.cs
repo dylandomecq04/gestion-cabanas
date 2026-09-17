@@ -293,7 +293,6 @@ namespace GestionCabanas.Controllers
             var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
 
             ViewBag.Reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
-            ViewBag.Tarifas = await _disponibilidad.ObtenerTarifasEnRangoAsync(cabanaId, primerDia, ultimoDia);
             ViewBag.PromosEstadia = await _disponibilidad.ObtenerPromosEnRangoAsync(cabanaId, primerDia, ultimoDia);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
