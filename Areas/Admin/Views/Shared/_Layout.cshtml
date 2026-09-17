@@ -38,7 +38,7 @@
 
             @if (User.Identity?.IsAuthenticated == true)
             {
-                <form asp-area="Admin" asp-controller="Account" asp-action="Logout" method="post" class="flex items-center gap-3">
+                <form asp-area="Admin" asp-controller="Account" asp-action="Logout" method="post" class="flex items-center gap-3" data-skip-loading>
                     <span class="hidden text-sm text-ink-300 sm:inline">@User.Identity!.Name</span>
                     <button type="submit" class="rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">Salir</button>
                 </form>
@@ -58,6 +58,19 @@
     <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         @RenderBody()
     </main>
+
+    <div id="overlay-cargando" class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-ink-950/50 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-xs rounded-2.5xl bg-white p-6 text-center shadow-lift">
+            <svg class="mx-auto h-8 w-8 animate-spin text-river-700" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <p id="overlay-cargando-texto" class="mt-3 text-sm font-medium text-ink-700">Guardando...</p>
+            <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-ink-100">
+                <div id="overlay-cargando-barra" class="h-full w-0 rounded-full bg-river-700 transition-[width] duration-200 ease-out"></div>
+            </div>
+        </div>
+    </div>
 
     <div id="modal-confirmacion" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-ink-950/40 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalConfirmacion();">
         <div class="w-full max-w-sm rounded-2.5xl bg-white p-6 shadow-lift">
@@ -101,8 +114,39 @@
         document.getElementById('modal-confirmacion-boton').addEventListener('click', function () {
             const form = __formPendienteConfirmacion;
             cerrarModalConfirmacion();
+            if (form) mostrarCargando(form);
             if (form) form.submit();
         });
+
+        let __intervaloCargando = null;
+
+        function mostrarCargando(form) {
+            const overlay = document.getElementById('overlay-cargando');
+            const barra = document.getElementById('overlay-cargando-barra');
+            const texto = document.getElementById('overlay-cargando-texto');
+
+            texto.textContent = form.dataset.loadingText || 'Guardando...';
+            barra.style.width = '0%';
+            overlay.classList.remove('hidden');
+
+            const boton = form.querySelector('button[type="submit"]');
+            if (boton) boton.disabled = true;
+
+            let porcentaje = 0;
+            clearInterval(__intervaloCargando);
+            __intervaloCargando = setInterval(function () {
+                porcentaje += (92 - porcentaje) * 0.1;
+                barra.style.width = Math.min(porcentaje, 92) + '%';
+            }, 200);
+        }
+
+        document.addEventListener('submit', function (event) {
+            if (event.defaultPrevented) return;
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            if (form.hasAttribute('data-skip-loading')) return;
+            mostrarCargando(form);
+        }, false);
     </script>
 
     @if (TempData["Mensaje"] != null)
