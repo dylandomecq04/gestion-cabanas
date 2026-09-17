@@ -1,0 +1,137 @@
+@{
+    Layout = null;
+    var token = (string)ViewBag.Token;
+    var cabanas = (List<Cabana>)ViewBag.Cabanas;
+    var reservas = (List<Reserva>)ViewBag.Reservas;
+    DateTime primerDia = ViewBag.PrimerDia;
+    DateTime ultimoDia = ViewBag.UltimoDia;
+    DateTime mesAnterior = ViewBag.MesAnterior;
+    DateTime mesSiguiente = ViewBag.MesSiguiente;
+    var dias = Enumerable.Range(0, (ultimoDia - primerDia).Days + 1).Select(i => primerDia.AddDays(i)).ToList();
+    var hoy = DateTime.Today;
+
+    Reserva? ReservaQueLlegaEseDia(int cabanaId, DateTime dia)
+        => reservas.FirstOrDefault(r => r.CabanaId == cabanaId && r.FechaDesde.Date == dia.Date);
+
+    Reserva? ReservaQueSaleEseDia(int cabanaId, DateTime dia)
+        => reservas.FirstOrDefault(r => r.CabanaId == cabanaId && r.FechaHasta.Date == dia.Date);
+
+    string[] diasSemana = { "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom" };
+    int IndiceDiaSemana(DateTime dia) => ((int)dia.DayOfWeek + 6) % 7;
+
+    var mesTitulo = primerDia.ToString("MMMM yyyy");
+    mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
+
+    string PrimerNombre(string nombreCompleto) => nombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? nombreCompleto;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recambios · Cabañas Sidharta</title>
+    <partial name="_TailwindConfig" />
+</head>
+<body class="bg-sand-50 text-ink-900 antialiased">
+    <header class="border-b border-ink-100 bg-white px-4 py-4 sm:px-6">
+        <div class="mx-auto flex max-w-5xl items-center gap-2">
+            <img src="~/images/logo-sidharta.png" alt="Cabañas Sidharta" class="h-9 w-9 rounded-xl shadow-soft" />
+            <span class="font-display text-base font-semibold text-river-800 sm:text-lg">Cabañas Sidharta · Recambios</span>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-3 py-6 sm:px-6">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h1 class="font-display text-lg font-semibold text-ink-900 sm:text-2xl">Recambios &middot; @mesTitulo</h1>
+            <div class="flex gap-2">
+                <a class="rounded-full border border-ink-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm"
+                   asp-controller="Recambios" asp-action="Index" asp-route-token="@token" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month">&larr; <span class="hidden sm:inline">Mes </span>anterior</a>
+                <a class="rounded-full border border-ink-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm"
+                   asp-controller="Recambios" asp-action="Index" asp-route-token="@token" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month"><span class="hidden sm:inline">Mes </span>siguiente &rarr;</a>
+            </div>
+        </div>
+
+        <div class="scroll-fino mb-4 flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 text-xs font-medium text-ink-500 sm:flex-wrap sm:gap-4 sm:overflow-visible sm:whitespace-normal sm:pb-0">
+            <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-300"></span> Sale y entra otro (recambio urgente)</span>
+            <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-sky-200"></span> Sale (hay que limpiar)</span>
+            <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-200"></span> Entra</span>
+        </div>
+
+        <div id="scroll-tabla" class="scroll-fino overflow-x-auto rounded-2.5xl bg-white p-2 shadow-soft ring-1 ring-ink-100 sm:p-3">
+            <table class="w-full border-separate text-xs [border-spacing:2px_7px] sm:[border-spacing:4px_10px]">
+                <thead>
+                    <tr>
+                        <th class="sticky left-0 z-20 min-w-[84px] rounded-lg bg-sand-50 px-2 py-1.5 text-left text-xs font-semibold text-ink-700 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)] sm:min-w-[140px] sm:px-3 sm:py-2 sm:text-sm">Cabaña</th>
+                        @foreach (var dia in dias)
+                        {
+                            var clasesHeader = dia.Date == hoy
+                                ? "bg-river-600 text-white"
+                                : "text-ink-400";
+                            <th id="@(dia.Date == hoy ? "col-hoy" : null)" class="min-w-[56px] rounded-lg px-0.5 py-1.5 text-center font-semibold sm:min-w-[80px] sm:px-1 sm:py-2 @clasesHeader">
+                                <div class="text-[10px] uppercase opacity-80 sm:text-xs">@diasSemana[IndiceDiaSemana(dia)]</div>
+                                <div class="text-sm sm:text-base">@dia.Day</div>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var iCabana = 0; iCabana < cabanas.Count; iCabana++)
+                    {
+                        var cabana = cabanas[iCabana];
+                        var filaClara = iCabana % 2 == 0;
+                        var bgFila = filaClara ? "bg-white" : "bg-sand-50/60";
+                        <tr>
+                            <td class="sticky left-0 z-20 align-middle @bgFila px-2 py-2 shadow-[6px_0_10px_-6px_rgba(15,23,42,0.25)] border-b border-ink-100 sm:px-3">
+                                <span class="inline-flex items-center rounded-full bg-sand-100 px-2.5 py-1 text-xs font-semibold text-ink-800 ring-1 ring-sand-200 sm:px-3 sm:text-sm">@cabana.Nombre</span>
+                            </td>
+                            @foreach (var dia in dias)
+                            {
+                                var llega = ReservaQueLlegaEseDia(cabana.Id, dia);
+                                var sale = ReservaQueSaleEseDia(cabana.Id, dia);
+                                var clase = llega is not null && sale is not null
+                                    ? "bg-amber-200"
+                                    : sale is not null
+                                        ? "bg-sky-100"
+                                        : llega is not null
+                                            ? "bg-green-100"
+                                            : "";
+                                <td class="p-0.5 align-top">
+                                    <div class="flex h-12 w-14 flex-col items-center justify-center gap-0.5 rounded-lg text-center text-[9px] font-semibold leading-tight sm:h-14 sm:w-20 sm:text-[11px] @clase">
+                                        @if (sale is not null)
+                                        {
+                                            <span class="text-rose-700" title="Sale: @sale.NombreHuesped">↓ @PrimerNombre(sale.NombreHuesped)</span>
+                                        }
+                                        @if (llega is not null)
+                                        {
+                                            <span class="text-river-700" title="Llega: @llega.NombreHuesped">↑ @PrimerNombre(llega.NombreHuesped)</span>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <style>
+        .scroll-fino::-webkit-scrollbar { height: 10px; }
+        .scroll-fino::-webkit-scrollbar-track { background: transparent; }
+        .scroll-fino::-webkit-scrollbar-thumb { background-color: #d8d2c4; border-radius: 999px; }
+        .scroll-fino::-webkit-scrollbar-thumb:hover { background-color: #c3bba8; }
+        .scroll-fino { scrollbar-width: thin; scrollbar-color: #d8d2c4 transparent; }
+    </style>
+
+    <script>
+        (function centrarScrollEnHoy() {
+            const tabla = document.getElementById('scroll-tabla');
+            const columnaHoy = document.getElementById('col-hoy');
+            if (!tabla || !columnaHoy) return;
+            const columnaNombres = tabla.querySelector('thead th');
+            const anchoColumnaNombres = columnaNombres ? columnaNombres.offsetWidth : 0;
+            tabla.scrollLeft = Math.max(0, columnaHoy.offsetLeft - anchoColumnaNombres);
+        })();
+    </script>
+</body>
+</html>
