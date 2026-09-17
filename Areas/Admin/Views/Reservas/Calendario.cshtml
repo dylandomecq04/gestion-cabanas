@@ -133,7 +133,20 @@
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-rose-600">↓</span> Sale ese día</span>
     </div>
-    <p class="mb-4 text-xs text-ink-400">Tocá una o varias celdas libres para ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <p class="text-xs text-ink-400">Tocá una o varias celdas libres para ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
+        <button type="button" id="btn-toggle-solicitudes" onclick="alternarVisibilidadSolicitudes()" aria-pressed="false"
+                class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">
+            <svg id="icono-ojo-abierto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <svg id="icono-ojo-cerrado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="hidden h-4 w-4 shrink-0">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12c1.292 4.338 5.31 7.5 10.066 7.5.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+            </svg>
+            <span id="texto-toggle-solicitudes">Ocultar solicitudes</span>
+        </button>
+    </div>
 
     <div id="scroll-arriba" class="scroll-fino mb-1.5 overflow-x-auto overflow-y-hidden">
         <div id="scroll-arriba-ancho" class="h-px"></div>
@@ -190,6 +203,20 @@
                                     var claseReserva = esPendiente
                                         ? "bg-sky-200 hover:bg-sky-300 text-sky-900"
                                         : "bg-green-300 hover:bg-green-400 text-green-900";
+
+                                    // Si es una solicitud (pendiente), preparamos una celda "Disponible" alternativa,
+                                    // oculta por defecto, que se muestra cuando se activa "Ocultar solicitudes".
+                                    var tarifaAlt = esPendiente ? TarifaDeLaCabanaEnElDia(cabana.Id, dia) : null;
+                                    var yaPasoAlt = dia.Date < hoy;
+                                    var precioMostrarAlt = tarifaAlt?.Precio ?? cabana.PrecioPorNoche;
+                                    var precioTextoAlt = tarifaAlt?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+                                    var etiquetaPrecioAlt = precioMostrarAlt.HasValue ? "$" + precioMostrarAlt.Value.ToString("N0") : "Sin precio";
+                                    var etiquetaEstadoAlt = yaPasoAlt ? "Sin reservar" : "Disponible";
+                                    var claseAlt = yaPasoAlt
+                                        ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                        : "bg-red-50 text-red-700 hover:bg-red-100";
+                                    var indiceAlt = indice;
+
                                     <td class="p-0">
                                         <div class="relative">
                                             <button type="button" onclick="abrirReserva(this)"
@@ -202,7 +229,7 @@
                                                     data-info-pago="@pagoTexto"
                                                     data-info-pagar="@pagarTexto"
                                                     title="@infoResumen (@etiquetaReserva)"
-                                                    class="day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[11px] font-bold leading-tight sm:h-28 sm:w-28 sm:gap-1 sm:px-1.5 sm:text-sm @claseReserva">
+                                                    class="day-cell @(esPendiente ? "solicitud-cell" : "") relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[11px] font-bold leading-tight sm:h-28 sm:w-28 sm:gap-1 sm:px-1.5 sm:text-sm @claseReserva">
                                                 <span>@etiquetaReserva</span>
                                                 <span class="truncate text-[9px] font-normal opacity-90 max-w-full sm:text-xs">@reserva.NombreHuesped</span>
                                                 @if (llega is not null)
@@ -214,6 +241,38 @@
                                                     <span title="Sale: @sale.NombreHuesped" class="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-rose-600 shadow ring-1 ring-ink-200 sm:bottom-1 sm:right-1 sm:h-6 sm:w-6 sm:text-base">↓</span>
                                                 }
                                             </button>
+                                            @if (esPendiente)
+                                            {
+                                                <button type="button" data-index="@indiceAlt"
+                                                        data-cabana-id="@cabana.Id"
+                                                        data-cabana-nombre="@cabana.Nombre"
+                                                        data-fecha="@fechaAttr"
+                                                        data-fecha-texto="@fechaTexto"
+                                                        data-precio="@precioTextoAlt"
+                                                        data-promo-id="@(promoDelDia is not null ? promoDelDia!.Id.ToString() : "")"
+                                                        onclick="alternarSeleccionDia(this)"
+                                                        class="dia-editable solicitud-alt-cell hidden day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @claseAlt">
+                                                    <span class="etiqueta-estado leading-tight">@etiquetaEstadoAlt</span>
+                                                    @if (!yaPasoAlt)
+                                                    {
+                                                        <span class="etiqueta-precio text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@etiquetaPrecioAlt</span>
+                                                    }
+                                                    <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
+                                                    @if (llega is not null)
+                                                    {
+                                                        <span title="Ingresa: @llega.NombreHuesped" class="absolute bottom-0.5 left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-river-700 shadow ring-1 ring-ink-200 sm:bottom-1 sm:left-1 sm:h-6 sm:w-6 sm:text-base">↑</span>
+                                                    }
+                                                    @if (sale is not null)
+                                                    {
+                                                        <span title="Sale: @sale.NombreHuesped" class="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-rose-600 shadow ring-1 ring-ink-200 sm:bottom-1 sm:right-1 sm:h-6 sm:w-6 sm:text-base">↓</span>
+                                                    }
+                                                </button>
+                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias.Index" value="@indiceAlt" />
+                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAlt].CabanaId" value="@cabana.Id" />
+                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAlt].Fecha" value="@fechaAttr" />
+                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAlt].Precio" value="@precioTextoAlt" />
+                                                indice++;
+                                            }
                                             @if (promoDelDia is not null)
                                             {
                                                 <button type="button" onclick="event.stopPropagation(); eliminarPromoDesdeCelda(@promoDelDia.Id)"
@@ -227,6 +286,20 @@
                                 }
                                 else if (reservasDia.Count > 1)
                                 {
+                                    // Si todas las reservas del día son solicitudes (sin ninguna confirmada), agregamos
+                                    // una celda "Disponible" alternativa para cuando se activa "Ocultar solicitudes".
+                                    var todasPendientes = reservasDia.All(r => r.Estado == EstadoReserva.Pendiente);
+                                    var tarifaAltMulti = todasPendientes ? TarifaDeLaCabanaEnElDia(cabana.Id, dia) : null;
+                                    var yaPasoAltMulti = dia.Date < hoy;
+                                    var precioMostrarAltMulti = tarifaAltMulti?.Precio ?? cabana.PrecioPorNoche;
+                                    var precioTextoAltMulti = tarifaAltMulti?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+                                    var etiquetaPrecioAltMulti = precioMostrarAltMulti.HasValue ? "$" + precioMostrarAltMulti.Value.ToString("N0") : "Sin precio";
+                                    var etiquetaEstadoAltMulti = yaPasoAltMulti ? "Sin reservar" : "Disponible";
+                                    var claseAltMulti = yaPasoAltMulti
+                                        ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                        : "bg-red-50 text-red-700 hover:bg-red-100";
+                                    var indiceAltMulti = indice;
+
                                     <td class="p-0 align-top">
                                         <div class="relative flex w-16 flex-col gap-0.5 sm:w-28">
                                             @foreach (var reserva in reservasDia)
@@ -249,10 +322,34 @@
                                                         data-info-pago="@pagoTexto"
                                                         data-info-pagar="@pagarTexto"
                                                         title="@infoResumen (@etiquetaReserva)"
-                                                        class="day-cell flex h-8 w-16 flex-col items-center justify-center gap-0 rounded-md px-1 text-[9px] font-bold leading-none sm:h-[3.3rem] sm:w-28 sm:gap-0.5 sm:px-1.5 sm:text-[11px] @claseReserva">
+                                                        class="day-cell @(esPendiente ? "solicitud-cell" : "") flex h-8 w-16 flex-col items-center justify-center gap-0 rounded-md px-1 text-[9px] font-bold leading-none sm:h-[3.3rem] sm:w-28 sm:gap-0.5 sm:px-1.5 sm:text-[11px] @claseReserva">
                                                     <span class="max-w-full truncate">@etiquetaReserva</span>
                                                     <span class="max-w-full truncate text-[8px] font-normal opacity-90 sm:text-[10px]">@reserva.NombreHuesped</span>
                                                 </button>
+                                            }
+                                            @if (todasPendientes)
+                                            {
+                                                <button type="button" data-index="@indiceAltMulti"
+                                                        data-cabana-id="@cabana.Id"
+                                                        data-cabana-nombre="@cabana.Nombre"
+                                                        data-fecha="@fechaAttr"
+                                                        data-fecha-texto="@fechaTexto"
+                                                        data-precio="@precioTextoAltMulti"
+                                                        data-promo-id="@(promoDelDia is not null ? promoDelDia!.Id.ToString() : "")"
+                                                        onclick="alternarSeleccionDia(this)"
+                                                        class="dia-editable solicitud-alt-cell hidden day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @claseAltMulti">
+                                                    <span class="etiqueta-estado leading-tight">@etiquetaEstadoAltMulti</span>
+                                                    @if (!yaPasoAltMulti)
+                                                    {
+                                                        <span class="etiqueta-precio text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@etiquetaPrecioAltMulti</span>
+                                                    }
+                                                    <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
+                                                </button>
+                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias.Index" value="@indiceAltMulti" />
+                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAltMulti].CabanaId" value="@cabana.Id" />
+                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAltMulti].Fecha" value="@fechaAttr" />
+                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAltMulti].Precio" value="@precioTextoAltMulti" />
+                                                indice++;
                                             }
                                             @if (llega is not null)
                                             {
@@ -315,6 +412,7 @@
                                                 <span title="Sale: @sale.NombreHuesped" class="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-rose-600 shadow ring-1 ring-ink-200 sm:bottom-1 sm:right-1 sm:h-6 sm:w-6 sm:text-base">↓</span>
                                             }
                                         </button>
+                                        <input type="hidden" name="dias.Index" value="@indice" />
                                         <input type="hidden" name="dias[@indice].CabanaId" value="@cabana.Id" />
                                         <input type="hidden" name="dias[@indice].Fecha" value="@fechaAttr" />
                                         <input type="hidden" name="dias[@indice].Precio" value="@precioTexto" />
@@ -716,6 +814,33 @@
             const offset = columnaHoy.offsetLeft - anchoColumnaNombres;
             tabla.scrollLeft = Math.max(0, offset);
             if (arriba) arriba.scrollLeft = tabla.scrollLeft;
+        })();
+
+        const CLAVE_OCULTAR_SOLICITUDES = 'calendarioOcultarSolicitudes';
+
+        function aplicarVisibilidadSolicitudes(ocultar) {
+            document.querySelectorAll('.solicitud-cell').forEach(el => el.classList.toggle('hidden', ocultar));
+            document.querySelectorAll('.solicitud-alt-cell').forEach(el => el.classList.toggle('hidden', !ocultar));
+            document.querySelectorAll('.solicitud-alt-input').forEach(el => { el.disabled = !ocultar; });
+
+            document.getElementById('icono-ojo-abierto').classList.toggle('hidden', ocultar);
+            document.getElementById('icono-ojo-cerrado').classList.toggle('hidden', !ocultar);
+            document.getElementById('texto-toggle-solicitudes').textContent = ocultar ? 'Mostrar solicitudes' : 'Ocultar solicitudes';
+            document.getElementById('btn-toggle-solicitudes').setAttribute('aria-pressed', ocultar ? 'true' : 'false');
+        }
+
+        function alternarVisibilidadSolicitudes() {
+            let ocultarActual = false;
+            try { ocultarActual = localStorage.getItem(CLAVE_OCULTAR_SOLICITUDES) === '1'; } catch { }
+            const ocultar = !ocultarActual;
+            try { localStorage.setItem(CLAVE_OCULTAR_SOLICITUDES, ocultar ? '1' : '0'); } catch { }
+            aplicarVisibilidadSolicitudes(ocultar);
+        }
+
+        (function inicializarVisibilidadSolicitudes() {
+            let ocultar = false;
+            try { ocultar = localStorage.getItem(CLAVE_OCULTAR_SOLICITUDES) === '1'; } catch { }
+            aplicarVisibilidadSolicitudes(ocultar);
         })();
 
         const seleccionDias = new Set();
