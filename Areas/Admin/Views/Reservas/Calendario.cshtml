@@ -91,25 +91,6 @@
                         <text>Todavía no sincronizaste</text>
                     }
                 </span>
-
-                @if (syncConexion.RepintadoPendienteAnio.HasValue)
-                {
-                    <span class="text-xs text-amber-700">Repintando el calendario @syncConexion.RepintadoPendienteAnio&hellip;</span>
-                }
-                else
-                {
-                    <form asp-controller="Sincronizacion" asp-action="SolicitarRepintado" method="post" class="flex items-center gap-2"
-                          onsubmit="return confirm('Esto va a repintar de nuevo, en el Excel, todo el calendario de disponibilidad de @primerDia.Year (columnas A a E). Puede tardar varios minutos. ¿Continuar?');">
-                        <input type="hidden" name="anio" value="@primerDia.Year" />
-                        <input type="hidden" name="mes" value="@primerDia.Month" />
-                        <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-ink-200 px-2.5 py-1 text-[11px] font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-3.5 w-3.5 shrink-0">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 3.75H6.912a2.25 2.25 0 00-2.15 1.588L2.35 13.177a2.25 2.25 0 00-.1.661V18a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25v-4.162c0-.225-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H15M9 3.75v11.25m0-11.25L5.25 9m3.75-5.25L12.75 9" />
-                            </svg>
-                            Repintar calendario @primerDia.Year
-                        </button>
-                    </form>
-                }
             }
             else
             {
