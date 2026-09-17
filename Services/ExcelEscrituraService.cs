@@ -335,10 +335,13 @@ namespace GestionCabanas.Services
         /// <summary>
         /// Repinta todo el calendario de disponibilidad (columnas A a E) de un año completo, en
         /// todas las hojas de mes que encuentre en el libro: verde en los días con una reserva
-        /// confirmada, amarillo en los días ya pasados sin ninguna, y sin tocar los días futuros sin
-        /// reservar. Pensado para dejar sincronizado de una vez lo que ya estaba cargado antes de
-        /// tener este coloreado automático. Agrupa los días consecutivos del mismo color de cada
-        /// cabaña en una sola llamada a Graph para no hacer una por día.
+        /// confirmada, amarillo en los días ya pasados sin ninguna. Los días futuros sin reservar
+        /// se dejan sin color, salvo que ya tuvieran algún color de fondo (un rojo de alguna
+        /// liberación anterior, tal vez de un tono viejo), en cuyo caso se normalizan al rojo
+        /// actual para que quede un solo tono en todo el año. Pensado para dejar sincronizado de
+        /// una vez lo que ya estaba cargado antes de tener este coloreado automático. Agrupa los
+        /// días consecutivos del mismo color de cada cabaña en una sola llamada a Graph para no
+        /// hacer una por día.
         /// </summary>
         public async Task<string?> RepintarCalendarioAsync(int anio)
         {
@@ -434,7 +437,23 @@ namespace GestionCabanas.Services
             {
                 var fecha = new DateTime(anio, mes, dia);
                 var ocupada = reservasConfirmadas.Any(r => r.CabanaId == cabanaId && r.FechaDesde <= fecha && fecha < r.FechaHasta);
-                var colorDia = ocupada ? ColorReservado : (fecha < hoy ? ColorPasadoSinReservar : null);
+                string? colorDia;
+                if (ocupada)
+                {
+                    colorDia = ColorReservado;
+                }
+                else if (fecha < hoy)
+                {
+                    colorDia = ColorPasadoSinReservar;
+                }
+                else
+                {
+                    // Día futuro sin reserva: si ya tenía algún color de fondo (de una liberación
+                    // anterior, tal vez con un tono viejo), se normaliza al rojo actual. Si nunca
+                    // tuvo color, se deja intacto.
+                    var tieneColorDeFondo = hoja.Cell(dia, columna).Style.Fill.BackgroundColor != XLColor.NoColor;
+                    colorDia = tieneColorDeFondo ? ColorLiberado : null;
+                }
 
                 if (colorDia != colorTramo)
                 {
