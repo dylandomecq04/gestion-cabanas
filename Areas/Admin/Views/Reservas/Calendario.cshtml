@@ -76,16 +76,6 @@
                         <input type="hidden" name="anio" value="@primerDia.Year" />
                         <input type="hidden" name="mes" value="@primerDia.Month" />
                     </form>
-                    <span class="text-xs text-ink-400">
-                        @if (syncConexion!.UltimaSincronizacion.HasValue)
-                        {
-                            <text>Última sincronización: @syncConexion.UltimaSincronizacion.Value.ToString("dd/MM/yyyy HH:mm")</text>
-                        }
-                        else
-                        {
-                            <text>Todavía no sincronizaste</text>
-                        }
-                    </span>
                 }
                 else
                 {
