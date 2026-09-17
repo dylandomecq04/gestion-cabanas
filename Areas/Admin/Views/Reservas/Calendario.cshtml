@@ -66,56 +66,45 @@
         </div>
     </div>
 
-    @if (syncConfigurada)
-    {
-        <div class="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
-            @if (syncConectada)
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            @if (syncConfigurada)
             {
-                <form id="form-sincronizar" asp-controller="Sincronizacion" asp-action="Sincronizar" method="post" class="flex items-center gap-2">
-                    <input type="hidden" name="anio" value="@primerDia.Year" />
-                    <input type="hidden" name="mes" value="@primerDia.Month" />
-                    <button type="submit" class="inline-flex items-center gap-1 rounded-full bg-river-700 px-2.5 py-1 text-[11px] font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-3.5 w-3.5 shrink-0 text-emerald-300">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                @if (syncConectada)
+                {
+                    <form id="form-sincronizar" asp-controller="Sincronizacion" asp-action="Sincronizar" method="post" class="flex items-center gap-2">
+                        <input type="hidden" name="anio" value="@primerDia.Year" />
+                        <input type="hidden" name="mes" value="@primerDia.Month" />
+                        <button type="submit" class="inline-flex items-center gap-1 rounded-full bg-river-700 px-2.5 py-1 text-[11px] font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-3.5 w-3.5 shrink-0 text-emerald-300">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                            Sincronizar con Excel
+                        </button>
+                    </form>
+                    <span class="text-xs text-ink-400">
+                        @if (syncConexion!.UltimaSincronizacion.HasValue)
+                        {
+                            <text>Última sincronización: @syncConexion.UltimaSincronizacion.Value.ToString("dd/MM/yyyy HH:mm")</text>
+                        }
+                        else
+                        {
+                            <text>Todavía no sincronizaste</text>
+                        }
+                    </span>
+                }
+                else
+                {
+                    <a asp-controller="Sincronizacion" asp-action="Conectar" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month"
+                       class="inline-flex items-center gap-1.5 rounded-full border border-river-300 px-3 py-1.5 text-xs font-semibold text-river-700 transition hover:bg-river-50 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
                         </svg>
-                        Sincronizar con Excel
-                    </button>
-                </form>
-                <span class="text-xs text-ink-400">
-                    @if (syncConexion!.UltimaSincronizacion.HasValue)
-                    {
-                        <text>Última sincronización: @syncConexion.UltimaSincronizacion.Value.ToString("dd/MM/yyyy HH:mm")</text>
-                    }
-                    else
-                    {
-                        <text>Todavía no sincronizaste</text>
-                    }
-                </span>
-            }
-            else
-            {
-                <a asp-controller="Sincronizacion" asp-action="Conectar" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month"
-                   class="inline-flex items-center gap-1.5 rounded-full border border-river-300 px-3 py-1.5 text-xs font-semibold text-river-700 transition hover:bg-river-50 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
-                    </svg>
-                    Conectar OneDrive para sincronizar
-                </a>
+                        Conectar OneDrive para sincronizar
+                    </a>
+                }
             }
         </div>
-    }
-
-    <div class="scroll-fino mb-1 flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 text-xs font-medium text-ink-500 sm:flex-wrap sm:gap-4 sm:overflow-visible sm:whitespace-normal sm:pb-0">
-        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
-        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-sky-200"></span> Solicitud</span>
-        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
-        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100 ring-1 ring-ink-200"></span> Sin reservar</span>
-        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
-        <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
-        <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-rose-600">↓</span> Sale ese día</span>
-    </div>
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <p class="text-xs text-ink-400">Tocá una o varias celdas libres para ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
         <button type="button" id="btn-toggle-solicitudes" onclick="alternarVisibilidadSolicitudes()" aria-pressed="false"
                 class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">
             <svg id="icono-ojo-abierto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4 shrink-0">
@@ -128,6 +117,17 @@
             <span id="texto-toggle-solicitudes">Ocultar solicitudes</span>
         </button>
     </div>
+
+    <div class="scroll-fino mb-1 flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 text-xs font-medium text-ink-500 sm:flex-wrap sm:gap-4 sm:overflow-visible sm:whitespace-normal sm:pb-0">
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-green-300"></span> Reservada</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-sky-200"></span> Solicitud</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100 ring-1 ring-ink-200"></span> Sin reservar</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-rose-600">↓</span> Sale ese día</span>
+    </div>
+    <p class="mb-4 text-xs text-ink-400">Tocá una o varias celdas libres para ponerles precio juntas. Tocá una celda con reserva para verla o editarla.</p>
 
     <div id="scroll-arriba" class="scroll-fino mb-1.5 overflow-x-auto overflow-y-hidden">
         <div id="scroll-arriba-ancho" class="h-px"></div>
