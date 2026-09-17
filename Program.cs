@@ -34,6 +34,12 @@ builder.Services.AddScoped<GestionCabanas.Services.ExcelReservasSyncService>();
 builder.Services.AddScoped<GestionCabanas.Services.ExcelEscrituraService>();
 builder.Services.AddHostedService<GestionCabanas.Services.SincronizacionAutomaticaService>();
 
+// El límite por defecto (~28,6 MB) no alcanza para subir varias fotos de celular de una sola vez.
+builder.Services.Configure<Microsoft.AspNetCore.Builder.IISServerOptions>(options =>
+{
+    options.MaxRequestBodySize = 209_715_200; // 200 MB
+});
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
