@@ -1,9 +1,12 @@
 using System.Globalization;
+using Azure.Storage.Blobs;
 using GestionCabanas.Data;
 using GestionCabanas.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,16 +31,32 @@ builder.Services.AddScoped<IPasswordHasher<AdminUsuario>, PasswordHasher<AdminUs
 builder.Services.AddScoped<GestionCabanas.Services.DisponibilidadService>();
 builder.Services.AddSingleton<GestionCabanas.Services.AlmacenamientoFotosService>();
 builder.Services.AddScoped<GestionCabanas.Services.INotificacionEmailService, GestionCabanas.Services.EmailNotificacionService>();
-builder.Services.AddDataProtection();
+
+// El disco del contenedor es efímero: sin esto, cada reinicio (incluido el scale-to-zero
+// de Container Apps) invalida las cookies de sesión y los tokens de OneDrive guardados
+// cifrados en la base. Se persisten las claves en el mismo Storage Account de las fotos.
+var cadenaConexionBlobs = builder.Configuration["BlobFotos:ConnStr"];
+if (!string.IsNullOrWhiteSpace(cadenaConexionBlobs))
+{
+    var contenedorClaves = new BlobContainerClient(cadenaConexionBlobs, "dataprotection-keys");
+    contenedorClaves.CreateIfNotExists();
+    builder.Services.AddDataProtection()
+        .PersistKeysToAzureBlobStorage(contenedorClaves.GetBlobClient("keys.xml"));
+}
+else
+{
+    builder.Services.AddDataProtection();
+}
+
 builder.Services.AddHttpClient<GestionCabanas.Services.GraphOneDriveService>();
 builder.Services.AddScoped<GestionCabanas.Services.ExcelReservasSyncService>();
 builder.Services.AddScoped<GestionCabanas.Services.ExcelEscrituraService>();
 builder.Services.AddHostedService<GestionCabanas.Services.SincronizacionAutomaticaService>();
 
 // El límite por defecto (~28,6 MB) no alcanza para subir varias fotos de celular de una sola vez.
-builder.Services.Configure<Microsoft.AspNetCore.Builder.IISServerOptions>(options =>
+builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    options.MaxRequestBodySize = 209_715_200; // 200 MB
+    options.Limits.MaxRequestBodySize = 209_715_200; // 200 MB
 });
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

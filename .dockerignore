@@ -1,0 +1,10 @@
+bin/
+obj/
+.git/
+.github/
+.vs/
+*.db
+*.db-shm
+*.db-wal
+*.db.bak-*
+wwwroot/uploads/
