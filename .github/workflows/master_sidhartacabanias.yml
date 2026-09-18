@@ -47,41 +47,71 @@ jobs:
     needs: build-and-push
     environment:
       name: 'Production'
+    # Este deploy apaga la revisión en producción antes de levantar la nueva: nunca dos a la vez.
+    concurrency:
+      group: deploy-produccion
+      cancel-in-progress: false
     steps:
       - name: Azure login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy new image to Container App
+      # La base es un SQLite en un volumen de Azure Files y no soporta que dos réplicas la abran a
+      # la vez. En modo "single" Azure levanta la revisión nueva ANTES de apagar la vieja, así que
+      # la nueva se cae en db.Database.Migrate() con "SQLite Error 15: locking protocol".
+      # Por eso la app está en modo "multiple" y acá se controla el orden a mano:
+      #   1. se apagan las revisiones activas (corte breve del sitio),
+      #   2. se despliega la imagen nueva y se espera a que quede lista,
+      #   3. si arranca, se le pasa todo el tráfico; si no, se reactiva la revisión anterior.
+      - name: Deploy new image (stop old revision first)
         uses: azure/CLI@v2
         with:
           inlineScript: |
-            az containerapp update \
-              --name ${{ env.CONTAINER_APP_NAME }} \
-              --resource-group ${{ env.RESOURCE_GROUP }} \
-              --image ${{ needs.build-and-push.outputs.image }}
-
-      # "az containerapp update" devuelve OK apenas se crea la revisión nueva; si esa revisión
-      # después no arranca, Azure deja el tráfico en la anterior y el deploy parece exitoso.
-      # Acá esperamos a que la revisión nueva quede lista y, si no, fallamos mostrando por qué.
-      - name: Wait for the new revision to be ready
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
+            set -e
             APP=${{ env.CONTAINER_APP_NAME }}
             RG=${{ env.RESOURCE_GROUP }}
+            IMAGE=${{ needs.build-and-push.outputs.image }}
+
+            PREV=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.latestReadyRevisionName -o tsv)
+            if [ "$PREV" = "None" ]; then PREV=""; fi
+            echo "Revisión en producción: ${PREV:-ninguna}"
+
+            restaurar_anterior() {
+              if [ -n "$PREV" ]; then
+                az containerapp revision activate --name "$APP" --resource-group "$RG" --revision "$PREV" || true
+                az containerapp ingress traffic set --name "$APP" --resource-group "$RG" --revision-weight "$PREV=100" || true
+                echo "Se reactivó la revisión anterior $PREV."
+              else
+                echo "::warning::No había una revisión anterior lista a la que volver."
+              fi
+            }
+            # Cualquier error inesperado (p. ej. falla el update) no debe dejar el sitio apagado.
+            trap 'echo "::error::El deploy falló de forma inesperada."; restaurar_anterior' ERR
+
+            # Cambiar de modo no crea una revisión nueva. Es idempotente.
+            az containerapp revision set-mode --name "$APP" --resource-group "$RG" --mode multiple
+
+            for R in $(az containerapp revision list --name "$APP" --resource-group "$RG" --query "[?properties.active].name" -o tsv); do
+              echo "Apagando la revisión $R"
+              az containerapp revision deactivate --name "$APP" --resource-group "$RG" --revision "$R"
+            done
+
+            az containerapp update --name "$APP" --resource-group "$RG" --image "$IMAGE"
 
             REVISION=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.latestRevisionName -o tsv)
             echo "Esperando la revisión $REVISION"
 
             for i in $(seq 1 30); do
               LISTA=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.latestReadyRevisionName -o tsv)
-              ESTADO=$(az containerapp revision show --name "$APP" --resource-group "$RG" --revision "$REVISION"                 --query "properties.runningState" -o tsv)
+              ESTADO=$(az containerapp revision show --name "$APP" --resource-group "$RG" --revision "$REVISION" --query properties.runningState -o tsv)
               echo "[$i/30] última lista: $LISTA | $REVISION: $ESTADO"
 
               if [ "$LISTA" = "$REVISION" ]; then
-                echo "La revisión $REVISION está lista y recibe el tráfico."
+                # La revisión nueva ya corre: de acá en adelante no se debe reactivar la anterior.
+                trap - ERR
+                az containerapp ingress traffic set --name "$APP" --resource-group "$RG" --revision-weight latest=100
+                echo "La revisión $REVISION está lista y recibe el 100% del tráfico."
                 exit 0
               fi
               if [ "$ESTADO" = "ActivationFailed" ]; then
@@ -90,7 +120,12 @@ jobs:
               sleep 10
             done
 
-            echo "::error::La revisión $REVISION no quedó lista. El tráfico sigue en $LISTA."
+            trap - ERR
+            echo "::error::La revisión $REVISION no quedó lista."
+
+            # Primero se restaura el servicio; el diagnóstico va después.
+            az containerapp revision deactivate --name "$APP" --resource-group "$RG" --revision "$REVISION" || true
+            restaurar_anterior
             az containerapp revision list --name "$APP" --resource-group "$RG" -o table || true
 
             # Sin réplica no hay log stream: los logs del arranque fallido se leen de Log Analytics
@@ -100,9 +135,9 @@ jobs:
             if [ -n "$WORKSPACE" ]; then
               sleep 90
               echo "----- Eventos del sistema para $REVISION -----"
-              az monitor log-analytics query --workspace "$WORKSPACE" -o tsv                 --analytics-query "ContainerAppSystemLogs_CL | where RevisionName_s == '$REVISION' | order by TimeGenerated asc | project TimeGenerated, Reason_s, Log_s | take 50" || true
+              az monitor log-analytics query --workspace "$WORKSPACE" -o tsv --analytics-query "ContainerAppSystemLogs_CL | where RevisionName_s == '$REVISION' | order by TimeGenerated asc | project TimeGenerated, Reason_s, Log_s | take 50" || true
               echo "----- Logs de la aplicación para $REVISION -----"
-              az monitor log-analytics query --workspace "$WORKSPACE" -o tsv                 --analytics-query "ContainerAppConsoleLogs_CL | where RevisionName_s == '$REVISION' | order by TimeGenerated asc | project TimeGenerated, Log_s | take 100" || true
+              az monitor log-analytics query --workspace "$WORKSPACE" -o tsv --analytics-query "ContainerAppConsoleLogs_CL | where RevisionName_s == '$REVISION' | order by TimeGenerated asc | project TimeGenerated, Log_s | take 100" || true
             else
               echo "El entorno no envía logs a Log Analytics; mirá los logs de la revisión en el portal de Azure."
             fi
