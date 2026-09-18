@@ -117,6 +117,12 @@ app.UseAuthorization();
 app.MapStaticAssets();
 
 app.MapControllerRoute(
+    name: "admin-inicio",
+    pattern: "Admin",
+    defaults: new { area = "Admin", controller = "Reservas", action = "Calendario" })
+    .WithStaticAssets();
+
+app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();

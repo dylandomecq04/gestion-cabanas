@@ -60,7 +60,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             {
                 return Redirect(modelo.ReturnUrl);
             }
-            return RedirectToAction("Index", "Reservas");
+            return RedirectToAction("Calendario", "Reservas");
         }
 
         [Authorize]
