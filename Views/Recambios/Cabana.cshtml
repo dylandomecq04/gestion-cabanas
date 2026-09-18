@@ -19,17 +19,8 @@
     for (var d = primerDia; d <= ultimoDia; d = d.AddDays(1)) celdas.Add(d);
     while (celdas.Count % 7 != 0) celdas.Add(null);
 
-    // Las reservas vienen filtradas a las que empiezan o terminan en este mes.
+    // Sólo interesan las salidas: las reservas ya vienen filtradas a las que terminan en este mes, de hoy en adelante.
     Reserva? ReservaQueSaleEseDia(DateTime d) => reservas.FirstOrDefault(r => r.FechaHasta.Date == d.Date);
-    Reserva? ReservaQueEntraEseDia(DateTime d) => reservas.FirstOrDefault(r => r.FechaDesde.Date == d.Date);
-
-    // Lista del mes: cada reserva aporta su entrada y/o su salida si caen dentro del mes.
-    // En un mismo día, la salida va antes que la entrada.
-    var movimientos = reservas
-        .SelectMany(r => new[] { (Fecha: r.FechaDesde.Date, Entra: true, Reserva: r), (Fecha: r.FechaHasta.Date, Entra: false, Reserva: r) })
-        .Where(m => m.Fecha >= primerDia && m.Fecha <= ultimoDia)
-        .OrderBy(m => m.Fecha).ThenBy(m => m.Entra)
-        .ToList();
 
     var mesTitulo = primerDia.ToString("MMMM yyyy");
     mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
@@ -75,8 +66,7 @@
         </div>
 
         <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-ink-500">
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-sky-200"></span> <span class="font-bold text-rose-600">↓</span> Sale, hay recambio</span>
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-200"></span> <span class="font-bold text-river-700">↑</span> Entra</span>
+            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-sky-200"></span> <span class="font-bold text-sky-700">↻</span> Hay recambio</span>
         </div>
 
         <div class="rounded-2.5xl bg-white p-2 shadow-soft ring-1 ring-ink-100 sm:p-3">
@@ -94,49 +84,38 @@
                     }
                     var dia = d.Value;
                     var sale = ReservaQueSaleEseDia(dia);
-                    var entra = ReservaQueEntraEseDia(dia);
-                    var clase = sale is not null ? "bg-sky-100" : entra is not null ? "bg-river-100" : "bg-sand-50";
+                    var clase = sale is not null ? "bg-sky-100" : "bg-sand-50";
                     var anillo = dia.Date == hoy ? "ring-2 ring-river-600" : "";
                     <div class="flex min-h-[64px] flex-col gap-0.5 rounded-lg p-1 sm:min-h-[84px] sm:p-1.5 @clase @anillo">
                         <div class="text-[11px] font-bold @(dia.Date == hoy ? "text-river-700" : "text-ink-500") sm:text-sm">@dia.Day</div>
                         @if (sale is not null)
                         {
-                            <div class="truncate text-[9px] font-semibold leading-tight text-rose-700 sm:text-[11px]" title="Sale: @sale.NombreHuesped">↓ @sale.NombreHuesped</div>
-                        }
-                        @if (entra is not null)
-                        {
-                            <div class="truncate text-[9px] font-semibold leading-tight text-river-700 sm:text-[11px]" title="Entra: @entra.NombreHuesped">↑ @entra.NombreHuesped</div>
+                            <div class="truncate text-[9px] font-semibold leading-tight text-sky-800 sm:text-[11px]" title="Hay recambio: sale @sale.NombreHuesped">↻ @sale.NombreHuesped</div>
                         }
                     </div>
                 }
             </div>
         </div>
 
-        @if (movimientos.Count > 0)
-        {
-            <section class="mt-5">
-                <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">Entradas y salidas del mes</h2>
+        <section class="mt-5">
+            <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">Recambios del mes</h2>
+            @if (reservas.Count > 0)
+            {
                 <ul class="divide-y divide-ink-100 rounded-2.5xl bg-white shadow-soft ring-1 ring-ink-100">
-                    @foreach (var m in movimientos)
+                    @foreach (var r in reservas.OrderBy(r => r.FechaHasta))
                     {
                         <li class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                            <span class="truncate font-semibold text-ink-800">@m.Reserva.NombreHuesped</span>
-                            <span class="shrink-0 text-xs text-ink-500">
-                                @if (m.Entra)
-                                {
-                                    <span class="font-bold text-river-700">↑</span>
-                                }
-                                else
-                                {
-                                    <span class="font-bold text-rose-600">↓</span>
-                                }
-                                @diasSemana[IndiceDiaSemana(m.Fecha)] @m.Fecha.ToString("d/M")
-                            </span>
+                            <span class="truncate font-semibold text-ink-800">@r.NombreHuesped</span>
+                            <span class="shrink-0 text-xs text-ink-500"><span class="font-bold text-sky-700">↻</span> Hay recambio el @diasSemana[IndiceDiaSemana(r.FechaHasta)] @r.FechaHasta.ToString("d/M")</span>
                         </li>
                     }
                 </ul>
-            </section>
-        }
+            }
+            else
+            {
+                <p class="rounded-2.5xl bg-white px-4 py-3 text-sm text-ink-500 shadow-soft ring-1 ring-ink-100">No hay recambios para mostrar este mes.</p>
+            }
+        </section>
     </main>
 
     <style>
