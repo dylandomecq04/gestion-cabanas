@@ -35,6 +35,10 @@
                 <label asp-for="Password" class="mb-1 block text-sm font-medium text-ink-700"></label>
                 <input asp-for="Password" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
             </div>
+            <label class="flex items-center gap-2 text-sm text-ink-700">
+                <input asp-for="Recordarme" class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-200" />
+                @Html.DisplayNameFor(m => m.Recordarme)
+            </label>
             <button type="submit" class="w-full rounded-full bg-river-700 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 hover:shadow-lift">
                 Ingresar
             </button>

@@ -54,7 +54,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 new(ClaimTypes.Name, usuario.NombreUsuario)
             };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+            // Sin IsPersistent la cookie es de sesión y se pierde al cerrar el navegador,
+            // aunque ExpireTimeSpan diga 30 días.
+            var propiedades = new AuthenticationProperties { IsPersistent = modelo.Recordarme };
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), propiedades);
 
             if (!string.IsNullOrEmpty(modelo.ReturnUrl) && Url.IsLocalUrl(modelo.ReturnUrl))
             {
