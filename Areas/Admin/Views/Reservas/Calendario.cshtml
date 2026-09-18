@@ -65,6 +65,11 @@
     string? syncSuperposiciones = TempData["ResultadoSuperposiciones"] as string;
 
     string SyncPlural(int n, string singular, string plural) => $"{n} {(n == 1 ? singular : plural)}";
+
+    // Para que el aviso de conflictos ("Mover acá") vuelva a este mes del calendario.
+    ViewData["Vista"] = "Calendario";
+    ViewData["Anio"] = primerDia.Year;
+    ViewData["Mes"] = primerDia.Month;
 }
 
 <div class="relative left-1/2 w-screen -translate-x-1/2 px-3 sm:px-8">
@@ -642,7 +647,17 @@
                 <div id="info-reserva-pagar" class="text-sm font-semibold text-ink-800"></div>
             </div>
         </div>
-        <div class="mt-4 flex gap-2">
+        <div class="mt-4 space-y-2">
+        <form id="form-aprobar-reserva" hidden asp-action="Confirmar" asp-route-vista="Calendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" data-loading-text="Aprobando la solicitud...">
+            <input type="hidden" name="id" id="input-aprobar-reserva-id" value="" />
+            <button type="submit" class="flex w-full items-center justify-center gap-1.5 rounded-full bg-river-700 px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                Aprobar solicitud
+            </button>
+        </form>
+        <div class="flex gap-2">
             <a id="link-editar-reserva" href="#" class="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-ink-200 px-4 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-river-300 hover:text-river-700">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
@@ -660,8 +675,11 @@
                 </button>
             </form>
         </div>
+        </div>
     </div>
 </div>
+
+<partial name="_ModalConflictos" />
 
 <div id="modal-promo" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalPromo();">
     <div class="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2.5xl bg-white p-6 shadow-lift">
@@ -837,6 +855,8 @@
         }
 
         const TRAMOS = [2, 4, 6];
+        // Parámetros para que Cargar / Editar / Aprobar vuelvan a este mes del calendario al terminar.
+        const ORIGEN_CALENDARIO = '?vista=Calendario&anio=@primerDia.Year&mes=@primerDia.Month';
 
         // Cada celda lleva en data-tramos los tramos de precio que su cabaña admite: una cabaña
         // para 4 personas no tiene precio para 6.
@@ -907,7 +927,7 @@
                 const fechas = btns.map(b => b.dataset.fecha).sort();
                 const fechaDesde = fechas[0];
                 const fechaHastaExclusiva = sumarUnDia(fechas[fechas.length - 1]);
-                linkCargar.href = '/Admin/Reservas/Create?cabanaId=' + btns[0].dataset.cabanaId + '&fecha=' + fechaDesde + '&fechaHasta=' + fechaHastaExclusiva;
+                linkCargar.href = '/Admin/Reservas/Create?cabanaId=' + btns[0].dataset.cabanaId + '&fecha=' + fechaDesde + '&fechaHasta=' + fechaHastaExclusiva + '&' + ORIGEN_CALENDARIO.substring(1);
                 linkCargar.classList.remove('hidden');
             } else {
                 linkCargar.classList.add('hidden');
@@ -1008,8 +1028,10 @@
             estado.className = 'shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ' +
                 (esPendiente ? 'bg-sky-100 text-sky-700' : 'bg-river-100 text-river-700');
 
-            document.getElementById('link-editar-reserva').href = '/Admin/Reservas/Edit/' + btn.dataset.reservaId;
+            document.getElementById('link-editar-reserva').href = '/Admin/Reservas/Edit/' + btn.dataset.reservaId + ORIGEN_CALENDARIO;
             document.getElementById('input-eliminar-reserva-id').value = btn.dataset.reservaId;
+            document.getElementById('input-aprobar-reserva-id').value = btn.dataset.reservaId;
+            document.getElementById('form-aprobar-reserva').hidden = !esPendiente;
             document.getElementById('modal-reserva').classList.remove('hidden');
         }
 

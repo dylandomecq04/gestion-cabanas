@@ -2,11 +2,15 @@
 @{
     ViewData["Title"] = "Editar reserva";
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
+    string? vista = ViewBag.Vista;
+    int? anioOrigen = ViewBag.Anio;
+    int? mesOrigen = ViewBag.Mes;
+    var volverACalendario = vista == "Calendario" && anioOrigen.HasValue && mesOrigen.HasValue;
 }
 
 <h1 class="mb-6 font-display text-2xl font-semibold text-ink-900">Editar reserva</h1>
 
-<form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="max-w-2xl space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+<form asp-action="Edit" asp-route-id="@Model.Id" asp-route-vista="@vista" asp-route-anio="@anioOrigen" asp-route-mes="@mesOrigen" method="post" class="max-w-2xl space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
     <input type="hidden" asp-for="Id" />
     @if (!ViewData.ModelState.IsValid)
     {
@@ -78,7 +82,14 @@
     </div>
     <div class="flex items-center gap-3 pt-2">
         <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">Guardar</button>
-        <a asp-action="Index" class="text-sm font-medium text-ink-500 hover:text-ink-700">Cancelar</a>
+        @if (volverACalendario)
+        {
+            <a asp-action="Calendario" asp-route-anio="@anioOrigen" asp-route-mes="@mesOrigen" class="text-sm font-medium text-ink-500 hover:text-ink-700">Cancelar</a>
+        }
+        else
+        {
+            <a asp-action="Index" class="text-sm font-medium text-ink-500 hover:text-ink-700">Cancelar</a>
+        }
     </div>
 </form>
 

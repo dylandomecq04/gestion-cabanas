@@ -130,8 +130,31 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return View(reservas);
         }
 
-        public async Task<IActionResult> Create(int? cabanaId, DateTime? fecha, DateTime? fechaHasta)
+        /// <summary>
+        /// Recuerda desde qué vista se llegó (por ahora sólo "Calendario" del mes en pantalla) para
+        /// poder volver ahí después de guardar, en vez de mandar siempre al listado.
+        /// </summary>
+        private void GuardarOrigen(string? vista, int? anio, int? mes)
         {
+            ViewBag.Vista = vista;
+            ViewBag.Anio = anio;
+            ViewBag.Mes = mes;
+        }
+
+        private IActionResult VolverAlOrigen(string? vista, int? anio, int? mes, EstadoReserva? estadoListado = null)
+        {
+            if (vista == "Calendario" && anio.HasValue && mes.HasValue)
+            {
+                return RedirectToAction(nameof(Calendario), new { anio, mes });
+            }
+            return estadoListado.HasValue
+                ? RedirectToAction(nameof(Index), new { estado = estadoListado })
+                : RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> Create(int? cabanaId, DateTime? fecha, DateTime? fechaHasta, string? vista, int? anio, int? mes)
+        {
+            GuardarOrigen(vista, anio, mes);
             ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
 
             var fechaDesde = fecha ?? DateTime.Today;
@@ -145,12 +168,13 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Reserva modelo)
+        public async Task<IActionResult> Create(Reserva modelo, string? vista, int? anio, int? mes)
         {
             await ValidarFechasAsync(modelo, null);
 
             if (!ModelState.IsValid)
             {
+                GuardarOrigen(vista, anio, mes);
                 ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
                 return View(modelo);
             }
@@ -165,23 +189,24 @@ namespace GestionCabanas.Areas.Admin.Controllers
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva creada correctamente."
                 : $"Reserva creada correctamente. {avisoExcel}";
-            return RedirectToAction(nameof(Index));
+            return VolverAlOrigen(vista, anio, mes);
         }
 
-        public async Task<IActionResult> Edit(int id)
+        public async Task<IActionResult> Edit(int id, string? vista, int? anio, int? mes)
         {
             var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
             if (reserva is null)
             {
                 return NotFound();
             }
+            GuardarOrigen(vista, anio, mes);
             ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
             return View(reserva);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Reserva modelo)
+        public async Task<IActionResult> Edit(int id, Reserva modelo, string? vista, int? anio, int? mes)
         {
             if (id != modelo.Id)
             {
@@ -192,6 +217,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             if (!ModelState.IsValid)
             {
+                GuardarOrigen(vista, anio, mes);
                 ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
                 return View(modelo);
             }
@@ -225,12 +251,12 @@ namespace GestionCabanas.Areas.Admin.Controllers
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva actualizada correctamente."
                 : $"Reserva actualizada correctamente. {avisoExcel}";
-            return RedirectToAction(nameof(Index));
+            return VolverAlOrigen(vista, anio, mes);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Confirmar(int id)
+        public async Task<IActionResult> Confirmar(int id, string? vista, int? anio, int? mes)
         {
             var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
             if (reserva is null)
@@ -241,7 +267,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             if (await _disponibilidad.HaySuperposicionAsync(reserva.CabanaId, reserva.FechaDesde, reserva.FechaHasta, reserva.Id))
             {
                 TempData["Alerta"] = "No se puede confirmar: esas fechas se superponen con otra reserva ya confirmada. La reserva NO fue confirmada.";
-                return RedirectToAction(nameof(Index));
+                return VolverAlOrigen(vista, anio, mes);
             }
 
             var anterior = new EstadoAnteriorReserva(reserva.CabanaId, reserva.FechaDesde, reserva.FechaHasta, reserva.Estado);
@@ -260,7 +286,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["ConflictosJson"] = JsonSerializer.Serialize(conflictos);
             }
 
-            return RedirectToAction(nameof(Index));
+            return VolverAlOrigen(vista, anio, mes);
         }
 
         /// <summary>
@@ -302,7 +328,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MoverCabana(int id, int nuevaCabanaId)
+        public async Task<IActionResult> MoverCabana(int id, int nuevaCabanaId, string? vista, int? anio, int? mes)
         {
             var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
             if (reserva is null)
@@ -313,14 +339,14 @@ namespace GestionCabanas.Areas.Admin.Controllers
             if (await _disponibilidad.HaySuperposicionAsync(nuevaCabanaId, reserva.FechaDesde, reserva.FechaHasta))
             {
                 TempData["Alerta"] = "No se puede mover: esas fechas no están disponibles en la otra cabaña. La solicitud NO fue movida.";
-                return RedirectToAction(nameof(Index), new { estado = EstadoReserva.Pendiente });
+                return VolverAlOrigen(vista, anio, mes, EstadoReserva.Pendiente);
             }
 
             reserva.CabanaId = nuevaCabanaId;
             await _db.SaveChangesAsync();
 
             TempData["Mensaje"] = "Solicitud movida a otra cabaña.";
-            return RedirectToAction(nameof(Index), new { estado = EstadoReserva.Pendiente });
+            return VolverAlOrigen(vista, anio, mes, EstadoReserva.Pendiente);
         }
 
         [HttpPost]

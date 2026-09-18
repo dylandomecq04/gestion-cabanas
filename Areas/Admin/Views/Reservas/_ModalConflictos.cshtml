@@ -1,0 +1,88 @@
+@using System.Text.Json
+@*
+    Aviso de solicitudes pendientes que quedaron en conflicto tras confirmar una reserva.
+    Lo usan el listado y el calendario. Si la vista que lo incluye define ViewData["Vista"] = "Calendario"
+    (y "Anio" / "Mes"), "Mover acá" vuelve al calendario en lugar de al listado.
+*@
+@{
+    var conflictosJson = TempData["ConflictosJson"] as string;
+    var conflictos = string.IsNullOrWhiteSpace(conflictosJson)
+        ? new List<ConflictoSolicitud>()
+        : JsonSerializer.Deserialize<List<ConflictoSolicitud>>(conflictosJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<ConflictoSolicitud>();
+    var vistaOrigen = ViewData["Vista"] as string;
+    var anioOrigen = ViewData["Anio"] as int?;
+    var mesOrigen = ViewData["Mes"] as int?;
+}
+
+@if (conflictos.Count > 0)
+{
+    <div id="modal-conflictos" class="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarModalConflictos();">
+        <div class="w-full max-w-lg rounded-2.5xl bg-white p-6 shadow-lift">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </span>
+                    <div class="pt-1.5">
+                        <h3 class="font-display text-base font-semibold text-ink-900">Hay otras solicitudes pendientes para esa fecha</h3>
+                        <p class="mt-1 text-sm text-ink-600">Tenelo en cuenta antes de confirmar otra reserva para esos días.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModalConflictos()" aria-label="Cerrar" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-400 transition hover:bg-sand-100 hover:text-ink-600">✕</button>
+            </div>
+
+            <div class="mt-4 max-h-[60vh] space-y-3 overflow-y-auto">
+                @foreach (var c in conflictos)
+                {
+                    <div class="rounded-2xl border border-ink-100 bg-sand-50/60 p-4">
+                        <div class="flex flex-wrap items-baseline justify-between gap-1">
+                            <span class="font-semibold text-ink-900">@c.NombreHuesped</span>
+                            <span class="text-xs text-ink-500">@c.FechaDesde.ToString("dd/MM/yyyy") &ndash; @c.FechaHasta.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <p class="mt-1 text-xs text-ink-500">Pagar solicitado: @(c.Valor.HasValue ? "$" + c.Valor.Value.ToString("N0") : "-")</p>
+
+                        @if (c.Alternativas.Count > 0)
+                        {
+                            <p class="mt-3 text-xs font-semibold uppercase tracking-wide text-ink-500">Mover a otra cabaña disponible</p>
+                            <div class="mt-2 space-y-2">
+                                @foreach (var alt in c.Alternativas)
+                                {
+                                    var precioDistinto = alt.Precio.HasValue && c.Valor.HasValue && alt.Precio.Value != c.Valor.Value;
+                                    <form asp-action="MoverCabana" asp-route-vista="@vistaOrigen" asp-route-anio="@anioOrigen" asp-route-mes="@mesOrigen" method="post" class="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 ring-1 ring-ink-100">
+                                        <input type="hidden" name="id" value="@c.ReservaId" />
+                                        <input type="hidden" name="nuevaCabanaId" value="@alt.CabanaId" />
+                                        <div class="text-sm">
+                                            <span class="font-medium text-ink-800">@alt.Nombre</span>
+                                            <span class="ml-2 text-ink-500">@(alt.Precio.HasValue ? "$" + alt.Precio.Value.ToString("N0") : "sin precio")</span>
+                                            @if (precioDistinto)
+                                            {
+                                                <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">precio distinto</span>
+                                            }
+                                        </div>
+                                        <button type="submit" class="shrink-0 rounded-full bg-river-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-river-700">Mover acá</button>
+                                    </form>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="mt-2 text-xs text-rose-600">No hay otra cabaña disponible para estas fechas.</p>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="mt-5 flex justify-end">
+                <button type="button" onclick="cerrarModalConflictos()" class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-ink-300">Entendido</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function cerrarModalConflictos() {
+            var modal = document.getElementById('modal-conflictos');
+            if (modal) modal.remove();
+        }
+    </script>
+}
