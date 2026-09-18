@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text.Json;
 using GestionCabanas.Data;
 using GestionCabanas.Models;
@@ -82,9 +83,30 @@ namespace GestionCabanas.Services
             return conexion;
         }
 
+        // Si el token guardado no se puede descifrar (se cifró con una clave que ya no existe, ej. tras
+        // mudar de hosting), se lo trata como "no conectado": así el calendario vuelve a ofrecer el
+        // botón de conectar y el resto de la app no intenta usar un token inservible.
         public async Task<OneDriveConexion?> ObtenerConexionAsync()
         {
-            return await _db.OneDriveConexiones.FirstOrDefaultAsync();
+            var conexion = await _db.OneDriveConexiones.FirstOrDefaultAsync();
+            if (conexion?.RefreshTokenCifrado is not null && !TokenSePuedeDescifrar(conexion.RefreshTokenCifrado))
+            {
+                return null;
+            }
+            return conexion;
+        }
+
+        private bool TokenSePuedeDescifrar(string tokenCifrado)
+        {
+            try
+            {
+                _protector.Unprotect(tokenCifrado);
+                return true;
+            }
+            catch (CryptographicException)
+            {
+                return false;
+            }
         }
 
         public async Task DesconectarAsync()
@@ -140,7 +162,15 @@ namespace GestionCabanas.Services
                 throw new InvalidOperationException("Todavía no conectaste tu cuenta de OneDrive.");
             }
 
-            var refreshToken = _protector.Unprotect(conexion.RefreshTokenCifrado);
+            string refreshToken;
+            try
+            {
+                refreshToken = _protector.Unprotect(conexion.RefreshTokenCifrado);
+            }
+            catch (CryptographicException)
+            {
+                throw new InvalidOperationException("La conexión con OneDrive dejó de ser válida. Volvé a conectar tu cuenta desde el calendario.");
+            }
 
             var form = new Dictionary<string, string>
             {
