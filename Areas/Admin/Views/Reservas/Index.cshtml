@@ -39,7 +39,10 @@
 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
     <div class="flex flex-wrap gap-2">
         <a asp-action="Index" asp-route-estado="Confirmada" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Confirmada)">Reservas</a>
-        <a asp-action="Index" asp-route-estado="Pendiente" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Pendiente)">Solicitudes</a>
+        <a asp-action="Index" asp-route-estado="Pendiente" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="inline-flex items-center gap-2 @ClasesTab(filtro == EstadoReserva.Pendiente)">
+            Solicitudes
+            @await Component.InvokeAsync("PendientesBadge")
+        </a>
     </div>
     <div class="flex items-center gap-3 rounded-full bg-white px-2 py-1.5 shadow-soft ring-1 ring-ink-100">
         <a asp-action="Index" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro"
