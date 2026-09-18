@@ -331,6 +331,8 @@
             const todasRepartidas = data.opciones.every(o => o.repartida);
             const algunaRepartida = data.opciones.some(o => o.repartida);
             const soloSucesivas = data.opciones.every(o => !o.repartida && o.segmentos.length > 1);
+            const hayParesContiguos = data.opciones.some(o => o.repartida && o.contiguas);
+            const hayParesSeparados = data.opciones.some(o => o.repartida && !o.contiguas);
 
             let titulo = 'Opciones disponibles';
             let bajada = '';
@@ -372,11 +374,22 @@
                 const fechasRepartida = opcion.repartida
                     ? `<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">${formatearFechaCorta(opcion.segmentos[0].desde)} – ${formatearFechaCorta(opcion.segmentos[0].hasta)} · 2 cabañas</div>`
                     : '';
+                let cercania = '';
+                if (opcion.repartida && opcion.contiguas) {
+                    cercania = hayParesSeparados
+                        ? '<div class="mb-2 rounded-lg bg-river-50 px-3 py-1.5 text-xs font-semibold text-river-800">📍 Te conviene: son cabañas contiguas, quedan una al lado de la otra</div>'
+                        : '<div class="mb-2 rounded-lg bg-river-50 px-3 py-1.5 text-xs font-semibold text-river-800">📍 Cabañas contiguas: quedan una al lado de la otra</div>';
+                } else if (opcion.repartida && hayParesContiguos) {
+                    cercania = '<div class="mb-2 rounded-lg bg-ink-50 px-3 py-1.5 text-xs font-medium text-ink-500">Estas cabañas no quedan una al lado de la otra</div>';
+                } else if (opcion.repartida) {
+                    cercania = '<div class="mb-2 rounded-lg bg-ink-50 px-3 py-1.5 text-xs font-medium text-ink-500">Ojo: estas cabañas no quedan una al lado de la otra</div>';
+                }
 
                 const claseCard = opcion.promoAplicada ? 'rounded-xl border-2 border-amber-300 bg-amber-50 p-4' : 'rounded-xl border border-ink-100 p-4';
 
                 html += `<div class="${claseCard}">
                     ${fechasRepartida}
+                    ${cercania}
                     <div class="space-y-1.5">${segmentosHtml}</div>
                     <div class="mt-2 flex items-center justify-between border-t border-ink-100 pt-2">
                         <span class="text-sm font-semibold text-ink-900">Total</span>

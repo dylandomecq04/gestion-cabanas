@@ -314,6 +314,8 @@ namespace GestionCabanas.Services
         /// ninguna lo cubre sola- todas las combinaciones válidas que usan la menor cantidad de
         /// cabañas posible. Los grupos de 5 o más personas además pueden repartirse en dos cabañas
         /// libres durante toda la estadía; si son más de lo que entra en una cabaña, es la única forma.
+        /// Todos los pares libres se ofrecen, pero los que quedan una al lado de la otra (según la
+        /// posición en la fila) se marcan como contiguos y van primero.
         /// </summary>
         public async Task<ResultadoBusquedaDisponibilidad> BuscarOpcionesAsync(DateTime desde, DateTime hasta, Huespedes huespedes)
         {
@@ -345,11 +347,16 @@ namespace GestionCabanas.Services
                 return resultado;
             }
 
-            var activas = await _db.Cabanas
-                .Where(c => c.Activa)
-                .OrderBy(c => c.Nombre)
+            // La fila completa (incluso las cabañas ocultas), porque una oculta sigue estando en el medio.
+            var fila = await _db.Cabanas
+                .OrderBy(c => c.Orden)
+                .ThenBy(c => c.Id)
                 .ToListAsync();
+            var activas = fila.Where(c => c.Activa).ToList();
             var cabanas = activas.Where(c => c.Capacidad >= personas).ToList();
+
+            bool SonContiguas(Cabana una, Cabana otra) =>
+                Math.Abs(fila.FindIndex(c => c.Id == una.Id) - fila.FindIndex(c => c.Id == otra.Id)) == 1;
 
             var repartos = new List<RepartoEnCabanas>();
             if (personas >= PoliticaPrecios.DosCabanasDesdePersonas)
@@ -515,7 +522,7 @@ namespace GestionCabanas.Services
                     continue;
                 }
 
-                var opcion = new OpcionReserva { Repartida = true };
+                var opcion = new OpcionReserva { Repartida = true, Contiguas = SonContiguas(reparto.Primera, reparto.Segunda) };
                 decimal? total = 0;
 
                 foreach (var (cabana, grupo) in new[] { (reparto.Primera, reparto.HuespedesPrimera), (reparto.Segunda, reparto.HuespedesSegunda) })
@@ -550,8 +557,10 @@ namespace GestionCabanas.Services
                 return resultado;
             }
 
+            // Los pares de cabañas que no quedan juntas se ofrecen igual, pero después de las demás.
             resultado.Opciones = resultado.Opciones
                 .OrderBy(o => o.Total.HasValue ? 0 : 1)
+                .ThenBy(o => o.Repartida && !o.Contiguas ? 1 : 0)
                 .ThenBy(o => o.Total)
                 .ToList();
 

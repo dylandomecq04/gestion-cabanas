@@ -218,6 +218,7 @@ namespace GestionCabanas.Controllers
                 {
                     total = o.Total,
                     repartida = o.Repartida,
+                    contiguas = o.Contiguas,
                     promoAplicada = o.Segmentos.Any(s => s.PromoAplicada),
                     segmentos = o.Segmentos.Select(s => new
                     {

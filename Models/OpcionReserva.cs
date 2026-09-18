@@ -27,6 +27,9 @@ namespace GestionCabanas.Models
         /// los segmentos son una sola cabaña o cabañas que se van sucediendo durante la estadía.
         /// </summary>
         public bool Repartida { get; set; }
+
+        /// <summary>Sólo para las repartidas: las dos cabañas quedan una al lado de la otra.</summary>
+        public bool Contiguas { get; set; }
     }
 
     /// <summary>Cómo se reparte un grupo entre dos cabañas que se ocupan a la vez.</summary>

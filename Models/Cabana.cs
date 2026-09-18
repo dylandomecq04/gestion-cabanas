@@ -15,6 +15,14 @@ namespace GestionCabanas.Models
 
         public bool Activa { get; set; } = true;
 
+        /// <summary>
+        /// Lugar que ocupa la cabaña en la fila física del complejo (1 = la primera). Sirve para saber
+        /// cuáles quedan una al lado de la otra cuando un grupo se reparte en dos.
+        /// </summary>
+        [Display(Name = "Posición en la fila")]
+        [Range(1, 999, ErrorMessage = "La posición debe ser un número mayor a 0")]
+        public int Orden { get; set; }
+
         /// <summary>Tramos de precio por cantidad de personas que existen en total.</summary>
         public static readonly int[] TodosLosTramos = { 2, 4, 6 };
 

@@ -28,9 +28,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return View(cabanas);
         }
 
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View(new Cabana());
+            var ultima = await _db.Cabanas.MaxAsync(c => (int?)c.Orden) ?? 0;
+            return View(new Cabana { Orden = ultima + 1 });
         }
 
         [HttpPost]
@@ -84,6 +85,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             cabana.Nombre = modelo.Nombre;
             cabana.Capacidad = modelo.Capacidad;
+            cabana.Orden = modelo.Orden;
             cabana.Activa = modelo.Activa;
 
             await _db.SaveChangesAsync();

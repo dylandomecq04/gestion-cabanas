@@ -18,6 +18,12 @@
         <input asp-for="Capacidad" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
         <span asp-validation-for="Capacidad" class="mt-1 block text-xs font-medium text-rose-600"></span>
     </div>
+    <div>
+        <label asp-for="Orden" class="mb-1 block text-sm font-medium text-ink-700"></label>
+        <input asp-for="Orden" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+        <span asp-validation-for="Orden" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        <p class="mt-1 text-xs text-ink-400">1 es la primera cabaña de la fila, 2 la que sigue, y así. Se usa para recomendar cabañas contiguas cuando un grupo se reparte en dos.</p>
+    </div>
     <label class="flex items-center gap-2 text-sm font-medium text-ink-700">
         <input asp-for="Activa" class="h-4 w-4 rounded border-ink-300 text-river-600 focus:ring-river-400" />
         Visible en el sitio público

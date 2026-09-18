@@ -29,14 +29,16 @@ namespace GestionCabanas.Data
 
             if (!db.Cabanas.Any())
             {
+                // Están en el orden en que se ubican en el complejo, una al lado de la otra.
                 var nombres = new[] { "Sidharta 1", "Sidharta 2", "Sidharta 3", "Maia", "Sidharta 5" };
-                foreach (var nombre in nombres)
+                for (var i = 0; i < nombres.Length; i++)
                 {
                     db.Cabanas.Add(new Cabana
                     {
-                        Nombre = nombre,
-                        Capacidad = nombre == "Maia" ? 6 : 4,
-                        Activa = true
+                        Nombre = nombres[i],
+                        Capacidad = nombres[i] == "Maia" ? 6 : 4,
+                        Activa = true,
+                        Orden = i + 1
                     });
                 }
             }
