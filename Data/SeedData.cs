@@ -34,7 +34,7 @@ namespace GestionCabanas.Data
                     db.Cabanas.Add(new Cabana
                     {
                         Nombre = nombre,
-                        Capacidad = 4,
+                        Capacidad = nombre == "Maia" ? 6 : 4,
                         Activa = true
                     });
                 }

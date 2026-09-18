@@ -75,7 +75,8 @@ namespace GestionCabanas.Services
 
         /// <summary>
         /// Guarda los precios (para 2, 4 y 6 personas) de cada día. Un día sin ningún precio
-        /// borra su tarifa.
+        /// borra su tarifa. Los tramos que la cabaña no admite (ej. "para 6" en una cabaña para 4)
+        /// se descartan, vengan de donde vengan.
         /// </summary>
         public async Task GuardarTarifasAsync(IEnumerable<TarifaDiaInput> dias)
         {
@@ -92,8 +93,19 @@ namespace GestionCabanas.Services
                 .Where(t => t.Fecha >= fechaMin && t.Fecha <= fechaMax)
                 .ToDictionaryAsync(t => (t.CabanaId, t.Fecha.Date), t => t);
 
+            var idsCabanas = listaDias.Select(d => d.CabanaId).Distinct().ToList();
+            var cabanas = await _db.Cabanas
+                .Where(c => idsCabanas.Contains(c.Id))
+                .ToDictionaryAsync(c => c.Id);
+
             foreach (var dia in listaDias)
             {
+                if (cabanas.TryGetValue(dia.CabanaId, out var cabana))
+                {
+                    if (!cabana.AdmiteTramo(4)) dia.Precio4 = null;
+                    if (!cabana.AdmiteTramo(6)) dia.Precio6 = null;
+                }
+
                 var fecha = dia.Fecha.Date;
                 existentes.TryGetValue((dia.CabanaId, fecha), out var existente);
 

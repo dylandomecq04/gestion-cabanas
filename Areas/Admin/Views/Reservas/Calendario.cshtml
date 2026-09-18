@@ -30,12 +30,14 @@
 
     string Miles(decimal? precio) => precio.HasValue ? precio.Value.ToString("N0") : "–";
     string Plano(decimal? precio) => precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
-    string AtributosPrecios(TarifaDia? t)
-        => $"data-precio2=\"{Plano(t?.Precio2)}\" data-precio4=\"{Plano(t?.Precio4)}\" data-precio6=\"{Plano(t?.Precio6)}\"";
-    string EtiquetaPrecios(TarifaDia? t)
-        => $"<span data-tramo=\"2\">{Miles(t?.Precio2)}</span><span data-tramo=\"4\">{Miles(t?.Precio4)}</span><span data-tramo=\"6\">{Miles(t?.Precio6)}</span>";
-    string InputsPrecios(int indice, TarifaDia? t, string atributosExtra)
-        => string.Concat(new[] { 2, 4, 6 }.Select(tramo =>
+    // Cada cabaña solo tiene los tramos de precio que admite (una para 4 no tiene "para 6").
+    string AtributosPrecios(Cabana cabana, TarifaDia? t)
+        => $"data-tramos=\"{string.Join(",", cabana.TramosDePrecio())}\" "
+            + string.Concat(cabana.TramosDePrecio().Select(tramo => $"data-precio{tramo}=\"{Plano(t?.PrecioDelTramo(tramo))}\" "));
+    string EtiquetaPrecios(Cabana cabana, TarifaDia? t)
+        => string.Concat(cabana.TramosDePrecio().Select(tramo => $"<span data-tramo=\"{tramo}\">{Miles(t?.PrecioDelTramo(tramo))}</span>"));
+    string InputsPrecios(int indice, Cabana cabana, TarifaDia? t, string atributosExtra)
+        => string.Concat(cabana.TramosDePrecio().Select(tramo =>
             $"<input type=\"hidden\" {atributosExtra} name=\"dias[{indice}].Precio{tramo}\" value=\"{Plano(t?.PrecioDelTramo(tramo))}\" />"));
 
     bool EsFinDeSemana(DateTime dia) => dia.DayOfWeek == DayOfWeek.Saturday || dia.DayOfWeek == DayOfWeek.Sunday;
@@ -219,14 +221,14 @@
                                                         data-cabana-nombre="@cabana.Nombre"
                                                         data-fecha="@fechaAttr"
                                                         data-fecha-texto="@fechaTexto"
-                                                        @Html.Raw(AtributosPrecios(tarifaAlt))
+                                                        @Html.Raw(AtributosPrecios(cabana, tarifaAlt))
                                                         data-promo-id="@(promoDelDia is not null ? promoDelDia!.Id.ToString() : "")"
                                                         onclick="alternarSeleccionDia(this)"
                                                         class="dia-editable solicitud-alt-cell hidden day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @claseAlt">
                                                     <span class="etiqueta-estado leading-tight">@etiquetaEstadoAlt</span>
                                                     @if (!yaPasoAlt)
                                                     {
-                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(tarifaAlt))</span>
+                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(cabana, tarifaAlt))</span>
                                                     }
                                                     <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                                     @if (llega is not null)
@@ -241,7 +243,7 @@
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias.Index" value="@indiceAlt" />
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAlt].CabanaId" value="@cabana.Id" />
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAlt].Fecha" value="@fechaAttr" />
-                                                <text>@Html.Raw(InputsPrecios(indiceAlt, tarifaAlt, "class=\"solicitud-alt-input\" disabled"))</text>
+                                                <text>@Html.Raw(InputsPrecios(indiceAlt, cabana, tarifaAlt, "class=\"solicitud-alt-input\" disabled"))</text>
                                                 indice++;
                                             }
                                             @if (promoDelDia is not null)
@@ -302,21 +304,21 @@
                                                         data-cabana-nombre="@cabana.Nombre"
                                                         data-fecha="@fechaAttr"
                                                         data-fecha-texto="@fechaTexto"
-                                                        @Html.Raw(AtributosPrecios(tarifaAltMulti))
+                                                        @Html.Raw(AtributosPrecios(cabana, tarifaAltMulti))
                                                         data-promo-id="@(promoDelDia is not null ? promoDelDia!.Id.ToString() : "")"
                                                         onclick="alternarSeleccionDia(this)"
                                                         class="dia-editable solicitud-alt-cell hidden day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @claseAltMulti">
                                                     <span class="etiqueta-estado leading-tight">@etiquetaEstadoAltMulti</span>
                                                     @if (!yaPasoAltMulti)
                                                     {
-                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(tarifaAltMulti))</span>
+                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(cabana, tarifaAltMulti))</span>
                                                     }
                                                     <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                                 </button>
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias.Index" value="@indiceAltMulti" />
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAltMulti].CabanaId" value="@cabana.Id" />
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAltMulti].Fecha" value="@fechaAttr" />
-                                                <text>@Html.Raw(InputsPrecios(indiceAltMulti, tarifaAltMulti, "class=\"solicitud-alt-input\" disabled"))</text>
+                                                <text>@Html.Raw(InputsPrecios(indiceAltMulti, cabana, tarifaAltMulti, "class=\"solicitud-alt-input\" disabled"))</text>
                                                 indice++;
                                             }
                                             @if (llega is not null)
@@ -354,7 +356,7 @@
                                                 data-cabana-nombre="@cabana.Nombre"
                                                 data-fecha="@fechaAttr"
                                                 data-fecha-texto="@fechaTexto"
-                                                @Html.Raw(AtributosPrecios(tarifa))
+                                                @Html.Raw(AtributosPrecios(cabana, tarifa))
                                                 data-promo-id="@(enPromoDia ? promoDelDia!.Id.ToString() : "")"
                                                 onclick="alternarSeleccionDia(this)"
                                                 class="dia-editable day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @clase @(enPromoDia ? "promo-glow" : "")">
@@ -365,7 +367,7 @@
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
                                             @if (!yaPaso)
                                             {
-                                                <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(tarifa))</span>
+                                                <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(cabana, tarifa))</span>
                                             }
                                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                             @if (llega is not null)
@@ -380,7 +382,7 @@
                                         <input type="hidden" name="dias.Index" value="@indice" />
                                         <input type="hidden" name="dias[@indice].CabanaId" value="@cabana.Id" />
                                         <input type="hidden" name="dias[@indice].Fecha" value="@fechaAttr" />
-                                        @Html.Raw(InputsPrecios(indice, tarifa, ""))
+                                        @Html.Raw(InputsPrecios(indice, cabana, tarifa, ""))
                                     </td>
                                     indice++;
                                 }
@@ -407,8 +409,9 @@
                 <div class="w-20 shrink-0 sm:w-28">
                     <label class="mb-1 block text-xs font-medium text-ink-500">Para @tramo</label>
                     <input id="bulk-precio-@tramo" type="text" inputmode="numeric" placeholder="$"
+                           title="@(tramo > 2 ? $"Solo se aplica a las cabañas con lugar para {tramo} personas" : "")"
                            oninput="formatearMiles(this)"
-                           class="h-9 w-full rounded-xl border border-ink-200 px-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 sm:h-10 sm:px-3" />
+                           class="h-9 w-full rounded-xl border border-ink-200 px-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 disabled:cursor-not-allowed disabled:bg-ink-50 sm:h-10 sm:px-3" />
                 </div>
             }
         </div>
@@ -835,6 +838,27 @@
 
         const TRAMOS = [2, 4, 6];
 
+        // Cada celda lleva en data-tramos los tramos de precio que su cabaña admite: una cabaña
+        // para 4 personas no tiene precio para 6.
+        function tramosDeLaCelda(btn) {
+            return (btn.dataset.tramos || TRAMOS.join(',')).split(',').map(Number);
+        }
+
+        // En la barra de precios, un tramo solo se puede cargar si alguna de las celdas
+        // seleccionadas lo admite; si no, se deshabilita y se vacía.
+        function actualizarTramosDeLaBarra(btns) {
+            TRAMOS.forEach(t => {
+                const input = document.getElementById('bulk-precio-' + t);
+                const habilitado = btns.length === 0 || btns.some(b => tramosDeLaCelda(b).includes(t));
+                input.disabled = !habilitado;
+                input.placeholder = habilitado ? '$' : 'No aplica';
+                if (!habilitado) {
+                    input.value = '';
+                }
+                input.parentElement.classList.toggle('opacity-40', !habilitado);
+            });
+        }
+
         function sumarUnDia(fechaTexto) {
             const [anio, mes, dia] = fechaTexto.split('-').map(Number);
             const fecha = new Date(Date.UTC(anio, mes - 1, dia));
@@ -869,6 +893,8 @@
             const linkCargar = document.getElementById('link-cargar-reserva-bulk');
             const idxs = [...seleccionDias];
             const btns = idxs.map(idx => document.querySelector(`.dia-editable[data-index="${idx}"]`)).filter(Boolean);
+
+            actualizarTramosDeLaBarra(btns);
 
             if (idxs.length === 1) {
                 TRAMOS.forEach(t => {
@@ -952,7 +978,9 @@
                 const btn = document.querySelector(`.dia-editable[data-index="${idx}"]`);
                 if (!btn) return;
 
+                const tramosDeEstaCelda = tramosDeLaCelda(btn);
                 TRAMOS.forEach(t => {
+                    if (!tramosDeEstaCelda.includes(t)) return;
                     if (!borrar && !nuevos[t]) return;
                     const valor = borrar ? '' : nuevos[t];
                     btn.dataset['precio' + t] = valor;

@@ -9,6 +9,12 @@
     bool permitirMesAnterior = ViewBag.PermitirMesAnterior;
     int indice = 0;
 
+    // Solo se cargan los tramos que la cabaña admite (una cabaña para 4 no tiene precio para 6).
+    var tramos = cabana.TramosDePrecio().ToList();
+    var textoTramos = tramos.Count > 1
+        ? string.Join(", ", tramos.Take(tramos.Count - 1)) + " y " + tramos.Last()
+        : tramos.First().ToString();
+
     int offset = ((int)primerDia.DayOfWeek + 6) % 7;
     var celdas = new List<DiaTarifaVista?>();
     for (int i = 0; i < offset; i++) celdas.Add(null);
@@ -29,7 +35,7 @@
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
         <h1 class="font-display text-2xl font-semibold text-ink-900">Precios y disponibilidad</h1>
-        <p class="mt-1 text-sm text-ink-500">@cabana.Nombre &middot; precio por noche según cantidad de personas (para 2, 4 y 6)</p>
+        <p class="mt-1 text-sm text-ink-500">@cabana.Nombre &middot; precio por noche según cantidad de personas (para @textoTramos) &middot; hasta @cabana.Capacidad personas</p>
     </div>
     <div class="flex gap-2">
         @if (permitirMesAnterior)
@@ -44,7 +50,7 @@
 
 <p class="mb-4 text-sm text-ink-500">
     Tocá uno o varios días para seleccionarlos (podés elegir varios a la vez) y después ponerles precio juntos.
-    En cada día se ven, de arriba hacia abajo, los precios para 2, 4 y 6 personas.
+    En cada día se ven, de arriba hacia abajo, los precios para @textoTramos personas.
 </p>
 
 <form id="form-tarifas" asp-action="GuardarTarifas" asp-route-id="@cabana.Id" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-24">
@@ -85,16 +91,18 @@
                             }
                             <span class="text-[9px] opacity-70">@dia.Fecha.Day</span>
                             <span class="etiqueta-precio flex flex-col items-center text-[9px] font-bold leading-tight">
-                                <span data-tramo="2">@Miles(dia.Precio2)</span>
-                                <span data-tramo="4">@Miles(dia.Precio4)</span>
-                                <span data-tramo="6">@Miles(dia.Precio6)</span>
+                                @foreach (var tramo in tramos)
+                                {
+                                    <span data-tramo="@tramo">@Miles(dia.PrecioDelTramo(tramo))</span>
+                                }
                             </span>
                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-3.5 w-3.5 items-center justify-center rounded-full bg-river-700 text-[9px] text-white shadow-soft">✓</span>
                         </button>
                         <input type="hidden" name="dias[@indice].Fecha" value="@dia.Fecha.ToString("yyyy-MM-dd")" />
-                        <input type="hidden" name="dias[@indice].Precio2" value="@Plano(dia.Precio2)" />
-                        <input type="hidden" name="dias[@indice].Precio4" value="@Plano(dia.Precio4)" />
-                        <input type="hidden" name="dias[@indice].Precio6" value="@Plano(dia.Precio6)" />
+                        @foreach (var tramo in tramos)
+                        {
+                            <input type="hidden" name="dias[@indice].Precio@(tramo)" value="@Plano(dia.PrecioDelTramo(tramo))" />
+                        }
                     </div>
                     indice++;
                 }
@@ -102,7 +110,7 @@
         </div>
 
         <div class="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink-500">
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-1 ring-inset ring-river-200"></span> Disponible (precios para 2 · 4 · 6 personas)</span>
+            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-1 ring-inset ring-river-200"></span> Disponible (precios para @string.Join(" · ", tramos) personas)</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Con promoción</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Reservada</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-50"></span> Fecha pasada</span>
@@ -168,7 +176,7 @@
 <div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 p-4 shadow-lift backdrop-blur">
     <div class="mx-auto flex max-w-4xl flex-wrap items-end gap-3">
         <div id="texto-seleccion" class="text-sm font-medium text-ink-700">0 días seleccionados</div>
-        @foreach (var tramo in new[] { 2, 4, 6 })
+        @foreach (var tramo in tramos)
         {
             <div class="min-w-[110px] flex-1">
                 <label class="mb-1 block text-xs font-medium text-ink-600">Para @tramo (vacío = no cambia)</label>
@@ -191,7 +199,7 @@
 
 @section Scripts {
     <script>
-        const TRAMOS = [2, 4, 6];
+        const TRAMOS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(tramos));
         const seleccionDias = new Set();
 
         function alternarSeleccionDia(btn) {

@@ -285,12 +285,17 @@ namespace GestionCabanas.Areas.Admin.Controllers
                         continue;
                     }
 
-                    var precios = fecha.DayOfWeek switch
+                    var preciosDelDia = fecha.DayOfWeek switch
                     {
                         DayOfWeek.Saturday => preciosSabado,
                         DayOfWeek.Sunday => preciosDomingo,
                         _ => preciosSemana
                     };
+
+                    // Solo cuentan los tramos que esta cabaña admite (una para 4 no tiene precio para 6).
+                    var precios = preciosDelDia
+                        .Select((precio, i) => cabana.AdmiteTramo(Cabana.TodosLosTramos[i]) ? precio : null)
+                        .ToArray();
 
                     if (precios.All(p => !p.HasValue))
                     {
@@ -312,7 +317,29 @@ namespace GestionCabanas.Areas.Admin.Controllers
             await _disponibilidad.GuardarTarifasAsync(dias);
 
             var nombres = string.Join(", ", cabanas.Select(c => c.Nombre));
-            TempData["Mensaje"] = $"Precios de {nombres} actualizados para {primerDia:MMMM yyyy}.";
+            var mensaje = $"Precios de {nombres} actualizados para {primerDia:MMMM yyyy}.";
+
+            // Avisar de los tramos cargados que no se aplicaron a alguna cabaña por no tener lugar para tantas personas.
+            var omitidos = new List<string>();
+            for (var i = 0; i < Cabana.TodosLosTramos.Length; i++)
+            {
+                var tramo = Cabana.TodosLosTramos[i];
+                var sinLugar = cabanas.Where(c => !c.AdmiteTramo(tramo)).Select(c => c.Nombre).ToList();
+                var cargado = preciosSemana[i].HasValue || preciosSabado[i].HasValue || preciosDomingo[i].HasValue;
+                if (sinLugar.Count > 0 && cargado)
+                {
+                    omitidos.Add($"el precio para {tramo} no se aplicó a {string.Join(", ", sinLugar)} (no tiene{(sinLugar.Count > 1 ? "n" : "")} lugar para tantas personas)");
+                }
+            }
+            if (omitidos.Count > 0)
+            {
+                var detalle = string.Join("; ", omitidos);
+                mensaje = dias.Count == 0
+                    ? $"No se cargó ningún precio: {detalle}."
+                    : mensaje + $" Ojo: {detalle}.";
+            }
+
+            TempData["Mensaje"] = mensaje;
             return RedirectToAction(nameof(Precios), new { anio, mes });
         }
 
