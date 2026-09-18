@@ -61,3 +61,41 @@ jobs:
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.RESOURCE_GROUP }} \
               --image ${{ needs.build-and-push.outputs.image }}
+
+      # "az containerapp update" devuelve OK apenas se crea la revisión nueva; si esa revisión
+      # después no arranca, Azure deja el tráfico en la anterior y el deploy parece exitoso.
+      # Acá esperamos a que la revisión nueva quede lista y, si no, fallamos mostrando por qué.
+      - name: Wait for the new revision to be ready
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            APP=${{ env.CONTAINER_APP_NAME }}
+            RG=${{ env.RESOURCE_GROUP }}
+
+            REVISION=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.latestRevisionName -o tsv)
+            FQDN=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.configuration.ingress.fqdn -o tsv)
+            echo "Esperando la revisión $REVISION"
+
+            for i in $(seq 1 30); do
+              # Con minReplicas 0 la app puede estar apagada: un request la despierta y fuerza el arranque.
+              curl -s -o /dev/null --max-time 20 "https://$FQDN/" || true
+
+              LISTA=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.latestReadyRevisionName -o tsv)
+              ESTADO=$(az containerapp revision show --name "$APP" --resource-group "$RG" --revision "$REVISION" \
+                --query "[properties.provisioningState, properties.healthState, properties.runningState]" -o tsv | tr '\n\t' '  ')
+              echo "[$i/30] última lista: $LISTA | $REVISION: $ESTADO"
+
+              if [ "$LISTA" = "$REVISION" ]; then
+                echo "La revisión $REVISION está lista y recibe el tráfico."
+                exit 0
+              fi
+              sleep 10
+            done
+
+            echo "::error::La revisión $REVISION no quedó lista a tiempo. El tráfico sigue en $LISTA."
+            az containerapp revision list --name "$APP" --resource-group "$RG" -o table || true
+            echo "----- Logs del sistema -----"
+            az containerapp logs show --name "$APP" --resource-group "$RG" --revision "$REVISION" --type system --tail 50 --format text || true
+            echo "----- Logs de la aplicación -----"
+            az containerapp logs show --name "$APP" --resource-group "$RG" --revision "$REVISION" --type console --tail 100 --format text || true
+            exit 1
