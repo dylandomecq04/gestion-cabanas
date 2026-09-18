@@ -310,6 +310,12 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 return NotFound();
             }
 
+            if (await _disponibilidad.HaySuperposicionAsync(nuevaCabanaId, reserva.FechaDesde, reserva.FechaHasta))
+            {
+                TempData["Mensaje"] = "No se puede mover: esas fechas no están disponibles en la otra cabaña.";
+                return RedirectToAction(nameof(Index), new { estado = EstadoReserva.Pendiente });
+            }
+
             reserva.CabanaId = nuevaCabanaId;
             await _db.SaveChangesAsync();
 
@@ -467,8 +473,9 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 ModelState.AddModelError(nameof(Reserva.CantidadMenores), "Tiene que haber al menos un adulto: los menores ya están incluidos en la cantidad de personas.");
             }
 
-            if (modelo.Estado == EstadoReserva.Confirmada &&
-                await _disponibilidad.HaySuperposicionAsync(modelo.CabanaId, modelo.FechaDesde, modelo.FechaHasta, idExcluir))
+            // Tanto una reserva confirmada como una solicitud necesitan que esos días estén libres de
+            // reservas confirmadas (las solicitudes entre sí sí pueden superponerse).
+            if (await _disponibilidad.HaySuperposicionAsync(modelo.CabanaId, modelo.FechaDesde, modelo.FechaHasta, idExcluir))
             {
                 ModelState.AddModelError(string.Empty, "Esas fechas se superponen con otra reserva confirmada para esta cabaña.");
             }
