@@ -27,9 +27,15 @@ namespace GestionCabanas.Models
         [Display(Name = "Fecha de salida")]
         public DateTime FechaHasta { get; set; } = DateTime.Today.AddDays(2);
 
-        [Required(ErrorMessage = "Indicá la cantidad de personas")]
-        [Range(1, 50, ErrorMessage = "La cantidad de personas debe ser mayor a 0")]
-        [Display(Name = "Cantidad de personas")]
-        public int CantidadPersonas { get; set; } = 1;
+        [Required(ErrorMessage = "Indicá la cantidad de adultos")]
+        [Range(1, 50, ErrorMessage = "Tiene que haber al menos un adulto")]
+        [Display(Name = "Adultos")]
+        public int CantidadAdultos { get; set; } = 2;
+
+        [Range(0, 50, ErrorMessage = "La cantidad de menores no es válida")]
+        [Display(Name = "Menores")]
+        public int CantidadMenores { get; set; }
+
+        public int CantidadPersonas => CantidadAdultos + CantidadMenores;
     }
 }

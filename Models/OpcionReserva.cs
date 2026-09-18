@@ -9,6 +9,7 @@ namespace GestionCabanas.Models
         public decimal? Subtotal { get; set; }
         public bool PromoAplicada { get; set; }
         public string? EtiquetaPromo { get; set; }
+        public string? EtiquetaTarifa { get; set; }
     }
 
     public class OpcionReserva
@@ -30,6 +31,9 @@ namespace GestionCabanas.Models
         public decimal? Total { get; set; }
         public bool PromoAplicada { get; set; }
         public string? EtiquetaPromo { get; set; }
+
+        /// <summary>Qué tarifa se usó (p. ej. "Tarifa para 4 personas"); null si aplicó una promo.</summary>
+        public string? EtiquetaTarifa { get; set; }
     }
 
     public class CabanaAlternativa

@@ -174,7 +174,9 @@ namespace GestionCabanas.Areas.Admin.Controllers
                     Fecha = fecha,
                     Reservada = reservas.Any(r => r.FechaDesde <= fecha && fecha < r.FechaHasta),
                     Pasada = fecha < hoy,
-                    Precio = tarifa?.Precio,
+                    Precio2 = tarifa?.Precio2,
+                    Precio4 = tarifa?.Precio4,
+                    Precio6 = tarifa?.Precio6,
                     EnPromo = promoDelDia is not null,
                     EtiquetaPromo = promoDelDia?.Nombre
                 });
@@ -231,7 +233,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AplicarPreciosPorDiaSemana(List<int> cabanaIds, int anio, int mes, decimal? precioSemana, decimal? precioSabado, decimal? precioDomingo)
+        public async Task<IActionResult> AplicarPreciosPorDiaSemana(
+            List<int> cabanaIds, int anio, int mes,
+            decimal? precioSemana2, decimal? precioSemana4, decimal? precioSemana6,
+            decimal? precioSabado2, decimal? precioSabado4, decimal? precioSabado6,
+            decimal? precioDomingo2, decimal? precioDomingo4, decimal? precioDomingo6)
         {
             if (cabanaIds is null || cabanaIds.Count == 0)
             {
@@ -239,7 +245,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Precios), new { anio, mes });
             }
 
-            if (!precioSemana.HasValue && !precioSabado.HasValue && !precioDomingo.HasValue)
+            var preciosSemana = new[] { precioSemana2, precioSemana4, precioSemana6 };
+            var preciosSabado = new[] { precioSabado2, precioSabado4, precioSabado6 };
+            var preciosDomingo = new[] { precioDomingo2, precioDomingo4, precioDomingo6 };
+
+            if (preciosSemana.Concat(preciosSabado).Concat(preciosDomingo).All(p => !p.HasValue))
             {
                 TempData["Mensaje"] = "Cargá al menos un precio (lunes a viernes, sábado o domingo) para aplicar.";
                 return RedirectToAction(nameof(Precios), new { anio, mes });
@@ -259,6 +269,12 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 .Where(r => cabanaIds.Contains(r.CabanaId) && r.Estado == EstadoReserva.Confirmada && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
                 .ToListAsync();
 
+            var existentes = (await _db.TarifasDias
+                .Where(t => cabanaIds.Contains(t.CabanaId) && t.Fecha >= primerDia && t.Fecha <= ultimoDia)
+                .ToListAsync())
+                .ToDictionary(t => (t.CabanaId, t.Fecha.Date));
+
+            // Sólo se pisan los tramos que se cargaron: los que se dejan vacíos conservan lo que ya había.
             var dias = new List<TarifaDiaInput>();
             foreach (var cabana in cabanas)
             {
@@ -269,23 +285,26 @@ namespace GestionCabanas.Areas.Admin.Controllers
                         continue;
                     }
 
-                    decimal? precio = fecha.DayOfWeek switch
+                    var precios = fecha.DayOfWeek switch
                     {
-                        DayOfWeek.Saturday => precioSabado,
-                        DayOfWeek.Sunday => precioDomingo,
-                        _ => precioSemana
+                        DayOfWeek.Saturday => preciosSabado,
+                        DayOfWeek.Sunday => preciosDomingo,
+                        _ => preciosSemana
                     };
 
-                    if (!precio.HasValue)
+                    if (precios.All(p => !p.HasValue))
                     {
                         continue;
                     }
 
+                    existentes.TryGetValue((cabana.Id, fecha), out var actual);
                     dias.Add(new TarifaDiaInput
                     {
                         CabanaId = cabana.Id,
                         Fecha = fecha,
-                        Precio = precio
+                        Precio2 = precios[0] ?? actual?.Precio2,
+                        Precio4 = precios[1] ?? actual?.Precio4,
+                        Precio6 = precios[2] ?? actual?.Precio6
                     });
                 }
             }

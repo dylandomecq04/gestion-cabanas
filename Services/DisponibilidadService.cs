@@ -1,17 +1,22 @@
 using GestionCabanas.Data;
 using GestionCabanas.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace GestionCabanas.Services
 {
     public class DisponibilidadService
     {
         private readonly ApplicationDbContext _db;
+        private readonly PoliticaPrecios _politica;
 
-        public DisponibilidadService(ApplicationDbContext db)
+        public DisponibilidadService(ApplicationDbContext db, IOptions<PoliticaPrecios> politica)
         {
             _db = db;
+            _politica = politica.Value;
         }
+
+        public PoliticaPrecios Politica => _politica;
 
         public async Task<bool> HaySuperposicionAsync(int cabanaId, DateTime desde, DateTime hasta, int? reservaIdExcluir = null)
         {
@@ -69,7 +74,8 @@ namespace GestionCabanas.Services
         }
 
         /// <summary>
-        /// Guarda los cambios de precio del calendario.
+        /// Guarda los precios (para 2, 4 y 6 personas) de cada día. Un día sin ningún precio
+        /// borra su tarifa.
         /// </summary>
         public async Task GuardarTarifasAsync(IEnumerable<TarifaDiaInput> dias)
         {
@@ -91,7 +97,7 @@ namespace GestionCabanas.Services
                 var fecha = dia.Fecha.Date;
                 existentes.TryGetValue((dia.CabanaId, fecha), out var existente);
 
-                if (!dia.Precio.HasValue)
+                if (!dia.Precio2.HasValue && !dia.Precio4.HasValue && !dia.Precio6.HasValue)
                 {
                     if (existente is not null)
                     {
@@ -102,31 +108,51 @@ namespace GestionCabanas.Services
 
                 if (existente is null)
                 {
-                    _db.TarifasDias.Add(new TarifaDia { CabanaId = dia.CabanaId, Fecha = fecha, Precio = dia.Precio });
+                    existente = new TarifaDia { CabanaId = dia.CabanaId, Fecha = fecha };
+                    _db.TarifasDias.Add(existente);
                 }
-                else
-                {
-                    existente.Precio = dia.Precio;
-                }
+
+                existente.Precio2 = dia.Precio2;
+                existente.Precio4 = dia.Precio4;
+                existente.Precio6 = dia.Precio6;
             }
 
             await _db.SaveChangesAsync();
         }
 
-        public async Task<decimal?> CalcularValorTotalAsync(int cabanaId, DateTime desde, DateTime hasta, decimal? precioBase)
+        /// <summary>
+        /// Precio "desde" de cada cabaña: la tarifa para 2 personas más baja entre las noches
+        /// que todavía no pasaron.
+        /// </summary>
+        public async Task<Dictionary<int, decimal>> ObtenerPreciosDesdeAsync()
         {
-            var detalle = await CalcularValorConDetalleAsync(cabanaId, desde, hasta, precioBase);
+            var hoy = DateTime.Today;
+            var tarifas = await _db.TarifasDias
+                .Where(t => t.Fecha >= hoy && t.Precio2 != null)
+                .ToListAsync();
+
+            return tarifas
+                .GroupBy(t => t.CabanaId)
+                .ToDictionary(g => g.Key, g => g.Min(t => t.Precio2!.Value));
+        }
+
+        public async Task<decimal?> CalcularValorTotalAsync(int cabanaId, DateTime desde, DateTime hasta, Huespedes huespedes)
+        {
+            var detalle = await CalcularValorConDetalleAsync(cabanaId, desde, hasta, huespedes);
             return detalle.Total;
         }
 
         /// <summary>
-        /// Calcula el valor total de una estadía y, si corresponde, aplica el paquete de precios
-        /// de una promoción por cantidad de noches (1, 2 o 3) para ese rango. Una promo sólo se
-        /// aplica si cubre TODAS las noches de la estadía. Para estadías de más de 3 noches con
-        /// promo activa, las primeras 3 noches se cobran al precio del paquete de 3 noches y el
-        /// resto a precio normal.
+        /// Calcula el valor total de una estadía según la cantidad de adultos y menores: para cada
+        /// noche se toma el precio del tramo que corresponde al grupo (para 2, 4 o 6 personas) y,
+        /// si hay un adulto de más, se le suma el recargo. Si corresponde, aplica el paquete de
+        /// precios de una promoción por cantidad de noches (1, 2 o 3) para ese rango. Una promo
+        /// sólo se aplica si cubre TODAS las noches de la estadía. Para estadías de más de 3
+        /// noches con promo activa, las primeras 3 noches se cobran al precio del paquete de 3
+        /// noches y el resto a precio normal. El precio del paquete no depende de la cantidad
+        /// de personas.
         /// </summary>
-        public async Task<ResultadoPrecio> CalcularValorConDetalleAsync(int cabanaId, DateTime desde, DateTime hasta, decimal? precioBase)
+        public async Task<ResultadoPrecio> CalcularValorConDetalleAsync(int cabanaId, DateTime desde, DateTime hasta, Huespedes huespedes)
         {
             var resultado = new ResultadoPrecio();
             if (hasta <= desde)
@@ -134,6 +160,7 @@ namespace GestionCabanas.Services
                 return resultado;
             }
 
+            var tarifaGrupo = _politica.Resolver(huespedes.Adultos, huespedes.Menores);
             var noches = (hasta - desde).Days;
             var promo = await BuscarPromoCubriendoAsync(cabanaId, desde, hasta);
 
@@ -152,7 +179,7 @@ namespace GestionCabanas.Services
                 }
                 else if (promo.Precio3Noches.HasValue)
                 {
-                    var totalResto = await SumaDiariaAsync(cabanaId, desde.AddDays(3), hasta, precioBase);
+                    var totalResto = tarifaGrupo is null ? null : await SumaDiariaAsync(cabanaId, desde.AddDays(3), hasta, tarifaGrupo);
                     resultado.Total = totalResto.HasValue ? promo.Precio3Noches.Value + totalResto.Value : null;
                     resultado.PromoAplicada = true;
                     resultado.EtiquetaPromo = EtiquetaPaquete(promo, 3);
@@ -160,7 +187,13 @@ namespace GestionCabanas.Services
                 }
             }
 
-            resultado.Total = await SumaDiariaAsync(cabanaId, desde, hasta, precioBase);
+            if (tarifaGrupo is null)
+            {
+                return resultado;
+            }
+
+            resultado.Total = await SumaDiariaAsync(cabanaId, desde, hasta, tarifaGrupo);
+            resultado.EtiquetaTarifa = tarifaGrupo.Descripcion(_politica.RecargoAdultoExtraPorcentaje);
             return resultado;
         }
 
@@ -187,7 +220,7 @@ namespace GestionCabanas.Services
             return string.IsNullOrWhiteSpace(promo.Nombre) ? $"Promo {nochesTexto}" : $"{promo.Nombre} · {nochesTexto}";
         }
 
-        private async Task<decimal?> SumaDiariaAsync(int cabanaId, DateTime desde, DateTime hasta, decimal? precioBase)
+        private async Task<decimal?> SumaDiariaAsync(int cabanaId, DateTime desde, DateTime hasta, TarifaGrupo tarifaGrupo)
         {
             if (hasta <= desde)
             {
@@ -199,12 +232,12 @@ namespace GestionCabanas.Services
 
             for (var dia = desde; dia < hasta; dia = dia.AddDays(1))
             {
-                var precioDelDia = tarifas.FirstOrDefault(t => t.Fecha.Date == dia.Date)?.Precio ?? precioBase;
+                var precioDelDia = tarifas.FirstOrDefault(t => t.Fecha.Date == dia.Date)?.PrecioDelTramo(tarifaGrupo.Tramo);
                 if (!precioDelDia.HasValue)
                 {
                     return null;
                 }
-                total += precioDelDia.Value;
+                total += tarifaGrupo.ConRecargo ? Math.Round(precioDelDia.Value * _politica.FactorRecargo, 0) : precioDelDia.Value;
             }
 
             return total;
@@ -229,8 +262,9 @@ namespace GestionCabanas.Services
         /// confirmadas en el rango dado, con capacidad suficiente. Se usa para ofrecer
         /// alternativas cuando dos solicitudes compiten por la misma cabaña y fecha.
         /// </summary>
-        public async Task<List<CabanaAlternativa>> ObtenerCabanasAlternativasAsync(DateTime desde, DateTime hasta, int cabanaIdExcluir, int personas)
+        public async Task<List<CabanaAlternativa>> ObtenerCabanasAlternativasAsync(DateTime desde, DateTime hasta, int cabanaIdExcluir, Huespedes huespedes)
         {
+            var personas = huespedes.Total;
             var cabanas = await _db.Cabanas
                 .Where(c => c.Activa && c.Id != cabanaIdExcluir && c.Capacidad >= personas)
                 .OrderBy(c => c.Nombre)
@@ -244,7 +278,7 @@ namespace GestionCabanas.Services
                     continue;
                 }
 
-                var precio = await CalcularValorTotalAsync(cabana.Id, desde, hasta, cabana.PrecioPorNoche);
+                var precio = await CalcularValorTotalAsync(cabana.Id, desde, hasta, huespedes);
                 resultado.Add(new CabanaAlternativa { CabanaId = cabana.Id, Nombre = cabana.Nombre, Precio = precio });
             }
 
@@ -256,7 +290,7 @@ namespace GestionCabanas.Services
         /// posibles: cabañas individuales que cubran todo el rango, o -si ninguna lo cubre sola-
         /// todas las combinaciones válidas que usan la menor cantidad de cabañas posible.
         /// </summary>
-        public async Task<ResultadoBusquedaDisponibilidad> BuscarOpcionesAsync(DateTime desde, DateTime hasta, int personas)
+        public async Task<ResultadoBusquedaDisponibilidad> BuscarOpcionesAsync(DateTime desde, DateTime hasta, Huespedes huespedes)
         {
             var resultado = new ResultadoBusquedaDisponibilidad();
 
@@ -273,6 +307,13 @@ namespace GestionCabanas.Services
                 return resultado;
             }
 
+            if (huespedes.Adultos < 1)
+            {
+                resultado.Mensaje = "Tiene que haber al menos un adulto.";
+                return resultado;
+            }
+
+            var personas = huespedes.Total;
             var cabanas = await _db.Cabanas
                 .Where(c => c.Activa && c.Capacidad >= personas)
                 .OrderBy(c => c.Nombre)
@@ -284,7 +325,7 @@ namespace GestionCabanas.Services
             {
                 resultado.CobreTotal = false;
                 resultado.DiasSinCobertura = fechas;
-                resultado.Mensaje = "Ninguna cabaña tiene capacidad para esa cantidad de personas.";
+                resultado.Mensaje = "Ninguna cabaña tiene capacidad para esa cantidad de personas. Para grupos así conviene repartirse en dos cabañas: escribinos y lo coordinamos.";
                 return resultado;
             }
 
@@ -394,7 +435,7 @@ namespace GestionCabanas.Services
                     var cabana = cabanas[cabanaIndex];
                     var segDesde = desde.AddDays(ini);
                     var segHasta = desde.AddDays(fin);
-                    var detalleSegmento = await CalcularValorConDetalleAsync(cabana.Id, segDesde, segHasta, cabana.PrecioPorNoche);
+                    var detalleSegmento = await CalcularValorConDetalleAsync(cabana.Id, segDesde, segHasta, huespedes);
 
                     opcion.Segmentos.Add(new SegmentoOpcion
                     {
@@ -404,7 +445,8 @@ namespace GestionCabanas.Services
                         Hasta = segHasta,
                         Subtotal = detalleSegmento.Total,
                         PromoAplicada = detalleSegmento.PromoAplicada,
-                        EtiquetaPromo = detalleSegmento.EtiquetaPromo
+                        EtiquetaPromo = detalleSegmento.EtiquetaPromo,
+                        EtiquetaTarifa = detalleSegmento.EtiquetaTarifa
                     });
 
                     total = total.HasValue && detalleSegmento.Total.HasValue ? total + detalleSegmento.Total : null;

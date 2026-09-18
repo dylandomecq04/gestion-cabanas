@@ -1,3 +1,4 @@
+@inject Microsoft.Extensions.Options.IOptions<PoliticaPrecios> Politica
 @{
     ViewData["Title"] = "Disponibilidad";
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
@@ -103,7 +104,7 @@
         <h2 class="font-display text-base font-semibold text-ink-900">Reservar para estas fechas</h2>
         <p class="mt-1 text-sm text-ink-500">Completá tus datos para reservar las fechas elegidas arriba.</p>
 
-        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-4">
             <div>
                 <label for="general-nombre" class="mb-1 block text-sm font-medium text-ink-700">Nombre y apellido</label>
                 <input id="general-nombre" type="text" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
@@ -113,10 +114,15 @@
                 <input id="general-telefono" type="tel" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
             </div>
             <div>
-                <label for="general-personas" class="mb-1 block text-sm font-medium text-ink-700">Cantidad de personas</label>
-                <input id="general-personas" type="number" min="1" max="50" value="2" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                <label for="general-adultos" class="mb-1 block text-sm font-medium text-ink-700">Adultos</label>
+                <input id="general-adultos" type="number" min="1" max="50" value="2" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div>
+                <label for="general-menores" class="mb-1 block text-sm font-medium text-ink-700">Menores</label>
+                <input id="general-menores" type="number" min="0" max="50" value="0" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
             </div>
         </div>
+        <p class="mt-2 text-xs text-ink-400">Los primeros @Politica.Value.MenoresSinCargo menores no suman al precio; del tercero en adelante cuentan como adultos.</p>
 
         <p id="general-error" class="mt-3 hidden text-sm font-medium text-rose-600"></p>
 
@@ -254,7 +260,8 @@
 
             const nombre = document.getElementById('general-nombre').value.trim();
             const telefono = document.getElementById('general-telefono').value.trim();
-            const personas = parseInt(document.getElementById('general-personas').value, 10) || 1;
+            const adultos = parseInt(document.getElementById('general-adultos').value, 10) || 0;
+            const menores = parseInt(document.getElementById('general-menores').value, 10) || 0;
 
             if (!__generalDesde || !__generalHasta) {
                 mostrarErrorGeneral('Elegí la fecha de entrada y de salida en el calendario.');
@@ -268,15 +275,19 @@
                 mostrarErrorGeneral('Ingresá un teléfono de contacto.');
                 return;
             }
+            if (adultos < 1) {
+                mostrarErrorGeneral('Tiene que haber al menos un adulto.');
+                return;
+            }
 
-            __datosHuesped = { nombre, telefono, personas };
+            __datosHuesped = { nombre, telefono, adultos, menores };
 
             const contenido = document.getElementById('modal-opciones-contenido');
             contenido.innerHTML = '<p class="text-sm text-ink-500">Buscando disponibilidad...</p>';
             abrirModalOpciones();
 
             try {
-                const resp = await fetch(`/Cabanas/BuscarOpciones?desde=${__generalDesde}&hasta=${__generalHasta}&personas=${personas}`);
+                const resp = await fetch(`/Cabanas/BuscarOpciones?desde=${__generalDesde}&hasta=${__generalHasta}&adultos=${adultos}&menores=${menores}`);
                 const data = await resp.json();
 
                 if (!data.valido) {
@@ -318,7 +329,7 @@
                     const subtotalTexto = s.subtotal !== null ? `$${Number(s.subtotal).toLocaleString('es-AR')}` : 'a consultar';
                     const promoHtml = s.promoAplicada
                         ? `<div class="mt-0.5 text-xs font-semibold text-amber-700">🎉 ${s.etiquetaPromo || 'Promoción'} aplicada</div>`
-                        : '';
+                        : (s.etiquetaTarifa ? `<div class="mt-0.5 text-xs text-ink-500">${s.etiquetaTarifa}</div>` : '');
                     return `<div class="flex justify-between gap-3 text-sm text-ink-600">
                         <div>
                             <span>${formatearFechaCorta(s.desde)} – ${formatearFechaCorta(s.hasta)}: <strong class="text-ink-900">${s.cabanaNombre}</strong></span>
@@ -356,7 +367,8 @@
             params.append('__RequestVerificationToken', token);
             params.append('NombreHuesped', __datosHuesped.nombre);
             params.append('Telefono', __datosHuesped.telefono);
-            params.append('CantidadPersonas', __datosHuesped.personas);
+            params.append('CantidadAdultos', __datosHuesped.adultos);
+            params.append('CantidadMenores', __datosHuesped.menores);
             opcion.segmentos.forEach((s, i) => {
                 params.append(`Segmentos[${i}].CabanaId`, s.cabanaId);
                 params.append(`Segmentos[${i}].FechaDesde`, s.desde);

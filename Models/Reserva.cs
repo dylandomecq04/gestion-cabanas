@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GestionCabanas.Models
 {
@@ -31,6 +32,13 @@ namespace GestionCabanas.Models
         [Range(1, 50, ErrorMessage = "La cantidad de personas debe ser mayor a 0")]
         [Display(Name = "Cantidad de personas")]
         public int CantidadPersonas { get; set; } = 1;
+
+        [Range(0, 50, ErrorMessage = "La cantidad de menores no es válida")]
+        [Display(Name = "Menores (ya incluidos en la cantidad de personas)")]
+        public int CantidadMenores { get; set; }
+
+        [NotMapped]
+        public int CantidadAdultos => Math.Max(0, CantidadPersonas - CantidadMenores);
 
         public EstadoReserva Estado { get; set; } = EstadoReserva.Pendiente;
 

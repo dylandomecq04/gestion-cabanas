@@ -47,7 +47,7 @@ namespace GestionCabanas.Services
                     Cabaña: {cabana.Nombre}
                     Huésped: {reserva.NombreHuesped}
                     Fechas: {reserva.FechaDesde:dd/MM/yyyy} – {reserva.FechaHasta:dd/MM/yyyy}
-                    Personas: {reserva.CantidadPersonas}
+                    Personas: {reserva.CantidadPersonas} ({reserva.CantidadAdultos} adultos, {reserva.CantidadMenores} menores)
                     Teléfono: {reserva.Telefono}
 
                     Entrá al panel de administración para confirmarla o rechazarla.

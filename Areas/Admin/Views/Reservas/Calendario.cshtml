@@ -28,6 +28,16 @@
     PromoEstadia? PromoDeLaCabanaEnElDia(int cabanaId, DateTime dia)
         => promos.FirstOrDefault(p => p.CabanaId == cabanaId && p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
 
+    string Miles(decimal? precio) => precio.HasValue ? precio.Value.ToString("N0") : "–";
+    string Plano(decimal? precio) => precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+    string AtributosPrecios(TarifaDia? t)
+        => $"data-precio2=\"{Plano(t?.Precio2)}\" data-precio4=\"{Plano(t?.Precio4)}\" data-precio6=\"{Plano(t?.Precio6)}\"";
+    string EtiquetaPrecios(TarifaDia? t)
+        => $"<span data-tramo=\"2\">{Miles(t?.Precio2)}</span><span data-tramo=\"4\">{Miles(t?.Precio4)}</span><span data-tramo=\"6\">{Miles(t?.Precio6)}</span>";
+    string InputsPrecios(int indice, TarifaDia? t, string atributosExtra)
+        => string.Concat(new[] { 2, 4, 6 }.Select(tramo =>
+            $"<input type=\"hidden\" {atributosExtra} name=\"dias[{indice}].Precio{tramo}\" value=\"{Plano(t?.PrecioDelTramo(tramo))}\" />"));
+
     bool EsFinDeSemana(DateTime dia) => dia.DayOfWeek == DayOfWeek.Saturday || dia.DayOfWeek == DayOfWeek.Sunday;
 
     string[] diasSemana = { "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom" };
@@ -107,6 +117,7 @@
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-red-400"></span> Disponible</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100 ring-1 ring-ink-200"></span> Sin reservar</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-2 ring-river-600"></span> Seleccionado</span>
+        <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-ink-700">$</span> Precios de arriba a abajo: para 2 · 4 · 6 personas</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-rose-600">↓</span> Sale ese día</span>
     </div>
@@ -171,9 +182,6 @@
                                     // oculta por defecto, que se muestra cuando se activa "Ocultar solicitudes".
                                     var tarifaAlt = esPendiente ? TarifaDeLaCabanaEnElDia(cabana.Id, dia) : null;
                                     var yaPasoAlt = dia.Date < hoy;
-                                    var precioMostrarAlt = tarifaAlt?.Precio ?? cabana.PrecioPorNoche;
-                                    var precioTextoAlt = tarifaAlt?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
-                                    var etiquetaPrecioAlt = precioMostrarAlt.HasValue ? "$" + precioMostrarAlt.Value.ToString("N0") : "Sin precio";
                                     var etiquetaEstadoAlt = yaPasoAlt ? "Sin reservar" : "Disponible";
                                     var claseAlt = yaPasoAlt
                                         ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
@@ -211,14 +219,14 @@
                                                         data-cabana-nombre="@cabana.Nombre"
                                                         data-fecha="@fechaAttr"
                                                         data-fecha-texto="@fechaTexto"
-                                                        data-precio="@precioTextoAlt"
+                                                        @Html.Raw(AtributosPrecios(tarifaAlt))
                                                         data-promo-id="@(promoDelDia is not null ? promoDelDia!.Id.ToString() : "")"
                                                         onclick="alternarSeleccionDia(this)"
                                                         class="dia-editable solicitud-alt-cell hidden day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @claseAlt">
                                                     <span class="etiqueta-estado leading-tight">@etiquetaEstadoAlt</span>
                                                     @if (!yaPasoAlt)
                                                     {
-                                                        <span class="etiqueta-precio text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@etiquetaPrecioAlt</span>
+                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(tarifaAlt))</span>
                                                     }
                                                     <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                                     @if (llega is not null)
@@ -233,7 +241,7 @@
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias.Index" value="@indiceAlt" />
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAlt].CabanaId" value="@cabana.Id" />
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAlt].Fecha" value="@fechaAttr" />
-                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAlt].Precio" value="@precioTextoAlt" />
+                                                <text>@Html.Raw(InputsPrecios(indiceAlt, tarifaAlt, "class=\"solicitud-alt-input\" disabled"))</text>
                                                 indice++;
                                             }
                                             @if (promoDelDia is not null)
@@ -254,9 +262,6 @@
                                     var todasPendientes = reservasDia.All(r => r.Estado == EstadoReserva.Pendiente);
                                     var tarifaAltMulti = todasPendientes ? TarifaDeLaCabanaEnElDia(cabana.Id, dia) : null;
                                     var yaPasoAltMulti = dia.Date < hoy;
-                                    var precioMostrarAltMulti = tarifaAltMulti?.Precio ?? cabana.PrecioPorNoche;
-                                    var precioTextoAltMulti = tarifaAltMulti?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
-                                    var etiquetaPrecioAltMulti = precioMostrarAltMulti.HasValue ? "$" + precioMostrarAltMulti.Value.ToString("N0") : "Sin precio";
                                     var etiquetaEstadoAltMulti = yaPasoAltMulti ? "Sin reservar" : "Disponible";
                                     var claseAltMulti = yaPasoAltMulti
                                         ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
@@ -297,21 +302,21 @@
                                                         data-cabana-nombre="@cabana.Nombre"
                                                         data-fecha="@fechaAttr"
                                                         data-fecha-texto="@fechaTexto"
-                                                        data-precio="@precioTextoAltMulti"
+                                                        @Html.Raw(AtributosPrecios(tarifaAltMulti))
                                                         data-promo-id="@(promoDelDia is not null ? promoDelDia!.Id.ToString() : "")"
                                                         onclick="alternarSeleccionDia(this)"
                                                         class="dia-editable solicitud-alt-cell hidden day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @claseAltMulti">
                                                     <span class="etiqueta-estado leading-tight">@etiquetaEstadoAltMulti</span>
                                                     @if (!yaPasoAltMulti)
                                                     {
-                                                        <span class="etiqueta-precio text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@etiquetaPrecioAltMulti</span>
+                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(tarifaAltMulti))</span>
                                                     }
                                                     <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                                 </button>
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias.Index" value="@indiceAltMulti" />
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAltMulti].CabanaId" value="@cabana.Id" />
                                                 <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAltMulti].Fecha" value="@fechaAttr" />
-                                                <input type="hidden" class="solicitud-alt-input" disabled name="dias[@indiceAltMulti].Precio" value="@precioTextoAltMulti" />
+                                                <text>@Html.Raw(InputsPrecios(indiceAltMulti, tarifaAltMulti, "class=\"solicitud-alt-input\" disabled"))</text>
                                                 indice++;
                                             }
                                             @if (llega is not null)
@@ -338,10 +343,7 @@
                                     var tarifa = TarifaDeLaCabanaEnElDia(cabana.Id, dia);
                                     var enPromoDia = promoDelDia is not null;
                                     var yaPaso = dia.Date < hoy;
-                                    var precioTexto = tarifa?.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
-                                    var precioMostrar = tarifa?.Precio ?? cabana.PrecioPorNoche;
                                     var etiquetaEstado = yaPaso ? "Sin reservar" : "Disponible";
-                                    var etiquetaPrecio = precioMostrar.HasValue ? "$" + precioMostrar.Value.ToString("N0") : "Sin precio";
                                     var clase = yaPaso
                                         ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
                                         : "bg-red-50 text-red-700 hover:bg-red-100";
@@ -352,7 +354,7 @@
                                                 data-cabana-nombre="@cabana.Nombre"
                                                 data-fecha="@fechaAttr"
                                                 data-fecha-texto="@fechaTexto"
-                                                data-precio="@precioTexto"
+                                                @Html.Raw(AtributosPrecios(tarifa))
                                                 data-promo-id="@(enPromoDia ? promoDelDia!.Id.ToString() : "")"
                                                 onclick="alternarSeleccionDia(this)"
                                                 class="dia-editable day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @clase @(enPromoDia ? "promo-glow" : "")">
@@ -363,7 +365,7 @@
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
                                             @if (!yaPaso)
                                             {
-                                                <span class="etiqueta-precio text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@etiquetaPrecio</span>
+                                                <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(tarifa))</span>
                                             }
                                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                             @if (llega is not null)
@@ -378,7 +380,7 @@
                                         <input type="hidden" name="dias.Index" value="@indice" />
                                         <input type="hidden" name="dias[@indice].CabanaId" value="@cabana.Id" />
                                         <input type="hidden" name="dias[@indice].Fecha" value="@fechaAttr" />
-                                        <input type="hidden" name="dias[@indice].Precio" value="@precioTexto" />
+                                        @Html.Raw(InputsPrecios(indice, tarifa, ""))
                                     </td>
                                     indice++;
                                 }
@@ -400,12 +402,15 @@
         <div class="hidden h-9 w-px bg-ink-200 sm:block"></div>
 
         <div class="flex shrink-0 items-end gap-2 sm:flex-wrap sm:gap-3">
-            <div class="w-20 shrink-0 sm:w-28">
-                <label class="mb-1 block text-xs font-medium text-ink-500">Precio</label>
-                <input id="bulk-precio" type="text" inputmode="numeric" placeholder="Base"
-                       oninput="formatearMiles(this)"
-                       class="h-9 w-full rounded-xl border border-ink-200 px-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 sm:h-10 sm:px-3" />
-            </div>
+            @foreach (var tramo in new[] { 2, 4, 6 })
+            {
+                <div class="w-20 shrink-0 sm:w-28">
+                    <label class="mb-1 block text-xs font-medium text-ink-500">Para @tramo</label>
+                    <input id="bulk-precio-@tramo" type="text" inputmode="numeric" placeholder="$"
+                           oninput="formatearMiles(this)"
+                           class="h-9 w-full rounded-xl border border-ink-200 px-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 sm:h-10 sm:px-3" />
+                </div>
+            }
         </div>
 
         <div class="flex shrink-0 items-center gap-2 sm:ml-auto">
@@ -425,7 +430,10 @@
                     Eliminar promo
                 </button>
             </form>
-            <button type="button" onclick="aplicarSeleccion()" title="Aplicar precio" aria-label="Aplicar precio" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-river-700 text-white shadow-soft transition hover:bg-river-800 sm:h-10 sm:w-10">
+            <button type="button" onclick="aplicarSeleccion(true)" title="Borrar los precios de los días seleccionados" class="h-9 shrink-0 whitespace-nowrap rounded-full border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 sm:h-10 sm:px-4 sm:text-sm">
+                Borrar precios
+            </button>
+            <button type="button" onclick="aplicarSeleccion(false)" title="Aplicar precios (los campos vacíos no se modifican)" aria-label="Aplicar precios" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-river-700 text-white shadow-soft transition hover:bg-river-800 sm:h-10 sm:w-10">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-4 w-4 sm:h-5 sm:w-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
@@ -825,6 +833,8 @@
             actualizarBarraSeleccion();
         }
 
+        const TRAMOS = [2, 4, 6];
+
         function sumarUnDia(fechaTexto) {
             const [anio, mes, dia] = fechaTexto.split('-').map(Number);
             const fecha = new Date(Date.UTC(anio, mes - 1, dia));
@@ -861,7 +871,10 @@
             const btns = idxs.map(idx => document.querySelector(`.dia-editable[data-index="${idx}"]`)).filter(Boolean);
 
             if (idxs.length === 1) {
-                document.getElementById('bulk-precio').value = btns[0].dataset.precio ? Number(btns[0].dataset.precio).toLocaleString('es-AR') : '';
+                TRAMOS.forEach(t => {
+                    const valor = btns[0].dataset['precio' + t];
+                    document.getElementById('bulk-precio-' + t).value = valor ? Number(valor).toLocaleString('es-AR') : '';
+                });
             }
 
             if (btns.length > 0 && puedeCargarReservaEnSeleccion(btns)) {
@@ -914,7 +927,7 @@
                 badge.classList.remove('flex');
             });
             seleccionDias.clear();
-            document.getElementById('bulk-precio').value = '';
+            TRAMOS.forEach(t => { document.getElementById('bulk-precio-' + t).value = ''; });
             actualizarBotonEliminarPromo([]);
             actualizarBarraSeleccion();
         }
@@ -927,20 +940,28 @@
             }
         }
 
-        function aplicarSeleccion() {
-            const precioTexto = document.getElementById('bulk-precio').value.replace(/\D/g, '');
+        // Con borrar = true se vacían los tres precios de los días elegidos; si no, sólo se
+        // pisan los tramos que tengan un valor cargado.
+        function aplicarSeleccion(borrar) {
+            const nuevos = {};
+            TRAMOS.forEach(t => {
+                nuevos[t] = document.getElementById('bulk-precio-' + t).value.replace(/\D/g, '');
+            });
 
             seleccionDias.forEach(idx => {
                 const btn = document.querySelector(`.dia-editable[data-index="${idx}"]`);
                 if (!btn) return;
 
-                btn.dataset.precio = precioTexto;
-                document.querySelector(`input[name="dias[${idx}].Precio"]`).value = precioTexto;
-
-                const etiquetaPrecio = btn.querySelector('.etiqueta-precio');
-                if (etiquetaPrecio) {
-                    etiquetaPrecio.textContent = precioTexto ? '$' + Number(precioTexto).toLocaleString('es-AR') : 'Sin precio';
-                }
+                TRAMOS.forEach(t => {
+                    if (!borrar && !nuevos[t]) return;
+                    const valor = borrar ? '' : nuevos[t];
+                    btn.dataset['precio' + t] = valor;
+                    document.querySelector(`input[name="dias[${idx}].Precio${t}"]`).value = valor;
+                    const linea = btn.querySelector(`.etiqueta-precio [data-tramo="${t}"]`);
+                    if (linea) {
+                        linea.textContent = valor ? Number(valor).toLocaleString('es-AR') : '–';
+                    }
+                });
             });
 
             cancelarSeleccion();

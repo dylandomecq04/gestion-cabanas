@@ -15,7 +15,8 @@
     celdas.AddRange(dias);
     while (celdas.Count % 7 != 0) celdas.Add(null);
 
-    var precioBaseTexto = cabana.PrecioPorNoche.HasValue ? "$" + cabana.PrecioPorNoche.Value.ToString("N0") : "Sin precio base";
+    string Miles(decimal? precio) => precio.HasValue ? precio.Value.ToString("N0") : "–";
+    string Plano(decimal? precio) => precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
 }
 
 <a asp-action="Index" class="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition hover:text-river-700">
@@ -28,10 +29,7 @@
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
         <h1 class="font-display text-2xl font-semibold text-ink-900">Precios y disponibilidad</h1>
-        <p class="mt-1 text-sm text-ink-500">
-            @cabana.Nombre &middot; precio base:
-            @(cabana.PrecioPorNoche.HasValue ? "$" + cabana.PrecioPorNoche.Value.ToString("N0") + " / noche" : "sin definir")
-        </p>
+        <p class="mt-1 text-sm text-ink-500">@cabana.Nombre &middot; precio por noche según cantidad de personas (para 2, 4 y 6)</p>
     </div>
     <div class="flex gap-2">
         @if (permitirMesAnterior)
@@ -46,6 +44,7 @@
 
 <p class="mb-4 text-sm text-ink-500">
     Tocá uno o varios días para seleccionarlos (podés elegir varios a la vez) y después ponerles precio juntos.
+    En cada día se ven, de arriba hacia abajo, los precios para 2, 4 y 6 personas.
 </p>
 
 <form id="form-tarifas" asp-action="GuardarTarifas" asp-route-id="@cabana.Id" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-24">
@@ -62,36 +61,40 @@
                 }
                 else if (dia.Pasada)
                 {
-                    <div class="day-cell flex h-12 items-center justify-center rounded-lg bg-ink-50 text-[10px] text-ink-300">@dia.Fecha.Day</div>
+                    <div class="day-cell flex h-16 items-center justify-center rounded-lg bg-ink-50 text-[10px] text-ink-300">@dia.Fecha.Day</div>
                 }
                 else if (dia.Reservada)
                 {
-                    <div class="day-cell flex h-12 flex-col items-center justify-center gap-0.5 rounded-lg bg-river-100 font-medium text-river-700" title="Reservada">
+                    <div class="day-cell flex h-16 flex-col items-center justify-center gap-0.5 rounded-lg bg-river-100 font-medium text-river-700" title="Reservada">
                         <span class="text-[9px] opacity-70">@dia.Fecha.Day</span>
                         <span class="text-[10px] font-bold uppercase">Reservada</span>
                     </div>
                 }
                 else
                 {
-                    var precioTexto = dia.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "";
-                    var etiqueta = dia.Precio.HasValue ? "$" + dia.Precio.Value.ToString("N0") : precioBaseTexto;
                     var clases = dia.EnPromo ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-river-50 text-river-700 hover:bg-river-100";
 
                     <div class="contents">
                         <button type="button" data-index="@indice"
-                                data-precio="@precioTexto"
+                                data-precio2="@Plano(dia.Precio2)" data-precio4="@Plano(dia.Precio4)" data-precio6="@Plano(dia.Precio6)"
                                 onclick="alternarSeleccionDia(this)"
-                                class="dia-editable day-cell relative flex h-12 flex-col items-center justify-center gap-0.5 rounded-lg font-medium ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clases">
+                                class="dia-editable day-cell relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-lg font-medium ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clases">
                             @if (dia.EnPromo)
                             {
                                 <span class="absolute -top-1.5 left-0.5 text-[7px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
                             }
                             <span class="text-[9px] opacity-70">@dia.Fecha.Day</span>
-                            <span class="etiqueta-precio text-[11px] font-bold leading-none">@etiqueta</span>
+                            <span class="etiqueta-precio flex flex-col items-center text-[9px] font-bold leading-tight">
+                                <span data-tramo="2">@Miles(dia.Precio2)</span>
+                                <span data-tramo="4">@Miles(dia.Precio4)</span>
+                                <span data-tramo="6">@Miles(dia.Precio6)</span>
+                            </span>
                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-3.5 w-3.5 items-center justify-center rounded-full bg-river-700 text-[9px] text-white shadow-soft">✓</span>
                         </button>
                         <input type="hidden" name="dias[@indice].Fecha" value="@dia.Fecha.ToString("yyyy-MM-dd")" />
-                        <input type="hidden" name="dias[@indice].Precio" value="@precioTexto" />
+                        <input type="hidden" name="dias[@indice].Precio2" value="@Plano(dia.Precio2)" />
+                        <input type="hidden" name="dias[@indice].Precio4" value="@Plano(dia.Precio4)" />
+                        <input type="hidden" name="dias[@indice].Precio6" value="@Plano(dia.Precio6)" />
                     </div>
                     indice++;
                 }
@@ -99,7 +102,7 @@
         </div>
 
         <div class="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink-500">
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-1 ring-inset ring-river-200"></span> Disponible (precio base)</span>
+            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-50 ring-1 ring-inset ring-river-200"></span> Disponible (precios para 2 · 4 · 6 personas)</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Con promoción</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Reservada</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-50"></span> Fecha pasada</span>
@@ -165,14 +168,20 @@
 <div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 p-4 shadow-lift backdrop-blur">
     <div class="mx-auto flex max-w-4xl flex-wrap items-end gap-3">
         <div id="texto-seleccion" class="text-sm font-medium text-ink-700">0 días seleccionados</div>
-        <div class="min-w-[140px] flex-1">
-            <label class="mb-1 block text-xs font-medium text-ink-600">Precio esa noche (vacío = @precioBaseTexto)</label>
-            <input id="bulk-precio" type="text" inputmode="numeric" placeholder="@precioBaseTexto"
-                   oninput="formatearMiles(this)"
-                   class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-        </div>
-        <button type="button" onclick="aplicarSeleccion()" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
+        @foreach (var tramo in new[] { 2, 4, 6 })
+        {
+            <div class="min-w-[110px] flex-1">
+                <label class="mb-1 block text-xs font-medium text-ink-600">Para @tramo (vacío = no cambia)</label>
+                <input id="bulk-precio-@tramo" type="text" inputmode="numeric" placeholder="$"
+                       oninput="formatearMiles(this)"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+        }
+        <button type="button" onclick="aplicarSeleccion(false)" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">
             Aplicar a seleccionados
+        </button>
+        <button type="button" onclick="aplicarSeleccion(true)" class="rounded-full border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+            Borrar precios
         </button>
         <button type="button" onclick="cancelarSeleccion()" class="rounded-full border border-ink-200 px-4 py-2.5 text-sm font-medium text-ink-600 transition hover:border-ink-300">
             Cancelar selección
@@ -182,7 +191,7 @@
 
 @section Scripts {
     <script>
-        const precioBaseTexto = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(precioBaseTexto));
+        const TRAMOS = [2, 4, 6];
         const seleccionDias = new Set();
 
         function alternarSeleccionDia(btn) {
@@ -220,7 +229,7 @@
                 badge.classList.remove('flex');
             });
             seleccionDias.clear();
-            document.getElementById('bulk-precio').value = '';
+            TRAMOS.forEach(t => { document.getElementById('bulk-precio-' + t).value = ''; });
             actualizarBarraSeleccion();
         }
 
@@ -229,23 +238,28 @@
             input.value = soloDigitos ? Number(soloDigitos).toLocaleString('es-AR') : '';
         }
 
-        function aplicarSeleccion() {
-            const precioTexto = document.getElementById('bulk-precio').value.replace(/\D/g, '');
+        // Con borrar = true se vacían los tres precios de los días elegidos; si no, sólo se
+        // pisan los tramos que tengan un valor cargado.
+        function aplicarSeleccion(borrar) {
+            const nuevos = {};
+            TRAMOS.forEach(t => {
+                nuevos[t] = document.getElementById('bulk-precio-' + t).value.replace(/\D/g, '');
+            });
 
             seleccionDias.forEach(idx => {
                 const btn = document.querySelector(`.dia-editable[data-index="${idx}"]`);
                 if (!btn) return;
 
-                btn.dataset.precio = precioTexto;
-                document.querySelector(`input[name="dias[${idx}].Precio"]`).value = precioTexto;
-
-                btn.classList.remove('bg-ink-200', 'text-ink-500');
-                btn.classList.add('bg-river-50', 'text-river-700', 'hover:bg-river-100');
-
-                const etiqueta = btn.querySelector('.etiqueta-precio');
-                if (etiqueta) {
-                    etiqueta.textContent = precioTexto ? '$' + Number(precioTexto).toLocaleString('es-AR') : precioBaseTexto;
-                }
+                TRAMOS.forEach(t => {
+                    if (!borrar && !nuevos[t]) return;
+                    const valor = borrar ? '' : nuevos[t];
+                    btn.dataset['precio' + t] = valor;
+                    document.querySelector(`input[name="dias[${idx}].Precio${t}"]`).value = valor;
+                    const linea = btn.querySelector(`.etiqueta-precio [data-tramo="${t}"]`);
+                    if (linea) {
+                        linea.textContent = valor ? Number(valor).toLocaleString('es-AR') : '–';
+                    }
+                });
             });
 
             cancelarSeleccion();

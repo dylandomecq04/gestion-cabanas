@@ -27,6 +27,8 @@ namespace GestionCabanas.Controllers
                 .OrderBy(c => c.Nombre)
                 .ToListAsync();
 
+            ViewBag.PreciosDesde = await _disponibilidad.ObtenerPreciosDesdeAsync();
+
             return View(cabanas);
         }
 
@@ -43,6 +45,7 @@ namespace GestionCabanas.Controllers
 
             ViewBag.Cabana = cabana;
             await CargarCalendarioAsync(id, anio, mes);
+            await CargarPrecioDesdeAsync(id);
 
             if (TempData["ReservaId"] is int reservaId)
             {
@@ -51,7 +54,8 @@ namespace GestionCabanas.Controllers
                 if (reservaConfirmada is not null)
                 {
                     ViewBag.ValorTotalReserva = await _disponibilidad.CalcularValorTotalAsync(
-                        id, reservaConfirmada.FechaDesde, reservaConfirmada.FechaHasta, cabana.PrecioPorNoche);
+                        id, reservaConfirmada.FechaDesde, reservaConfirmada.FechaHasta,
+                        new Huespedes(reservaConfirmada.CantidadAdultos, reservaConfirmada.CantidadMenores));
                 }
             }
 
@@ -87,7 +91,11 @@ namespace GestionCabanas.Controllers
 
             if (modelo.CantidadPersonas > cabana.Capacidad)
             {
-                ModelState.AddModelError(nameof(modelo.CantidadPersonas), $"Esta cabaña tiene capacidad para {cabana.Capacidad} personas");
+                ModelState.AddModelError(nameof(modelo.CantidadAdultos), $"Esta cabaña tiene capacidad para {cabana.Capacidad} personas (contando a los menores)");
+            }
+            else if (_disponibilidad.Politica.Resolver(modelo.CantidadAdultos, modelo.CantidadMenores) is null)
+            {
+                ModelState.AddModelError(nameof(modelo.CantidadAdultos), "Para un grupo de este tamaño hay que armar la reserva en más de una cabaña. Escribinos y lo coordinamos.");
             }
 
             if (!ModelState.IsValid)
@@ -95,6 +103,7 @@ namespace GestionCabanas.Controllers
                 modelo.NombreCabana = cabana.Nombre;
                 ViewBag.Cabana = cabana;
                 await CargarCalendarioAsync(modelo.CabanaId, modelo.FechaDesde.Year, modelo.FechaDesde.Month);
+                await CargarPrecioDesdeAsync(modelo.CabanaId);
                 return View("Details", modelo);
             }
 
@@ -106,6 +115,7 @@ namespace GestionCabanas.Controllers
                 FechaDesde = modelo.FechaDesde,
                 FechaHasta = modelo.FechaHasta,
                 CantidadPersonas = modelo.CantidadPersonas,
+                CantidadMenores = modelo.CantidadMenores,
                 Estado = EstadoReserva.Pendiente
             };
             _db.Reservas.Add(reserva);
@@ -119,7 +129,7 @@ namespace GestionCabanas.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> CalcularTotal(int id, DateTime? desde, DateTime? hasta)
+        public async Task<IActionResult> CalcularTotal(int id, DateTime? desde, DateTime? hasta, int adultos = 2, int menores = 0)
         {
             var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == id && c.Activa);
             if (cabana is null || desde is null || hasta is null || hasta <= desde)
@@ -128,22 +138,39 @@ namespace GestionCabanas.Controllers
             }
 
             var disponible = !await _disponibilidad.HaySuperposicionAsync(id, desde.Value, hasta.Value);
-            var detalle = await _disponibilidad.CalcularValorConDetalleAsync(id, desde.Value, hasta.Value, cabana.PrecioPorNoche);
+            var huespedes = new Huespedes(adultos, menores);
+            var detalle = await _disponibilidad.CalcularValorConDetalleAsync(id, desde.Value, hasta.Value, huespedes);
             var noches = (hasta.Value - desde.Value).Days;
+
+            string? aviso = null;
+            if (adultos < 1)
+            {
+                aviso = "Tiene que haber al menos un adulto.";
+            }
+            else if (huespedes.Total > cabana.Capacidad)
+            {
+                aviso = $"Esta cabaña tiene capacidad para {cabana.Capacidad} personas (contando a los menores).";
+            }
+            else if (_disponibilidad.Politica.Resolver(adultos, menores) is null)
+            {
+                aviso = "Para un grupo de este tamaño hay que armar la reserva en más de una cabaña. Escribinos y lo coordinamos.";
+            }
 
             return Json(new
             {
                 valido = true,
                 disponible,
-                total = detalle.Total,
+                total = aviso is null ? detalle.Total : null,
                 noches,
                 promoAplicada = detalle.PromoAplicada,
-                etiquetaPromo = detalle.EtiquetaPromo
+                etiquetaPromo = detalle.EtiquetaPromo,
+                etiquetaTarifa = aviso is null ? detalle.EtiquetaTarifa : null,
+                aviso
             });
         }
 
         [HttpGet]
-        public async Task<IActionResult> BuscarOpciones(DateTime? desde, DateTime? hasta, int personas = 1)
+        public async Task<IActionResult> BuscarOpciones(DateTime? desde, DateTime? hasta, int adultos = 2, int menores = 0)
         {
             if (desde is null || hasta is null || hasta <= desde)
             {
@@ -155,7 +182,17 @@ namespace GestionCabanas.Controllers
                 return Json(new { valido = false, mensaje = "La fecha de entrada no puede ser anterior a hoy." });
             }
 
-            var resultado = await _disponibilidad.BuscarOpcionesAsync(desde.Value.Date, hasta.Value.Date, personas);
+            if (adultos < 1 || menores < 0)
+            {
+                return Json(new { valido = false, mensaje = "Tiene que haber al menos un adulto." });
+            }
+
+            if (_disponibilidad.Politica.Resolver(adultos, menores) is null)
+            {
+                return Json(new { valido = false, mensaje = "Para un grupo de este tamaño hay que armar la reserva en más de una cabaña. Escribinos y lo coordinamos." });
+            }
+
+            var resultado = await _disponibilidad.BuscarOpcionesAsync(desde.Value.Date, hasta.Value.Date, new Huespedes(adultos, menores));
 
             return Json(new
             {
@@ -175,7 +212,8 @@ namespace GestionCabanas.Controllers
                         hasta = s.Hasta.ToString("yyyy-MM-dd"),
                         subtotal = s.Subtotal,
                         promoAplicada = s.PromoAplicada,
-                        etiquetaPromo = s.EtiquetaPromo
+                        etiquetaPromo = s.EtiquetaPromo,
+                        etiquetaTarifa = s.EtiquetaTarifa
                     })
                 })
             });
@@ -211,17 +249,22 @@ namespace GestionCabanas.Controllers
                     return Json(new { exito = false, mensaje = $"{cabana.Nombre} tiene capacidad para {cabana.Capacidad} personas." });
                 }
 
+                if (_disponibilidad.Politica.Resolver(modelo.CantidadAdultos, modelo.CantidadMenores) is null)
+                {
+                    return Json(new { exito = false, mensaje = "Para un grupo de este tamaño hay que armar la reserva en más de una cabaña. Escribinos y lo coordinamos." });
+                }
+
                 if (await _disponibilidad.HaySuperposicionAsync(segmento.CabanaId, segmento.FechaDesde, segmento.FechaHasta))
                 {
                     return Json(new { exito = false, mensaje = $"{cabana.Nombre} ya no está disponible para esas fechas. Volvé a buscar." });
                 }
             }
 
+            var huespedes = new Huespedes(modelo.CantidadAdultos, modelo.CantidadMenores);
             var reservasCreadas = new List<Reserva>();
             foreach (var segmento in modelo.Segmentos)
             {
-                var cabana = cabanas.First(c => c.Id == segmento.CabanaId);
-                var valor = await _disponibilidad.CalcularValorTotalAsync(segmento.CabanaId, segmento.FechaDesde, segmento.FechaHasta, cabana.PrecioPorNoche);
+                var valor = await _disponibilidad.CalcularValorTotalAsync(segmento.CabanaId, segmento.FechaDesde, segmento.FechaHasta, huespedes);
 
                 var reserva = new Reserva
                 {
@@ -231,6 +274,7 @@ namespace GestionCabanas.Controllers
                     FechaDesde = segmento.FechaDesde,
                     FechaHasta = segmento.FechaHasta,
                     CantidadPersonas = modelo.CantidadPersonas,
+                    CantidadMenores = modelo.CantidadMenores,
                     Estado = EstadoReserva.Pendiente,
                     Valor = valor
                 };
@@ -284,6 +328,12 @@ namespace GestionCabanas.Controllers
             ViewBag.PermitirMesAnterior = primerDia > new DateTime(hoy.Year, hoy.Month, 1);
 
             return View();
+        }
+
+        private async Task CargarPrecioDesdeAsync(int cabanaId)
+        {
+            var preciosDesde = await _disponibilidad.ObtenerPreciosDesdeAsync();
+            ViewBag.PrecioDesde = preciosDesde.TryGetValue(cabanaId, out var precio) ? precio : (decimal?)null;
         }
 
         private async Task CargarCalendarioAsync(int cabanaId, int? anio, int? mes)

@@ -1,4 +1,5 @@
 @model SolicitarReservaViewModel
+@inject Microsoft.Extensions.Options.IOptions<PoliticaPrecios> Politica
 @{
     var cabana = (Cabana)ViewBag.Cabana;
     var reservas = (List<Reserva>)ViewBag.Reservas;
@@ -150,9 +151,9 @@
                 </svg>
                 Hasta @cabana.Capacidad personas
             </span>
-            @if (cabana.PrecioPorNoche.HasValue)
+            @if (ViewBag.PrecioDesde is decimal precioDesde)
             {
-                <span class="rounded-full bg-river-50 px-3 py-1 font-semibold text-river-700">Desde $@cabana.PrecioPorNoche.Value.ToString("N0") / noche</span>
+                <span class="rounded-full bg-river-50 px-3 py-1 font-semibold text-river-700">Desde $@precioDesde.ToString("N0") / noche (2 personas)</span>
             }
         </div>
         <div class="mt-6 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:mt-8 sm:p-6">
@@ -265,12 +266,22 @@
                     <label asp-for="Telefono" class="mb-1 block text-sm font-medium text-ink-700"></label>
                     <input asp-for="Telefono" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
                 </div>
-                <div>
-                    <label asp-for="CantidadPersonas" class="mb-1 block text-sm font-medium text-ink-700"></label>
-                    <input asp-for="CantidadPersonas" type="number" min="1" max="@cabana.Capacidad" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                    <p class="mt-1 text-xs text-ink-400">Capacidad máxima: @cabana.Capacidad personas.</p>
-                    <span asp-validation-for="CantidadPersonas" class="mt-1 block text-xs font-medium text-rose-600"></span>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label asp-for="CantidadAdultos" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                        <input asp-for="CantidadAdultos" type="number" min="1" max="@cabana.Capacidad" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                    </div>
+                    <div>
+                        <label asp-for="CantidadMenores" class="mb-1 block text-sm font-medium text-ink-700"></label>
+                        <input asp-for="CantidadMenores" type="number" min="0" max="@(cabana.Capacidad - 1)" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                    </div>
                 </div>
+                <p class="-mt-2 text-xs text-ink-400">
+                    Capacidad máxima: @cabana.Capacidad personas (contando a los menores).
+                    Los primeros @Politica.Value.MenoresSinCargo menores no suman al precio; del tercero en adelante cuentan como adultos.
+                </p>
+                <span asp-validation-for="CantidadAdultos" class="block text-xs font-medium text-rose-600"></span>
+                <span asp-validation-for="CantidadMenores" class="block text-xs font-medium text-rose-600"></span>
 
                 <div id="resumen-total" class="hidden"></div>
 
@@ -314,6 +325,8 @@
         const __cabanaId = @cabana.Id;
         const __inputDesde = document.getElementById('FechaDesde');
         const __inputHasta = document.getElementById('FechaHasta');
+        const __inputAdultos = document.getElementById('CantidadAdultos');
+        const __inputMenores = document.getElementById('CantidadMenores');
         const __resumenTotal = document.getElementById('resumen-total');
         let __ultimaConsulta = 0;
 
@@ -415,7 +428,9 @@
 
             const consultaId = ++__ultimaConsulta;
             try {
-                const resp = await fetch(`/Cabanas/CalcularTotal?id=${__cabanaId}&desde=${desde}&hasta=${hasta}`);
+                const adultos = parseInt(__inputAdultos.value, 10) || 0;
+                const menores = parseInt(__inputMenores.value, 10) || 0;
+                const resp = await fetch(`/Cabanas/CalcularTotal?id=${__cabanaId}&desde=${desde}&hasta=${hasta}&adultos=${adultos}&menores=${menores}`);
                 const data = await resp.json();
                 if (consultaId !== __ultimaConsulta) return;
 
@@ -428,7 +443,11 @@
                 if (!data.disponible) {
                     __resumenTotal.className = 'rounded-2xl border-2 border-rose-200 bg-rose-50 px-5 py-4 text-center';
                     __resumenTotal.innerHTML = '<p class="text-sm font-semibold text-rose-700">Esas fechas ya no están disponibles para esta cabaña.</p>';
+                } else if (data.aviso) {
+                    __resumenTotal.className = 'rounded-2xl border-2 border-rose-200 bg-rose-50 px-5 py-4 text-center';
+                    __resumenTotal.innerHTML = '<p class="text-sm font-semibold text-rose-700">' + data.aviso + '</p>';
                 } else if (data.total !== null) {
+                    const notaTarifa = data.etiquetaTarifa ? '<p class="mt-0.5 text-[11px] text-ink-500">' + data.etiquetaTarifa + '</p>' : '';
                     const totalTexto = Number(data.total).toLocaleString('es-AR');
                     if (data.promoAplicada) {
                         __resumenTotal.className = 'rounded-2xl border-2 border-amber-300 bg-amber-50 px-5 py-4 text-center shadow-soft';
@@ -441,7 +460,7 @@
                         __resumenTotal.innerHTML =
                             '<p class="text-xs font-semibold uppercase tracking-wide text-river-600">Total estimado</p>' +
                             '<p class="mt-1 text-3xl font-bold text-river-800">$' + totalTexto + '</p>' +
-                            '<p class="text-xs font-medium text-river-600">' + pluralizar(data.noches, 'noche', 'noches') + '</p>';
+                            '<p class="text-xs font-medium text-river-600">' + pluralizar(data.noches, 'noche', 'noches') + '</p>' + notaTarifa;
                     }
                 } else {
                     __resumenTotal.className = 'rounded-2xl border-2 border-sand-200 bg-sand-100 px-5 py-4 text-center';
@@ -451,6 +470,10 @@
                 __resumenTotal.classList.add('hidden');
             }
         }
+
+        [__inputAdultos, __inputMenores].forEach(function (input) {
+            if (input) input.addEventListener('input', actualizarResumenTotal);
+        });
 
         if (__inputDesde && __inputHasta) {
             actualizarResumenTotal();

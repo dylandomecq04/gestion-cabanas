@@ -40,7 +40,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             }
             foreach (var t in tarifas.OrderBy(t => t.CabanaId).ThenBy(t => t.Fecha))
             {
-                sb.Append(t.CabanaId).Append('|').Append(t.Fecha.Ticks).Append('|').Append(t.Precio).Append(';');
+                sb.Append(t.CabanaId).Append('|').Append(t.Fecha.Ticks).Append('|').Append(t.Precio2).Append('|').Append(t.Precio4).Append('|').Append(t.Precio6).Append(';');
             }
             foreach (var p in promos.OrderBy(p => p.Id))
             {
@@ -209,6 +209,8 @@ namespace GestionCabanas.Areas.Admin.Controllers
             reserva.Telefono = modelo.Telefono;
             reserva.FechaDesde = modelo.FechaDesde;
             reserva.FechaHasta = modelo.FechaHasta;
+            reserva.CantidadPersonas = modelo.CantidadPersonas;
+            reserva.CantidadMenores = modelo.CantidadMenores;
             reserva.Estado = modelo.Estado;
             reserva.Pago = modelo.Pago;
             reserva.Valor = modelo.Valor;
@@ -281,7 +283,8 @@ namespace GestionCabanas.Areas.Admin.Controllers
             foreach (var solicitud in solicitudesEnConflicto)
             {
                 var alternativas = await _disponibilidad.ObtenerCabanasAlternativasAsync(
-                    solicitud.FechaDesde, solicitud.FechaHasta, solicitud.CabanaId, solicitud.CantidadPersonas);
+                    solicitud.FechaDesde, solicitud.FechaHasta, solicitud.CabanaId,
+                    new Huespedes(solicitud.CantidadAdultos, solicitud.CantidadMenores));
 
                 conflictos.Add(new ConflictoSolicitud
                 {
@@ -457,6 +460,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
             {
                 ModelState.AddModelError(nameof(Reserva.FechaHasta), "La fecha de salida debe ser posterior a la de entrada");
                 return;
+            }
+
+            if (modelo.CantidadMenores >= modelo.CantidadPersonas)
+            {
+                ModelState.AddModelError(nameof(Reserva.CantidadMenores), "Tiene que haber al menos un adulto: los menores ya están incluidos en la cantidad de personas.");
             }
 
             if (modelo.Estado == EstadoReserva.Confirmada &&

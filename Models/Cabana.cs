@@ -13,9 +13,6 @@ namespace GestionCabanas.Models
         [Range(1, 50, ErrorMessage = "La capacidad debe ser mayor a 0")]
         public int Capacidad { get; set; }
 
-        [Range(0, 999999999)]
-        public decimal? PrecioPorNoche { get; set; }
-
         public bool Activa { get; set; } = true;
 
         public List<FotoCabana> Fotos { get; set; } = new();

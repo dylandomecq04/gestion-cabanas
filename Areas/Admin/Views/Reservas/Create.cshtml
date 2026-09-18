@@ -37,10 +37,17 @@
             <span asp-validation-for="FechaHasta" class="mt-1 block text-xs font-medium text-rose-600"></span>
         </div>
     </div>
-    <div>
-        <label asp-for="CantidadPersonas" class="mb-1 block text-sm font-medium text-ink-700"></label>
-        <input asp-for="CantidadPersonas" class="w-full max-w-[10rem] rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-        <span asp-validation-for="CantidadPersonas" class="mt-1 block text-xs font-medium text-rose-600"></span>
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label asp-for="CantidadPersonas" class="mb-1 block text-sm font-medium text-ink-700"></label>
+            <input asp-for="CantidadPersonas" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <span asp-validation-for="CantidadPersonas" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+        <div>
+            <label asp-for="CantidadMenores" class="mb-1 block text-sm font-medium text-ink-700">Menores (incluidos en el total)</label>
+            <input asp-for="CantidadMenores" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <span asp-validation-for="CantidadMenores" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
     </div>
     <div class="grid grid-cols-2 gap-4">
         <div>

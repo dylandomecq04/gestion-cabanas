@@ -1,3 +1,4 @@
+@inject Microsoft.Extensions.Options.IOptions<PoliticaPrecios> Politica
 @{
     ViewData["Title"] = "Precios";
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
@@ -40,33 +41,44 @@
                 }
             </div>
         </div>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-4 sm:items-end">
-            <div>
-                <label class="mb-1 block text-sm font-medium text-ink-700">Lunes a viernes</label>
-                <input type="text" inputmode="numeric" placeholder="$"
-                       oninput="formatearMilesConReal(this, 'precio-semana-real')"
-                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                <input type="hidden" id="precio-semana-real" name="precioSemana" />
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-ink-700">Sábado</label>
-                <input type="text" inputmode="numeric" placeholder="$"
-                       oninput="formatearMilesConReal(this, 'precio-sabado-real')"
-                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                <input type="hidden" id="precio-sabado-real" name="precioSabado" />
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-ink-700">Domingo</label>
-                <input type="text" inputmode="numeric" placeholder="$"
-                       oninput="formatearMilesConReal(this, 'precio-domingo-real')"
-                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                <input type="hidden" id="precio-domingo-real" name="precioDomingo" />
-            </div>
-            <div>
-                <button type="submit" class="w-full rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 sm:w-auto">
-                    Aplicar
-                </button>
-            </div>
+        <p class="mb-3 text-sm text-ink-500">
+            Precio de la noche según la cantidad de personas que pagan. Con 3 o 5 adultos se cobra el tramo inferior más un recargo
+            y los primeros @Politica.Value.MenoresSinCargo menores no suman. Lo que dejes vacío no se modifica.
+        </p>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[420px] text-sm">
+                <thead>
+                    <tr class="text-left text-xs font-semibold uppercase tracking-wide text-ink-400">
+                        <th class="py-2 pr-3"></th>
+                        <th class="px-2 py-2">Para 2</th>
+                        <th class="px-2 py-2">Para 4</th>
+                        <th class="px-2 py-2">Para 6</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var (clave, etiqueta) in new[] { ("Semana", "Lunes a viernes"), ("Sabado", "Sábado"), ("Domingo", "Domingo") })
+                    {
+                        <tr>
+                            <td class="py-1.5 pr-3 font-medium text-ink-700">@etiqueta</td>
+                            @foreach (var tramo in new[] { 2, 4, 6 })
+                            {
+                                var idReal = $"precio-{clave}-{tramo}-real";
+                                <td class="px-2 py-1.5">
+                                    <input type="text" inputmode="numeric" placeholder="$"
+                                           oninput="formatearMilesConReal(this, '@idReal')"
+                                           class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                                    <input type="hidden" id="@idReal" name="precio@(clave)@(tramo)" />
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+                Aplicar
+            </button>
         </div>
     </form>
 </div>
