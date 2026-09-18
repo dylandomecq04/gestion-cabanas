@@ -73,29 +73,37 @@ jobs:
             RG=${{ env.RESOURCE_GROUP }}
 
             REVISION=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.latestRevisionName -o tsv)
-            FQDN=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.configuration.ingress.fqdn -o tsv)
             echo "Esperando la revisión $REVISION"
 
             for i in $(seq 1 30); do
-              # Con minReplicas 0 la app puede estar apagada: un request la despierta y fuerza el arranque.
-              curl -s -o /dev/null --max-time 20 "https://$FQDN/" || true
-
               LISTA=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.latestReadyRevisionName -o tsv)
-              ESTADO=$(az containerapp revision show --name "$APP" --resource-group "$RG" --revision "$REVISION" \
-                --query "[properties.provisioningState, properties.healthState, properties.runningState]" -o tsv | tr '\n\t' '  ')
+              ESTADO=$(az containerapp revision show --name "$APP" --resource-group "$RG" --revision "$REVISION"                 --query "properties.runningState" -o tsv)
               echo "[$i/30] última lista: $LISTA | $REVISION: $ESTADO"
 
               if [ "$LISTA" = "$REVISION" ]; then
                 echo "La revisión $REVISION está lista y recibe el tráfico."
                 exit 0
               fi
+              if [ "$ESTADO" = "ActivationFailed" ]; then
+                break
+              fi
               sleep 10
             done
 
-            echo "::error::La revisión $REVISION no quedó lista a tiempo. El tráfico sigue en $LISTA."
+            echo "::error::La revisión $REVISION no quedó lista. El tráfico sigue en $LISTA."
             az containerapp revision list --name "$APP" --resource-group "$RG" -o table || true
-            echo "----- Logs del sistema -----"
-            az containerapp logs show --name "$APP" --resource-group "$RG" --revision "$REVISION" --type system --tail 50 --format text || true
-            echo "----- Logs de la aplicación -----"
-            az containerapp logs show --name "$APP" --resource-group "$RG" --revision "$REVISION" --type console --tail 100 --format text || true
+
+            # Sin réplica no hay log stream: los logs del arranque fallido se leen de Log Analytics
+            # (tardan un rato en aparecer, por eso la espera).
+            ENV_ID=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.environmentId -o tsv)
+            WORKSPACE=$(az containerapp env show --ids "$ENV_ID" --query properties.appLogsConfiguration.logAnalyticsConfiguration.customerId -o tsv || true)
+            if [ -n "$WORKSPACE" ]; then
+              sleep 90
+              echo "----- Eventos del sistema para $REVISION -----"
+              az monitor log-analytics query --workspace "$WORKSPACE" -o tsv                 --analytics-query "ContainerAppSystemLogs_CL | where RevisionName_s == '$REVISION' | order by TimeGenerated asc | project TimeGenerated, Reason_s, Log_s | take 50" || true
+              echo "----- Logs de la aplicación para $REVISION -----"
+              az monitor log-analytics query --workspace "$WORKSPACE" -o tsv                 --analytics-query "ContainerAppConsoleLogs_CL | where RevisionName_s == '$REVISION' | order by TimeGenerated asc | project TimeGenerated, Log_s | take 100" || true
+            else
+              echo "El entorno no envía logs a Log Analytics; mirá los logs de la revisión en el portal de Azure."
+            fi
             exit 1
