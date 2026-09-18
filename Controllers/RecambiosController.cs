@@ -51,7 +51,7 @@ namespace GestionCabanas.Controllers
             return View();
         }
 
-        // Detalle de una cabaña: calendario del mes con quién entra y quién sale cada día.
+        // Detalle de una cabaña: calendario del mes con quién sale cada día.
         [HttpGet("{token}/cabana/{id:int}")]
         public async Task<IActionResult> Cabana(string token, int id, int? anio, int? mes)
         {
@@ -71,9 +71,10 @@ namespace GestionCabanas.Controllers
             var primerDia = new DateTime(anio ?? hoy.Year, mes ?? hoy.Month, 1);
             var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
 
+            var mesSiguiente = primerDia.AddMonths(1);
             var reservas = await _db.Reservas
                 .Where(r => r.CabanaId == id && r.Estado == EstadoReserva.Confirmada
-                    && r.FechaDesde <= ultimoDia && r.FechaHasta >= primerDia)
+                    && r.FechaHasta >= primerDia && r.FechaHasta < mesSiguiente)
                 .ToListAsync();
 
             ViewBag.Token = token;
@@ -83,7 +84,7 @@ namespace GestionCabanas.Controllers
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
-            ViewBag.MesSiguiente = primerDia.AddMonths(1);
+            ViewBag.MesSiguiente = mesSiguiente;
 
             return View();
         }
