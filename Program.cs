@@ -3,6 +3,7 @@ using Azure.Storage.Blobs;
 using GestionCabanas.Data;
 using GestionCabanas.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -69,7 +70,19 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
     });
 
+// Container Apps termina el HTTPS en su proxy y le habla a la app por HTTP. Sin esto Request.Scheme
+// es "http" y las URLs absolutas (p. ej. el redirect_uri de OneDrive) salen con http:// y Microsoft
+// las rechaza. El proxy no es loopback, así que hay que confiar en él explícitamente.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 app.UseRequestLocalization(new RequestLocalizationOptions
 {
