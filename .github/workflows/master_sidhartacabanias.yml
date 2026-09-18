@@ -79,7 +79,12 @@ jobs:
 
             restaurar_anterior() {
               if [ -n "$PREV" ]; then
-                az containerapp revision activate --name "$APP" --resource-group "$RG" --revision "$PREV" || true
+                # Justo después de apagar/actualizar, Azure a veces responde "Precondition Failed": se reintenta.
+                for t in 1 2 3; do
+                  az containerapp revision activate --name "$APP" --resource-group "$RG" --revision "$PREV" && break
+                  echo "No se pudo reactivar $PREV (intento $t/3); reintento en 20s"
+                  sleep 20
+                done
                 az containerapp ingress traffic set --name "$APP" --resource-group "$RG" --revision-weight "$PREV=100" || true
                 echo "Se reactivó la revisión anterior $PREV."
               else
@@ -97,17 +102,32 @@ jobs:
               az containerapp revision deactivate --name "$APP" --resource-group "$RG" --revision "$R"
             done
 
-            az containerapp update --name "$APP" --resource-group "$RG" --image "$IMAGE"
+            # Justo después de apagar revisiones Azure a veces responde "Precondition Failed" (y aun así
+            # puede haber creado la revisión), así que el update se reintenta.
+            ACTUALIZADO=""
+            for t in 1 2 3; do
+              if az containerapp update --name "$APP" --resource-group "$RG" --image "$IMAGE"; then
+                ACTUALIZADO=1
+                break
+              fi
+              echo "El update falló (intento $t/3); reintento en 20s"
+              sleep 20
+            done
+            [ -n "$ACTUALIZADO" ]
 
             REVISION=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.latestRevisionName -o tsv)
             echo "Esperando la revisión $REVISION"
+
+            # Si el update no crea una revisión nueva (misma imagen que una anterior), la última puede
+            # ser una de las que se apagaron arriba: hay que volver a activarla.
+            az containerapp revision activate --name "$APP" --resource-group "$RG" --revision "$REVISION" || true
 
             for i in $(seq 1 30); do
               LISTA=$(az containerapp show --name "$APP" --resource-group "$RG" --query properties.latestReadyRevisionName -o tsv)
               ESTADO=$(az containerapp revision show --name "$APP" --resource-group "$RG" --revision "$REVISION" --query properties.runningState -o tsv)
               echo "[$i/30] última lista: $LISTA | $REVISION: $ESTADO"
 
-              if [ "$LISTA" = "$REVISION" ]; then
+              if [ "$LISTA" = "$REVISION" ] && [ "$ESTADO" != "Stopped" ]; then
                 # La revisión nueva ya corre: de acá en adelante no se debe reactivar la anterior.
                 trap - ERR
                 az containerapp ingress traffic set --name "$APP" --resource-group "$RG" --revision-weight latest=100
