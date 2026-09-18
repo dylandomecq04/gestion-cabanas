@@ -240,7 +240,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             if (await _disponibilidad.HaySuperposicionAsync(reserva.CabanaId, reserva.FechaDesde, reserva.FechaHasta, reserva.Id))
             {
-                TempData["Mensaje"] = "No se puede confirmar: esas fechas se superponen con otra reserva ya confirmada.";
+                TempData["Alerta"] = "No se puede confirmar: esas fechas se superponen con otra reserva ya confirmada. La reserva NO fue confirmada.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -312,7 +312,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             if (await _disponibilidad.HaySuperposicionAsync(nuevaCabanaId, reserva.FechaDesde, reserva.FechaHasta))
             {
-                TempData["Mensaje"] = "No se puede mover: esas fechas no están disponibles en la otra cabaña.";
+                TempData["Alerta"] = "No se puede mover: esas fechas no están disponibles en la otra cabaña. La solicitud NO fue movida.";
                 return RedirectToAction(nameof(Index), new { estado = EstadoReserva.Pendiente });
             }
 

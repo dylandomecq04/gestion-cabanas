@@ -163,6 +163,25 @@
         </script>
     }
 
+    @if (TempData["Alerta"] != null)
+    {
+        <div id="modal-alerta" class="fixed inset-0 z-[80] flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-labelledby="modal-alerta-titulo">
+            <div class="w-full max-w-md rounded-2.5xl bg-white p-6 text-center shadow-lift ring-2 ring-rose-500">
+                <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-8 w-8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                </span>
+                <h3 id="modal-alerta-titulo" class="mt-4 font-display text-lg font-semibold text-rose-700">No se realizó la acción</h3>
+                <p class="mt-2 text-sm font-medium text-ink-700">@TempData["Alerta"]</p>
+                <button type="button" id="modal-alerta-boton" onclick="document.getElementById('modal-alerta').remove();" class="mt-6 rounded-full bg-rose-600 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-rose-700">Entendido</button>
+            </div>
+        </div>
+        <script>
+            document.getElementById('modal-alerta-boton').focus();
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
