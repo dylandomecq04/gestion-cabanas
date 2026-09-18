@@ -28,11 +28,11 @@ namespace GestionCabanas.Models
         public DateTime FechaHasta { get; set; } = DateTime.Today.AddDays(2);
 
         [Required(ErrorMessage = "Indicá la cantidad de adultos")]
-        [Range(1, 50, ErrorMessage = "Tiene que haber al menos un adulto")]
+        [Range(1, PoliticaPrecios.MaxPersonasPorReserva, ErrorMessage = "Tiene que haber al menos un adulto (y hasta 8 personas en total)")]
         [Display(Name = "Adultos")]
         public int CantidadAdultos { get; set; } = 2;
 
-        [Range(0, 50, ErrorMessage = "La cantidad de menores no es válida")]
+        [Range(0, PoliticaPrecios.MaxPersonasPorReserva - 1, ErrorMessage = "La cantidad de menores no es válida")]
         [Display(Name = "Menores")]
         public int CantidadMenores { get; set; }
 

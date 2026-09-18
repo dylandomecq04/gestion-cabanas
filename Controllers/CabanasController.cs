@@ -12,6 +12,12 @@ namespace GestionCabanas.Controllers
         private readonly DisponibilidadService _disponibilidad;
         private readonly INotificacionEmailService _email;
 
+        private static readonly string MensajeMaximoPersonas =
+            $"Podemos recibir hasta {PoliticaPrecios.MaxPersonasPorReserva} personas por reserva (contando a los menores).";
+
+        private const string MensajeGrupoGrande =
+            "Para un grupo más grande, usá «Reservar» en el menú: te ofrecemos una cabaña más grande o repartirse en dos cabañas.";
+
         public CabanasController(ApplicationDbContext db, DisponibilidadService disponibilidad, INotificacionEmailService email)
         {
             _db = db;
@@ -89,13 +95,17 @@ namespace GestionCabanas.Controllers
                 ModelState.AddModelError(string.Empty, "Esas fechas ya no están disponibles para esta cabaña. Elegí otro rango.");
             }
 
-            if (modelo.CantidadPersonas > cabana.Capacidad)
+            if (modelo.CantidadPersonas > PoliticaPrecios.MaxPersonasPorReserva)
             {
-                ModelState.AddModelError(nameof(modelo.CantidadAdultos), $"Esta cabaña tiene capacidad para {cabana.Capacidad} personas (contando a los menores)");
+                ModelState.AddModelError(nameof(modelo.CantidadAdultos), MensajeMaximoPersonas);
+            }
+            else if (modelo.CantidadPersonas > cabana.Capacidad)
+            {
+                ModelState.AddModelError(nameof(modelo.CantidadAdultos), $"Esta cabaña tiene capacidad para {cabana.Capacidad} personas (contando a los menores). {MensajeGrupoGrande}");
             }
             else if (_disponibilidad.Politica.Resolver(modelo.CantidadAdultos, modelo.CantidadMenores) is null)
             {
-                ModelState.AddModelError(nameof(modelo.CantidadAdultos), "Para un grupo de este tamaño hay que armar la reserva en más de una cabaña. Escribinos y lo coordinamos.");
+                ModelState.AddModelError(nameof(modelo.CantidadAdultos), "Tiene que haber al menos un adulto.");
             }
 
             if (!ModelState.IsValid)
@@ -147,13 +157,17 @@ namespace GestionCabanas.Controllers
             {
                 aviso = "Tiene que haber al menos un adulto.";
             }
+            else if (huespedes.Total > PoliticaPrecios.MaxPersonasPorReserva)
+            {
+                aviso = MensajeMaximoPersonas;
+            }
             else if (huespedes.Total > cabana.Capacidad)
             {
-                aviso = $"Esta cabaña tiene capacidad para {cabana.Capacidad} personas (contando a los menores).";
+                aviso = $"Esta cabaña tiene capacidad para {cabana.Capacidad} personas (contando a los menores). {MensajeGrupoGrande}";
             }
             else if (_disponibilidad.Politica.Resolver(adultos, menores) is null)
             {
-                aviso = "Para un grupo de este tamaño hay que armar la reserva en más de una cabaña. Escribinos y lo coordinamos.";
+                aviso = "Tiene que haber al menos un adulto.";
             }
 
             return Json(new
@@ -187,9 +201,9 @@ namespace GestionCabanas.Controllers
                 return Json(new { valido = false, mensaje = "Tiene que haber al menos un adulto." });
             }
 
-            if (_disponibilidad.Politica.Resolver(adultos, menores) is null)
+            if (adultos + menores > PoliticaPrecios.MaxPersonasPorReserva)
             {
-                return Json(new { valido = false, mensaje = "Para un grupo de este tamaño hay que armar la reserva en más de una cabaña. Escribinos y lo coordinamos." });
+                return Json(new { valido = false, mensaje = MensajeMaximoPersonas });
             }
 
             var resultado = await _disponibilidad.BuscarOpcionesAsync(desde.Value.Date, hasta.Value.Date, new Huespedes(adultos, menores));
@@ -203,11 +217,15 @@ namespace GestionCabanas.Controllers
                 opciones = resultado.Opciones.Select(o => new
                 {
                     total = o.Total,
+                    repartida = o.Repartida,
                     promoAplicada = o.Segmentos.Any(s => s.PromoAplicada),
                     segmentos = o.Segmentos.Select(s => new
                     {
                         cabanaId = s.CabanaId,
                         cabanaNombre = s.CabanaNombre,
+                        adultos = s.Adultos,
+                        menores = s.Menores,
+                        personas = s.Personas,
                         desde = s.Desde.ToString("yyyy-MM-dd"),
                         hasta = s.Hasta.ToString("yyyy-MM-dd"),
                         subtotal = s.Subtotal,
@@ -228,12 +246,49 @@ namespace GestionCabanas.Controllers
                 return Json(new { exito = false, mensaje = "Faltan datos para completar la solicitud." });
             }
 
+            var huespedes = new Huespedes(modelo.CantidadAdultos, modelo.CantidadMenores);
+            if (huespedes.Total > PoliticaPrecios.MaxPersonasPorReserva)
+            {
+                return Json(new { exito = false, mensaje = MensajeMaximoPersonas });
+            }
+
             var cabanaIds = modelo.Segmentos.Select(s => s.CabanaId).Distinct().ToList();
             var cabanas = await _db.Cabanas.Where(c => cabanaIds.Contains(c.Id) && c.Activa).ToListAsync();
 
             if (cabanas.Count != cabanaIds.Count)
             {
                 return Json(new { exito = false, mensaje = "Una de las cabañas de esta opción ya no está disponible. Volvé a buscar." });
+            }
+
+            // Segmentos que coinciden en fechas = el grupo se reparte en dos cabañas a la vez. El reparto
+            // se recalcula acá, igual que en la búsqueda, en lugar de confiar en lo que mande el navegador.
+            var repartida = modelo.Segmentos.Count > 1 && modelo.Segmentos.Any(a => modelo.Segmentos.Any(b =>
+                !ReferenceEquals(a, b) && a.FechaDesde < b.FechaHasta && b.FechaDesde < a.FechaHasta));
+
+            var grupoPorCabana = new Dictionary<int, Huespedes>();
+            if (repartida)
+            {
+                var primero = modelo.Segmentos[0];
+                var mismasFechas = modelo.Segmentos.Count == 2 && cabanas.Count == 2
+                    && primero.FechaDesde == modelo.Segmentos[1].FechaDesde && primero.FechaHasta == modelo.Segmentos[1].FechaHasta;
+                var reparto = mismasFechas && huespedes.Total >= PoliticaPrecios.DosCabanasDesdePersonas
+                    ? DisponibilidadService.RepartirEnCabanas(cabanas[0], cabanas[1], huespedes)
+                    : null;
+
+                if (reparto is null)
+                {
+                    return Json(new { exito = false, mensaje = "No podemos repartir al grupo en esas cabañas. Volvé a buscar." });
+                }
+
+                grupoPorCabana[reparto.Primera.Id] = reparto.HuespedesPrimera;
+                grupoPorCabana[reparto.Segunda.Id] = reparto.HuespedesSegunda;
+            }
+            else
+            {
+                foreach (var cabana in cabanas)
+                {
+                    grupoPorCabana[cabana.Id] = huespedes;
+                }
             }
 
             foreach (var segmento in modelo.Segmentos)
@@ -244,14 +299,15 @@ namespace GestionCabanas.Controllers
                 }
 
                 var cabana = cabanas.First(c => c.Id == segmento.CabanaId);
-                if (modelo.CantidadPersonas > cabana.Capacidad)
+                var grupo = grupoPorCabana[cabana.Id];
+                if (grupo.Total > cabana.Capacidad)
                 {
                     return Json(new { exito = false, mensaje = $"{cabana.Nombre} tiene capacidad para {cabana.Capacidad} personas." });
                 }
 
-                if (_disponibilidad.Politica.Resolver(modelo.CantidadAdultos, modelo.CantidadMenores) is null)
+                if (_disponibilidad.Politica.Resolver(grupo.Adultos, grupo.Menores) is null)
                 {
-                    return Json(new { exito = false, mensaje = "Para un grupo de este tamaño hay que armar la reserva en más de una cabaña. Escribinos y lo coordinamos." });
+                    return Json(new { exito = false, mensaje = "Tiene que haber al menos un adulto." });
                 }
 
                 if (await _disponibilidad.HaySuperposicionAsync(segmento.CabanaId, segmento.FechaDesde, segmento.FechaHasta))
@@ -260,11 +316,11 @@ namespace GestionCabanas.Controllers
                 }
             }
 
-            var huespedes = new Huespedes(modelo.CantidadAdultos, modelo.CantidadMenores);
             var reservasCreadas = new List<Reserva>();
             foreach (var segmento in modelo.Segmentos)
             {
-                var valor = await _disponibilidad.CalcularValorTotalAsync(segmento.CabanaId, segmento.FechaDesde, segmento.FechaHasta, huespedes);
+                var grupo = grupoPorCabana[segmento.CabanaId];
+                var valor = await _disponibilidad.CalcularValorTotalAsync(segmento.CabanaId, segmento.FechaDesde, segmento.FechaHasta, grupo);
 
                 var reserva = new Reserva
                 {
@@ -273,8 +329,8 @@ namespace GestionCabanas.Controllers
                     Telefono = modelo.Telefono,
                     FechaDesde = segmento.FechaDesde,
                     FechaHasta = segmento.FechaHasta,
-                    CantidadPersonas = modelo.CantidadPersonas,
-                    CantidadMenores = modelo.CantidadMenores,
+                    CantidadPersonas = grupo.Total,
+                    CantidadMenores = grupo.Menores,
                     Estado = EstadoReserva.Pendiente,
                     Valor = valor
                 };

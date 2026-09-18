@@ -115,14 +115,17 @@
             </div>
             <div>
                 <label for="general-adultos" class="mb-1 block text-sm font-medium text-ink-700">Adultos</label>
-                <input id="general-adultos" type="number" min="1" max="50" value="2" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                <input id="general-adultos" type="number" min="1" max="@PoliticaPrecios.MaxPersonasPorReserva" value="2" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
             </div>
             <div>
                 <label for="general-menores" class="mb-1 block text-sm font-medium text-ink-700">Menores</label>
-                <input id="general-menores" type="number" min="0" max="50" value="0" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                <input id="general-menores" type="number" min="0" max="@(PoliticaPrecios.MaxPersonasPorReserva - 1)" value="0" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
             </div>
         </div>
-        <p class="mt-2 text-xs text-ink-400">Los primeros @Politica.Value.MenoresSinCargo menores no suman al precio; del tercero en adelante cuentan como adultos.</p>
+        <p class="mt-2 text-xs text-ink-400">
+            Máximo @PoliticaPrecios.MaxPersonasPorReserva personas por reserva (contando a los menores). Si son más de 4 te ofrecemos Maia (hasta 6) o repartirse en dos cabañas; si son más de 6, siempre en dos cabañas.
+            Los primeros @Politica.Value.MenoresSinCargo menores no suman al precio; del tercero en adelante cuentan como adultos.
+        </p>
 
         <p id="general-error" class="mt-3 hidden text-sm font-medium text-rose-600"></p>
 
@@ -252,6 +255,7 @@
             document.getElementById('modal-opciones').classList.remove('flex');
         }
 
+        const __maxPersonas = @PoliticaPrecios.MaxPersonasPorReserva;
         let __ultimaOpcionesBusqueda = [];
         let __datosHuesped = {};
 
@@ -277,6 +281,10 @@
             }
             if (adultos < 1) {
                 mostrarErrorGeneral('Tiene que haber al menos un adulto.');
+                return;
+            }
+            if (adultos + menores > __maxPersonas) {
+                mostrarErrorGeneral(`Podemos recibir hasta ${__maxPersonas} personas por reserva (contando a los menores).`);
                 return;
             }
 
@@ -319,8 +327,26 @@
                 return;
             }
 
-            const combinada = data.opciones[0].segmentos.length > 1;
-            let html = `<h3 class="font-display text-xl font-semibold text-ink-900">${combinada ? 'Estas fechas requieren combinar cabañas' : 'Opciones disponibles'}</h3>`;
+            const personas = __datosHuesped.adultos + __datosHuesped.menores;
+            const todasRepartidas = data.opciones.every(o => o.repartida);
+            const algunaRepartida = data.opciones.some(o => o.repartida);
+            const soloSucesivas = data.opciones.every(o => !o.repartida && o.segmentos.length > 1);
+
+            let titulo = 'Opciones disponibles';
+            let bajada = '';
+            if (todasRepartidas) {
+                titulo = 'Tu grupo se aloja en dos cabañas';
+                bajada = `Para ${personas} personas hacen falta dos cabañas. Las reservamos juntas, en las mismas fechas.`;
+            } else if (algunaRepartida) {
+                bajada = `Para ${personas} personas podés reservar una sola cabaña o repartirte en dos, en las mismas fechas.`;
+            } else if (soloSucesivas) {
+                titulo = 'Estas fechas requieren combinar cabañas';
+            }
+
+            let html = `<h3 class="font-display text-xl font-semibold text-ink-900">${titulo}</h3>`;
+            if (bajada) {
+                html += `<p class="mt-2 text-sm text-ink-600">${bajada}</p>`;
+            }
             html += '<div class="mt-4 space-y-3">';
 
             data.opciones.forEach((opcion, idx) => {
@@ -330,26 +356,35 @@
                     const promoHtml = s.promoAplicada
                         ? `<div class="mt-0.5 text-xs font-semibold text-amber-700">🎉 ${s.etiquetaPromo || 'Promoción'} aplicada</div>`
                         : (s.etiquetaTarifa ? `<div class="mt-0.5 text-xs text-ink-500">${s.etiquetaTarifa}</div>` : '');
+                    const detallePersonas = `${s.personas} ${s.personas === 1 ? 'persona' : 'personas'}` +
+                        (s.menores > 0 ? ` (${s.adultos} ${s.adultos === 1 ? 'adulto' : 'adultos'} y ${s.menores} ${s.menores === 1 ? 'menor' : 'menores'})` : '');
+                    const titulo = opcion.repartida
+                        ? `<strong class="text-ink-900">${s.cabanaNombre}</strong> · ${detallePersonas}`
+                        : `${formatearFechaCorta(s.desde)} – ${formatearFechaCorta(s.hasta)}: <strong class="text-ink-900">${s.cabanaNombre}</strong>`;
                     return `<div class="flex justify-between gap-3 text-sm text-ink-600">
                         <div>
-                            <span>${formatearFechaCorta(s.desde)} – ${formatearFechaCorta(s.hasta)}: <strong class="text-ink-900">${s.cabanaNombre}</strong></span>
+                            <span>${titulo}</span>
                             ${promoHtml}
                         </div>
                         <span>${subtotalTexto}</span>
                     </div>`;
                 }).join('');
+                const fechasRepartida = opcion.repartida
+                    ? `<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">${formatearFechaCorta(opcion.segmentos[0].desde)} – ${formatearFechaCorta(opcion.segmentos[0].hasta)} · 2 cabañas</div>`
+                    : '';
 
                 const claseCard = opcion.promoAplicada ? 'rounded-xl border-2 border-amber-300 bg-amber-50 p-4' : 'rounded-xl border border-ink-100 p-4';
 
                 html += `<div class="${claseCard}">
-                    ${segmentosHtml}
+                    ${fechasRepartida}
+                    <div class="space-y-1.5">${segmentosHtml}</div>
                     <div class="mt-2 flex items-center justify-between border-t border-ink-100 pt-2">
                         <span class="text-sm font-semibold text-ink-900">Total</span>
                         <span class="text-lg font-bold text-river-700">${totalTexto}</span>
                     </div>
                     <button type="button" onclick="reservarOpcionGeneral(${idx})"
                             class="mt-3 w-full rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
-                        ${opcion.segmentos.length > 1 ? 'Reservar esta combinación' : 'Reservar esta opción'}
+                        ${opcion.repartida ? 'Reservar en estas dos cabañas' : (opcion.segmentos.length > 1 ? 'Reservar esta combinación' : 'Reservar esta opción')}
                     </button>
                 </div>`;
             });

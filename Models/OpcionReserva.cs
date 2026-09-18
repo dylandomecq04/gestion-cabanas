@@ -10,13 +10,27 @@ namespace GestionCabanas.Models
         public bool PromoAplicada { get; set; }
         public string? EtiquetaPromo { get; set; }
         public string? EtiquetaTarifa { get; set; }
+
+        /// <summary>Personas que se alojan en esta cabaña (cuando el grupo se reparte en dos, sólo una parte).</summary>
+        public int Adultos { get; set; }
+        public int Menores { get; set; }
+        public int Personas => Adultos + Menores;
     }
 
     public class OpcionReserva
     {
         public List<SegmentoOpcion> Segmentos { get; set; } = new();
         public decimal? Total { get; set; }
+
+        /// <summary>
+        /// El grupo se reparte en dos cabañas que se ocupan a la vez, en las mismas fechas. Si es false,
+        /// los segmentos son una sola cabaña o cabañas que se van sucediendo durante la estadía.
+        /// </summary>
+        public bool Repartida { get; set; }
     }
+
+    /// <summary>Cómo se reparte un grupo entre dos cabañas que se ocupan a la vez.</summary>
+    public record RepartoEnCabanas(Cabana Primera, Cabana Segunda, Huespedes HuespedesPrimera, Huespedes HuespedesSegunda);
 
     public class ResultadoBusquedaDisponibilidad
     {

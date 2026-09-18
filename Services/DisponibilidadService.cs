@@ -298,9 +298,22 @@ namespace GestionCabanas.Services
         }
 
         /// <summary>
-        /// Busca, para un rango de fechas y una cantidad de personas, las opciones de reserva
-        /// posibles: cabañas individuales que cubran todo el rango, o -si ninguna lo cubre sola-
-        /// todas las combinaciones válidas que usan la menor cantidad de cabañas posible.
+        /// Reparte al grupo entre dos cabañas que se ocupan a la vez (la de mayor capacidad primero).
+        /// Devuelve null si no entran o si no hay al menos un adulto en cada una.
+        /// </summary>
+        public static RepartoEnCabanas? RepartirEnCabanas(Cabana una, Cabana otra, Huespedes huespedes)
+        {
+            var (primera, segunda) = una.Capacidad >= otra.Capacidad ? (una, otra) : (otra, una);
+            var reparto = huespedes.RepartirEnDos(primera.Capacidad, segunda.Capacidad);
+            return reparto is null ? null : new RepartoEnCabanas(primera, segunda, reparto.Value.Primera, reparto.Value.Segunda);
+        }
+
+        /// <summary>
+        /// Busca, para un rango de fechas y una cantidad de personas (hasta el máximo por reserva),
+        /// las opciones de reserva posibles: cabañas individuales que cubran todo el rango, o -si
+        /// ninguna lo cubre sola- todas las combinaciones válidas que usan la menor cantidad de
+        /// cabañas posible. Los grupos de 5 o más personas además pueden repartirse en dos cabañas
+        /// libres durante toda la estadía; si son más de lo que entra en una cabaña, es la única forma.
         /// </summary>
         public async Task<ResultadoBusquedaDisponibilidad> BuscarOpcionesAsync(DateTime desde, DateTime hasta, Huespedes huespedes)
         {
@@ -326,18 +339,40 @@ namespace GestionCabanas.Services
             }
 
             var personas = huespedes.Total;
-            var cabanas = await _db.Cabanas
-                .Where(c => c.Activa && c.Capacidad >= personas)
+            if (personas > PoliticaPrecios.MaxPersonasPorReserva)
+            {
+                resultado.Mensaje = $"Podemos recibir hasta {PoliticaPrecios.MaxPersonasPorReserva} personas por reserva (contando a los menores).";
+                return resultado;
+            }
+
+            var activas = await _db.Cabanas
+                .Where(c => c.Activa)
                 .OrderBy(c => c.Nombre)
                 .ToListAsync();
+            var cabanas = activas.Where(c => c.Capacidad >= personas).ToList();
+
+            var repartos = new List<RepartoEnCabanas>();
+            if (personas >= PoliticaPrecios.DosCabanasDesdePersonas)
+            {
+                for (var i = 0; i < activas.Count; i++)
+                {
+                    for (var j = i + 1; j < activas.Count; j++)
+                    {
+                        var reparto = RepartirEnCabanas(activas[i], activas[j], huespedes);
+                        if (reparto is not null)
+                        {
+                            repartos.Add(reparto);
+                        }
+                    }
+                }
+            }
 
             var fechas = Enumerable.Range(0, noches).Select(i => desde.AddDays(i)).ToList();
 
-            if (cabanas.Count == 0)
+            if (cabanas.Count == 0 && repartos.Count == 0)
             {
                 resultado.CobreTotal = false;
-                resultado.DiasSinCobertura = fechas;
-                resultado.Mensaje = "Ninguna cabaña tiene capacidad para esa cantidad de personas. Para grupos así conviene repartirse en dos cabañas: escribinos y lo coordinamos.";
+                resultado.Mensaje = "No podemos armar una reserva para ese grupo (en cada cabaña tiene que haber al menos un adulto). Escribinos y lo coordinamos.";
                 return resultado;
             }
 
@@ -357,7 +392,9 @@ namespace GestionCabanas.Services
             var sinCobertura = new List<DateTime>();
             for (var n = 0; n < noches; n++)
             {
-                if (!Enumerable.Range(0, cabanas.Count).Any(c => libre[c, n]))
+                var hayCabanaLibre = Enumerable.Range(0, cabanas.Count).Any(c => libre[c, n]);
+                var hayRepartoLibre = repartos.Any(r => !EstaOcupada(r.Primera.Id, fechas[n]) && !EstaOcupada(r.Segunda.Id, fechas[n]));
+                if (!hayCabanaLibre && !hayRepartoLibre)
                 {
                     sinCobertura.Add(fechas[n]);
                 }
@@ -458,7 +495,9 @@ namespace GestionCabanas.Services
                         Subtotal = detalleSegmento.Total,
                         PromoAplicada = detalleSegmento.PromoAplicada,
                         EtiquetaPromo = detalleSegmento.EtiquetaPromo,
-                        EtiquetaTarifa = detalleSegmento.EtiquetaTarifa
+                        EtiquetaTarifa = detalleSegmento.EtiquetaTarifa,
+                        Adultos = huespedes.Adultos,
+                        Menores = huespedes.Menores
                     });
 
                     total = total.HasValue && detalleSegmento.Total.HasValue ? total + detalleSegmento.Total : null;
@@ -466,6 +505,49 @@ namespace GestionCabanas.Services
 
                 opcion.Total = total;
                 resultado.Opciones.Add(opcion);
+            }
+
+            foreach (var reparto in repartos)
+            {
+                var libreTodaLaEstadia = fechas.All(f => !EstaOcupada(reparto.Primera.Id, f) && !EstaOcupada(reparto.Segunda.Id, f));
+                if (!libreTodaLaEstadia)
+                {
+                    continue;
+                }
+
+                var opcion = new OpcionReserva { Repartida = true };
+                decimal? total = 0;
+
+                foreach (var (cabana, grupo) in new[] { (reparto.Primera, reparto.HuespedesPrimera), (reparto.Segunda, reparto.HuespedesSegunda) })
+                {
+                    var detalle = await CalcularValorConDetalleAsync(cabana.Id, desde, hasta, grupo);
+
+                    opcion.Segmentos.Add(new SegmentoOpcion
+                    {
+                        CabanaId = cabana.Id,
+                        CabanaNombre = cabana.Nombre,
+                        Desde = desde,
+                        Hasta = hasta,
+                        Subtotal = detalle.Total,
+                        PromoAplicada = detalle.PromoAplicada,
+                        EtiquetaPromo = detalle.EtiquetaPromo,
+                        EtiquetaTarifa = detalle.EtiquetaTarifa,
+                        Adultos = grupo.Adultos,
+                        Menores = grupo.Menores
+                    });
+
+                    total = total.HasValue && detalle.Total.HasValue ? total + detalle.Total : null;
+                }
+
+                opcion.Total = total;
+                resultado.Opciones.Add(opcion);
+            }
+
+            if (resultado.Opciones.Count == 0 && personas >= PoliticaPrecios.DosCabanasDesdePersonas)
+            {
+                resultado.CobreTotal = false;
+                resultado.Mensaje = "No encontramos una cabaña, ni dos cabañas a la vez, libres durante todas esas fechas para el grupo. Probá con otras fechas o escribinos y lo coordinamos.";
+                return resultado;
             }
 
             resultado.Opciones = resultado.Opciones

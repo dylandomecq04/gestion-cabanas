@@ -8,6 +8,15 @@ namespace GestionCabanas.Models
     {
         public static readonly int[] Tramos = { 2, 4, 6 };
 
+        /// <summary>Máximo de personas (contando a los menores) en una misma reserva, sea en una o en dos cabañas.</summary>
+        public const int MaxPersonasPorReserva = 8;
+
+        /// <summary>
+        /// Desde esta cantidad de personas, además de una cabaña sola (si alguna tiene lugar), se ofrece
+        /// repartir al grupo en dos cabañas a la vez. Las cabañas comunes son para 4 y Maia para 6.
+        /// </summary>
+        public const int DosCabanasDesdePersonas = 5;
+
         /// <summary>Menores que no suman para el precio. Del tercero en adelante cuentan como adultos.</summary>
         public int MenoresSinCargo { get; set; } = 2;
 
@@ -53,5 +62,51 @@ namespace GestionCabanas.Models
     public record Huespedes(int Adultos, int Menores)
     {
         public int Total => Adultos + Menores;
+
+        /// <summary>
+        /// Reparte al grupo entre dos cabañas que se ocupan a la vez: lo más parejo posible, con al menos
+        /// un adulto en cada una y sin pasar la capacidad de ninguna. El grupo más grande queda en la
+        /// primera cabaña (que tiene que ser la de mayor capacidad). Devuelve null si no se puede.
+        /// </summary>
+        public (Huespedes Primera, Huespedes Segunda)? RepartirEnDos(int capacidadPrimera, int capacidadSegunda)
+        {
+            if (Adultos < 2 || Menores < 0 || Total > capacidadPrimera + capacidadSegunda)
+            {
+                return null;
+            }
+
+            var minPrimera = Math.Max(1, Total - capacidadSegunda);
+            var maxPrimera = Math.Min(capacidadPrimera, Total - 1);
+
+            (Huespedes, Huespedes)? mejor = null;
+            var mejorDiferencia = int.MaxValue;
+
+            for (var primera = maxPrimera; primera >= minPrimera; primera--)
+            {
+                var diferencia = Math.Abs(2 * primera - Total);
+                if (diferencia >= mejorDiferencia)
+                {
+                    continue;
+                }
+
+                // Adultos de la primera cabaña: los que le corresponden por proporción, dejando
+                // al menos uno en cada cabaña y sin que sobren menores de un lado.
+                var adultosMin = Math.Max(1, primera - Menores);
+                var adultosMax = Math.Min(Adultos - 1, primera);
+                if (adultosMin > adultosMax)
+                {
+                    continue;
+                }
+
+                var adultosPrimera = Math.Clamp((int)Math.Round((double)Adultos * primera / Total, MidpointRounding.AwayFromZero), adultosMin, adultosMax);
+                var menoresPrimera = primera - adultosPrimera;
+
+                mejor = (new Huespedes(adultosPrimera, menoresPrimera),
+                         new Huespedes(Adultos - adultosPrimera, Menores - menoresPrimera));
+                mejorDiferencia = diferencia;
+            }
+
+            return mejor;
+        }
     }
 }
