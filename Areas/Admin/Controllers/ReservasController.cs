@@ -152,7 +152,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 : RedirectToAction(nameof(Index));
         }
 
-        public async Task<IActionResult> Create(int? cabanaId, DateTime? fecha, DateTime? fechaHasta, string? vista, int? anio, int? mes)
+        public async Task<IActionResult> Create(int? cabanaId, DateTime? fecha, DateTime? fechaHasta, string? vista, int? anio, int? mes, EstadoReserva? estado)
         {
             GuardarOrigen(vista, anio, mes);
             ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
@@ -162,7 +162,8 @@ namespace GestionCabanas.Areas.Admin.Controllers
             {
                 CabanaId = cabanaId ?? 0,
                 FechaDesde = fechaDesde,
-                FechaHasta = fechaHasta ?? fechaDesde.AddDays(1)
+                FechaHasta = fechaHasta ?? fechaDesde.AddDays(1),
+                Estado = estado ?? EstadoReserva.Confirmada
             });
         }
 
@@ -186,10 +187,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
             string? avisoExcel = modelo.Estado == EstadoReserva.Confirmada
                 ? await _excelEscritura.EscribirReservaAsync(modelo)
                 : null;
+            var creada = modelo.Estado == EstadoReserva.Pendiente ? "Solicitud creada" : "Reserva creada";
             TempData["Mensaje"] = avisoExcel is null
-                ? "Reserva creada correctamente."
-                : $"Reserva creada correctamente. {avisoExcel}";
-            return VolverAlOrigen(vista, anio, mes);
+                ? $"{creada} correctamente."
+                : $"{creada} correctamente. {avisoExcel}";
+            return VolverAlOrigen(vista, anio, mes, modelo.Estado);
         }
 
         public async Task<IActionResult> Edit(int id, string? vista, int? anio, int? mes)
