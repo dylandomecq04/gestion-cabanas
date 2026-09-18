@@ -1,4 +1,5 @@
 using GestionCabanas.Models;
+using GestionCabanas.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestionCabanas.Data
@@ -20,6 +21,31 @@ namespace GestionCabanas.Data
         public DbSet<FotoHero> FotosHero => Set<FotoHero>();
         public DbSet<PromoEstadia> PromosEstadia => Set<PromoEstadia>();
         public DbSet<OneDriveConexion> OneDriveConexiones => Set<OneDriveConexion>();
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            NormalizarNombresDeHuespedes();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            NormalizarNombresDeHuespedes();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        // Todo nombre de huésped se guarda con la primera letra de cada palabra en mayúscula, venga
+        // de la solicitud pública, del panel o del Excel, así se ve igual en cualquier pantalla.
+        private void NormalizarNombresDeHuespedes()
+        {
+            foreach (var entrada in ChangeTracker.Entries<Reserva>())
+            {
+                if (entrada.State is EntityState.Added or EntityState.Modified)
+                {
+                    entrada.Entity.NombreHuesped = NombresPropios.Formatear(entrada.Entity.NombreHuesped);
+                }
+            }
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

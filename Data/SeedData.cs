@@ -1,4 +1,5 @@
 using GestionCabanas.Models;
+using GestionCabanas.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -82,7 +83,41 @@ namespace GestionCabanas.Data
                 }
             }
 
+            NormalizarNombresExistentes(db, logger);
+
             db.SaveChanges();
+        }
+
+        // Las reservas cargadas antes de que los nombres se normalizaran al guardar quedan con el
+        // formato que tenían (todo en minúscula, todo en mayúscula, etc.). Idempotente: una vez
+        // corregidas no toca nada.
+        private static void NormalizarNombresExistentes(ApplicationDbContext db, ILogger logger)
+        {
+            var corregidas = 0;
+            foreach (var reserva in db.Reservas.ToList())
+            {
+                var nombre = NombresPropios.Formatear(reserva.NombreHuesped);
+                if (reserva.NombreHuesped != nombre)
+                {
+                    reserva.NombreHuesped = nombre;
+                    corregidas++;
+                }
+            }
+
+            if (corregidas == 0)
+            {
+                return;
+            }
+
+            logger.LogInformation("Se normalizaron los nombres de {Cantidad} reservas.", corregidas);
+
+            // Sin esto la sincronización automática no vuelve a leer el Excel hasta que alguien lo
+            // modifique, y los nombres de sus celdas quedarían como estaban.
+            var conexion = db.OneDriveConexiones.FirstOrDefault();
+            if (conexion is not null)
+            {
+                conexion.UltimaModificacionExcelVista = null;
+            }
         }
     }
 }

@@ -21,11 +21,19 @@ namespace GestionCabanas.Services
         public List<string> NoInterpretadas { get; } = new();
         public List<string> CabanasNoEncontradas { get; } = new();
         public List<string> Superposiciones { get; } = new();
+        public List<CorreccionNombreExcel> CorreccionesNombre { get; } = new();
     }
+
+    /// <summary>
+    /// Celda de nombre del Excel cuyo texto no está normalizado y hay que reescribir con <see cref="Nombre"/>.
+    /// </summary>
+    public record CorreccionNombreExcel(string Hoja, string Celda, string Nombre);
 
     public class ExcelReservasSyncService
     {
         private readonly ApplicationDbContext _db;
+        private readonly GraphOneDriveService _oneDrive;
+        private readonly ILogger<ExcelReservasSyncService> _logger;
 
         private static readonly Dictionary<string, int> MesesPorNombre = new()
         {
@@ -46,10 +54,12 @@ namespace GestionCabanas.Services
 
         private readonly IConfiguration _config;
 
-        public ExcelReservasSyncService(ApplicationDbContext db, IConfiguration config)
+        public ExcelReservasSyncService(ApplicationDbContext db, IConfiguration config, GraphOneDriveService oneDrive, ILogger<ExcelReservasSyncService> logger)
         {
             _db = db;
             _config = config;
+            _oneDrive = oneDrive;
+            _logger = logger;
         }
 
         /// <summary>
@@ -90,11 +100,40 @@ namespace GestionCabanas.Services
             try
             {
                 var archivo = await descargarArchivo();
-                return await SincronizarArchivoAsync(archivo, anio);
+                var resultado = await SincronizarArchivoAsync(archivo, anio);
+                await CorregirNombresEnExcelAsync(resultado);
+                return resultado;
             }
             finally
             {
                 CandadoExcel.Release();
+            }
+        }
+
+        /// <summary>
+        /// Reescribe en el Excel los nombres que no estaban normalizados (ej. "juan perez" pasa a
+        /// "Juan Perez"). Va dentro del candado, después de leer el archivo. Si falla no rompe la
+        /// sincronización: las reservas ya quedaron bien en la base y se reintenta en la próxima.
+        /// </summary>
+        private async Task CorregirNombresEnExcelAsync(ResultadoSincronizacion resultado)
+        {
+            var urlArchivo = _config["OneDrive:ArchivoUrl"];
+            if (resultado.CorreccionesNombre.Count == 0 || string.IsNullOrWhiteSpace(urlArchivo))
+            {
+                return;
+            }
+
+            try
+            {
+                var (driveId, itemId) = await _oneDrive.ObtenerDriveItemAsync(urlArchivo);
+                foreach (var correccion in resultado.CorreccionesNombre)
+                {
+                    await _oneDrive.EscribirCeldaAsync(driveId, itemId, correccion.Hoja, correccion.Celda, correccion.Nombre);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudieron normalizar {Cantidad} nombres en el Excel.", resultado.CorreccionesNombre.Count);
             }
         }
 
@@ -205,7 +244,8 @@ namespace GestionCabanas.Services
                     for (var r = fila + 1; r <= ultimaFila; r++)
                     {
                         var textoFecha = hoja.Cell(r, colFecha).GetString().Trim();
-                        var textoNombre = hoja.Cell(r, colNombre.Value).GetString().Trim();
+                        var celdaNombre = hoja.Cell(r, colNombre.Value);
+                        var textoNombre = NombresPropios.Formatear(celdaNombre.GetString());
 
                         if (Normalizar(textoFecha) == "TOTAL" || Normalizar(textoNombre) == "TOTAL")
                         {
@@ -287,6 +327,12 @@ namespace GestionCabanas.Services
                         }
 
                         var ubicacion = $"{anio}/{hoja.Name}!{hoja.Cell(r, colFecha).Address}";
+
+                        // Solo se reescriben celdas de texto plano: una fórmula se pisaría con su valor.
+                        if (celdaNombre.DataType == XLDataType.Text && !celdaNombre.HasFormula && celdaNombre.GetString() != textoNombre)
+                        {
+                            resultado.CorreccionesNombre.Add(new CorreccionNombreExcel(hoja.Name, celdaNombre.Address.ToString()!, textoNombre));
+                        }
 
                         decimal? pago = colPago.HasValue ? LeerDecimal(hoja.Cell(r, colPago.Value)) : null;
                         decimal? pagar = colPagar.HasValue ? LeerDecimal(hoja.Cell(r, colPagar.Value)) : null;

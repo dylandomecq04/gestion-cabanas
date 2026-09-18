@@ -303,7 +303,7 @@ namespace GestionCabanas.Controllers
                 cabanas = cabanas.Select(c => c.Nombre),
                 desde = modelo.Segmentos.Min(s => s.FechaDesde).ToString("dd/MM/yyyy"),
                 hasta = modelo.Segmentos.Max(s => s.FechaHasta).ToString("dd/MM/yyyy"),
-                nombreHuesped = modelo.NombreHuesped,
+                nombreHuesped = reservasCreadas[0].NombreHuesped,
                 cantidadPersonas = modelo.CantidadPersonas
             });
         }
