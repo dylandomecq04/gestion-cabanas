@@ -5,7 +5,7 @@ namespace GestionCabanas.Services
 {
     public class SincronizacionAutomaticaService : BackgroundService
     {
-        private static readonly TimeSpan Intervalo = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan Intervalo = TimeSpan.FromMinutes(1);
 
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<SincronizacionAutomaticaService> _logger;
@@ -108,8 +108,7 @@ namespace GestionCabanas.Services
                     return;
                 }
 
-                var bytes = await oneDrive.DescargarArchivoCompartidoAsync(urlArchivo);
-                var resultado = await sync.SincronizarAsync(bytes, DateTime.Today.Year);
+                var resultado = await sync.SincronizarAsync(() => oneDrive.DescargarArchivoCompartidoAsync(urlArchivo), DateTime.Today.Year);
                 await oneDrive.MarcarSincronizadoAsync(modificado);
 
                 _logger.LogInformation(

@@ -68,6 +68,7 @@ namespace GestionCabanas.Services
                 return null;
             }
 
+            await ExcelReservasSyncService.CandadoExcel.WaitAsync();
             try
             {
                 var (driveId, itemId) = await _oneDrive.ObtenerDriveItemAsync(urlArchivo);
@@ -114,6 +115,20 @@ namespace GestionCabanas.Services
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagoCelda, textoPago);
                 await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagarCelda, textoPagar);
 
+                // La nueva ubicación se guarda apenas está escrita, antes de limpiar la anterior o de
+                // pintar: si algo de lo que sigue falla, la base ya apunta a la fila correcta.
+                var ubicacionAnterior = reserva.ExcelUbicacion;
+                var ubicacionNueva = $"{reserva.FechaDesde.Year}/{hoja.Name}!{direccionFechaCelda}";
+                reserva.ExcelUbicacion = ubicacionNueva;
+                await _db.SaveChangesAsync();
+
+                // Si la reserva se mudó de fila (cambió de cabaña o de mes), la fila vieja tiene que
+                // quedar vacía: si no, la próxima sincronización la toma como una reserva nueva.
+                if (anterior is not null)
+                {
+                    await LiberarFilaAnteriorAsync(driveId, itemId, workbook, ubicacionAnterior, ubicacionNueva, anterior);
+                }
+
                 // Si antes estaba confirmada con otra cabaña o fechas, esos días quedaron libres.
                 if (anterior is not null && anterior.Estado == EstadoReserva.Confirmada &&
                     (anterior.CabanaId != reserva.CabanaId || anterior.FechaDesde != reserva.FechaDesde || anterior.FechaHasta != reserva.FechaHasta))
@@ -138,29 +153,47 @@ namespace GestionCabanas.Services
                     await ColorearDiasAsync(driveId, itemId, workbook, sobrescrituras, cabana.Nombre, reserva.FechaDesde, reserva.FechaHasta, ColorLiberado);
                 }
 
-                reserva.ExcelUbicacion = $"{reserva.FechaDesde.Year}/{hoja.Name}!{direccionFechaCelda}";
-                await _db.SaveChangesAsync();
                 return null;
             }
             catch (Exception ex)
             {
                 return $"No se pudo reflejar en el Excel: {ex.Message}";
             }
+            finally
+            {
+                ExcelReservasSyncService.CandadoExcel.Release();
+            }
         }
 
         /// <summary>
-        /// Si la reserva ya tiene una celda asignada y esa celda sigue perteneciendo al bloque
-        /// actual de su cabaña, devuelve esa ubicación para reusarla. Si no, devuelve null para que
-        /// el llamador busque una fila libre nueva.
+        /// Separa una ubicación guardada ("2026/Septiembre!P16") en el nombre de la hoja y la celda.
         /// </summary>
-        private static (int ColFecha, int ColNombre, int ColPago, int ColPagar, int Fila)? ResolverFilaExistente(Reserva reserva, IXLWorksheet hoja, string nombreCabana)
+        private static (string Hoja, string Celda)? ParsearUbicacion(string? ubicacion)
         {
-            if (string.IsNullOrEmpty(reserva.ExcelUbicacion) || !reserva.ExcelUbicacion.Contains('!'))
+            if (string.IsNullOrEmpty(ubicacion) || !ubicacion.Contains('!'))
             {
                 return null;
             }
 
-            var direccionFecha = reserva.ExcelUbicacion.Split('!', 2)[1];
+            var partes = ubicacion.Split('!', 2);
+            return (partes[0][(partes[0].IndexOf('/') + 1)..], partes[1]);
+        }
+
+        /// <summary>
+        /// Si la reserva ya tiene una celda asignada, en la hoja del mes que se está escribiendo, y
+        /// esa celda sigue perteneciendo al bloque actual de su cabaña, devuelve esa ubicación para
+        /// reusarla. Si no (cambió de cabaña o de mes), devuelve null para que el llamador busque
+        /// una fila libre nueva.
+        /// </summary>
+        private static (int ColFecha, int ColNombre, int ColPago, int ColPagar, int Fila)? ResolverFilaExistente(Reserva reserva, IXLWorksheet hoja, string nombreCabana)
+        {
+            var ubicacion = ParsearUbicacion(reserva.ExcelUbicacion);
+            if (ubicacion is null || ubicacion.Value.Hoja != hoja.Name)
+            {
+                return null;
+            }
+
+            var direccionFecha = ubicacion.Value.Celda;
             IXLCell celdaFecha;
             try
             {
@@ -182,8 +215,10 @@ namespace GestionCabanas.Services
 
         /// <summary>
         /// Limpia (sin borrar la fila) la celda de Excel de una reserva que se eliminó en el sitio.
+        /// <paramref name="cabanaIdEnExcel"/> es la cabaña en cuyo bloque está la fila hoy, para
+        /// cuando la reserva ya cambió de cabaña en el sitio y la fila sigue en el bloque anterior.
         /// </summary>
-        public async Task<string?> LimpiarReservaAsync(Reserva reserva)
+        public async Task<string?> LimpiarReservaAsync(Reserva reserva, int? cabanaIdEnExcel = null)
         {
             var urlArchivo = _config["OneDrive:ArchivoUrl"];
             var conexion = await _oneDrive.ObtenerConexionAsync();
@@ -191,44 +226,27 @@ namespace GestionCabanas.Services
             {
                 return null;
             }
-            if (string.IsNullOrEmpty(reserva.ExcelUbicacion) || !reserva.ExcelUbicacion.Contains('!'))
+            var ubicacion = ParsearUbicacion(reserva.ExcelUbicacion);
+            if (ubicacion is null)
             {
                 return null; // Esta reserva nunca estuvo en el Excel.
             }
 
+            await ExcelReservasSyncService.CandadoExcel.WaitAsync();
             try
             {
                 var (driveId, itemId) = await _oneDrive.ObtenerDriveItemAsync(urlArchivo);
                 var bytes = await _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo);
                 using var workbook = new XLWorkbook(new MemoryStream(bytes));
 
-                var partes = reserva.ExcelUbicacion.Split('!', 2);
-                var nombreHoja = partes[0][(partes[0].IndexOf('/') + 1)..];
-                var hoja = workbook.Worksheets.FirstOrDefault(h => h.Name == nombreHoja);
+                var hoja = workbook.Worksheets.FirstOrDefault(h => h.Name == ubicacion.Value.Hoja);
                 if (hoja is null)
                 {
                     return null;
                 }
 
-                var celdaFecha = hoja.Cell(partes[1]);
-                var fila = celdaFecha.Address.RowNumber;
-                var colFecha = celdaFecha.Address.ColumnNumber;
-
-                var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == reserva.CabanaId);
-                var bloque = cabana is null ? null : ExcelReservasSyncService.UbicarBloqueDeCabana(hoja, cabana.Nombre);
-                var colNombre = bloque?.ColNombre ?? colFecha + 1;
-                var colPago = bloque?.ColPago ?? colFecha + 2;
-                var colPagar = bloque?.ColPagar ?? colFecha + 3;
-
-                var direccionFechaCelda = hoja.Cell(fila, colFecha).Address.ToString();
-                var direccionNombreCelda = hoja.Cell(fila, colNombre).Address.ToString();
-                var direccionPagoCelda = hoja.Cell(fila, colPago).Address.ToString();
-                var direccionPagarCelda = hoja.Cell(fila, colPagar).Address.ToString();
-
-                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionFechaCelda, null);
-                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionNombreCelda, null);
-                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagoCelda, null);
-                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, direccionPagarCelda, null);
+                var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == (cabanaIdEnExcel ?? reserva.CabanaId));
+                await LimpiarFilaAsync(driveId, itemId, hoja, hoja.Cell(ubicacion.Value.Celda), cabana?.Nombre);
 
                 if (reserva.Estado == EstadoReserva.Confirmada && cabana is not null)
                 {
@@ -242,6 +260,69 @@ namespace GestionCabanas.Services
             {
                 return $"No se pudo limpiar la celda en el Excel: {ex.Message}";
             }
+            finally
+            {
+                ExcelReservasSyncService.CandadoExcel.Release();
+            }
+        }
+
+        /// <summary>
+        /// Vacía las cuatro celdas (fecha, nombre, pagó, pagar) de la fila de una reserva, sin
+        /// borrar la fila. Las columnas salen del bloque de la cabaña indicada; si no se lo encuentra,
+        /// se asume el orden habitual pegado a la columna de fecha.
+        /// </summary>
+        private async Task LimpiarFilaAsync(string driveId, string itemId, IXLWorksheet hoja, IXLCell celdaFecha, string? nombreCabana)
+        {
+            var fila = celdaFecha.Address.RowNumber;
+            var colFecha = celdaFecha.Address.ColumnNumber;
+
+            var bloque = nombreCabana is null ? null : ExcelReservasSyncService.UbicarBloqueDeCabana(hoja, nombreCabana);
+            var colNombre = bloque?.ColNombre ?? colFecha + 1;
+            var colPago = bloque?.ColPago ?? colFecha + 2;
+            var colPagar = bloque?.ColPagar ?? colFecha + 3;
+
+            foreach (var col in new[] { colFecha, colNombre, colPago, colPagar })
+            {
+                await _oneDrive.EscribirCeldaAsync(driveId, itemId, hoja.Name, hoja.Cell(fila, col).Address.ToString(), null);
+            }
+        }
+
+        /// <summary>
+        /// Cuando una reserva se mudó de fila al editarla en el sitio (otra cabaña u otro mes), vacía
+        /// la fila donde estaba antes. Solo lo hace si esa fila todavía muestra las fechas que la
+        /// reserva tenía: si alguien ya la reescribió en el Excel con otra cosa, no se toca.
+        /// </summary>
+        private async Task LiberarFilaAnteriorAsync(
+            string driveId,
+            string itemId,
+            XLWorkbook workbook,
+            string? ubicacionAnterior,
+            string ubicacionNueva,
+            EstadoAnteriorReserva anterior)
+        {
+            var previa = ParsearUbicacion(ubicacionAnterior);
+            if (previa is null || previa == ParsearUbicacion(ubicacionNueva))
+            {
+                return;
+            }
+
+            var hojaPrevia = workbook.Worksheets.FirstOrDefault(h => h.Name == previa.Value.Hoja);
+            if (hojaPrevia is null)
+            {
+                return;
+            }
+
+            var celdaFecha = hojaPrevia.Cell(previa.Value.Celda);
+            var dias = ExcelReservasSyncService.PatronFechas.Match(celdaFecha.GetString());
+            if (!dias.Success ||
+                int.Parse(dias.Groups[1].Value) != anterior.FechaDesde.Day ||
+                int.Parse(dias.Groups[2].Value) != anterior.FechaHasta.Day)
+            {
+                return;
+            }
+
+            var cabanaAnterior = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == anterior.CabanaId);
+            await LimpiarFilaAsync(driveId, itemId, hojaPrevia, celdaFecha, cabanaAnterior?.Nombre);
         }
 
         /// <summary>

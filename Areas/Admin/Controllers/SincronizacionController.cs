@@ -95,8 +95,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             try
             {
                 var modificado = await _oneDrive.ObtenerFechaModificacionAsync(urlArchivo);
-                var bytes = await _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo);
-                var resultado = await _sync.SincronizarAsync(bytes, anio);
+                var resultado = await _sync.SincronizarAsync(() => _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo), anio);
                 await _oneDrive.MarcarSincronizadoAsync(modificado);
 
                 TempData["ResultadoCreadas"] = resultado.Creadas;

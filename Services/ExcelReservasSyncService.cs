@@ -69,7 +69,36 @@ namespace GestionCabanas.Services
             return resultado;
         }
 
-        public async Task<ResultadoSincronizacion> SincronizarAsync(byte[] archivo, int anio)
+        /// <summary>
+        /// Serializa todo lo que lee o escribe reservas contra el Excel: una sincronización (que
+        /// descarga el archivo y actualiza la base) y una escritura del sitio (que cambia el archivo
+        /// después de haber guardado la reserva) no pueden cruzarse, porque la sincronización vería
+        /// el Excel a medio actualizar y pisaría el cambio recién hecho en el sitio.
+        /// </summary>
+        public static readonly SemaphoreSlim CandadoExcel = new(1, 1);
+
+        // Celda de fecha de una reserva en el Excel: "18 a 19", "18 al 19", "8 ab 9", etc.
+        internal static readonly Regex PatronFechas = new(@"(\d{1,2})\s*al?b?\.?\s*(\d{1,2})", RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// Descarga el archivo y lo sincroniza dentro del candado: bajarlo antes de tomarlo dejaría
+        /// pasar una copia vieja si en el medio el sitio escribió en el Excel.
+        /// </summary>
+        public async Task<ResultadoSincronizacion> SincronizarAsync(Func<Task<byte[]>> descargarArchivo, int anio)
+        {
+            await CandadoExcel.WaitAsync();
+            try
+            {
+                var archivo = await descargarArchivo();
+                return await SincronizarArchivoAsync(archivo, anio);
+            }
+            finally
+            {
+                CandadoExcel.Release();
+            }
+        }
+
+        private async Task<ResultadoSincronizacion> SincronizarArchivoAsync(byte[] archivo, int anio)
         {
             var resultado = new ResultadoSincronizacion();
             var cabanas = await _db.Cabanas.ToListAsync();
@@ -195,7 +224,7 @@ namespace GestionCabanas.Services
                         var esPrimeraFila = primeraFilaDelBloque;
                         primeraFilaDelBloque = false;
 
-                        var match = Regex.Match(textoFecha, @"(\d{1,2})\s*al?b?\.?\s*(\d{1,2})", RegexOptions.IgnoreCase);
+                        var match = PatronFechas.Match(textoFecha);
                         if (!match.Success)
                         {
                             resultado.NoInterpretadas.Add($"{hoja.Name} / {nombreCabana}: \"{textoFecha}\" ({textoNombre})");
@@ -500,7 +529,7 @@ namespace GestionCabanas.Services
                     continue;
                 }
 
-                var match = Regex.Match(textoFecha, @"(\d{1,2})\s*al?b?\.?\s*(\d{1,2})", RegexOptions.IgnoreCase);
+                var match = PatronFechas.Match(textoFecha);
                 if (match.Success)
                 {
                     var diaDesdeFila = int.Parse(match.Groups[1].Value);

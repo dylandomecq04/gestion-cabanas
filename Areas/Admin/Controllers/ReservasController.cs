@@ -220,7 +220,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             string? avisoExcel = reserva.Estado == EstadoReserva.Confirmada
                 ? await _excelEscritura.EscribirReservaAsync(reserva, anterior)
                 : anterior.Estado == EstadoReserva.Confirmada
-                    ? await _excelEscritura.LimpiarReservaAsync(reserva)
+                    ? await _excelEscritura.LimpiarReservaAsync(reserva, anterior.CabanaId)
                     : null;
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva actualizada correctamente."
