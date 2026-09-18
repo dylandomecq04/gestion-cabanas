@@ -51,7 +51,7 @@ namespace GestionCabanas.Controllers
             return View();
         }
 
-        // Detalle de una cabaña: calendario del mes con quién sale cada día.
+        // Detalle de una cabaña: calendario del mes con quién entra y quién sale cada día.
         [HttpGet("{token}/cabana/{id:int}")]
         public async Task<IActionResult> Cabana(string token, int id, int? anio, int? mes)
         {
@@ -74,7 +74,8 @@ namespace GestionCabanas.Controllers
             var mesSiguiente = primerDia.AddMonths(1);
             var reservas = await _db.Reservas
                 .Where(r => r.CabanaId == id && r.Estado == EstadoReserva.Confirmada
-                    && r.FechaHasta >= primerDia && r.FechaHasta < mesSiguiente)
+                    && ((r.FechaHasta >= primerDia && r.FechaHasta < mesSiguiente)
+                        || (r.FechaDesde >= primerDia && r.FechaDesde < mesSiguiente)))
                 .ToListAsync();
 
             ViewBag.Token = token;
