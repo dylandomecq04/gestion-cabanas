@@ -20,20 +20,14 @@ namespace GestionCabanas.Services
 
         public async Task NotificarNuevaSolicitudAsync(Cabana cabana, Reserva reserva)
         {
-            var host = _config["Notificaciones:Email:SmtpHost"];
-            var portTexto = _config["Notificaciones:Email:SmtpPort"];
             var usuario = _config["Notificaciones:Email:Usuario"];
-            var appPassword = _config["Notificaciones:Email:AppPassword"];
             var destinatario = _config["Notificaciones:Email:Destinatario"];
 
-            if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(usuario) ||
-                string.IsNullOrWhiteSpace(appPassword) || string.IsNullOrWhiteSpace(destinatario))
+            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(destinatario))
             {
                 _logger.LogWarning("Notificación de email omitida: falta completar Notificaciones:Email en appsettings.json");
                 return;
             }
-
-            var puerto = int.TryParse(portTexto, out var p) ? p : 587;
 
             var mensaje = new MimeMessage();
             mensaje.From.Add(MailboxAddress.Parse(usuario));
@@ -54,6 +48,55 @@ namespace GestionCabanas.Services
                     """
             };
 
+            await EnviarAsync(mensaje, reserva.Id);
+        }
+
+        public async Task NotificarConfirmacionHuespedAsync(Cabana cabana, Reserva reserva)
+        {
+            var usuario = _config["Notificaciones:Email:Usuario"];
+
+            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(reserva.Email))
+            {
+                return;
+            }
+
+            var mensaje = new MimeMessage();
+            mensaje.From.Add(MailboxAddress.Parse(usuario));
+            mensaje.To.Add(MailboxAddress.Parse(reserva.Email));
+            mensaje.Subject = $"Recibimos tu solicitud de reserva - {cabana.Nombre}";
+            mensaje.Body = new TextPart("plain")
+            {
+                Text = $"""
+                    ¡Hola {reserva.NombreHuesped}!
+
+                    Recibimos tu solicitud de reserva 🏡
+
+                    Cabaña: {cabana.Nombre}
+                    Fechas: {reserva.FechaDesde:dd/MM/yyyy} – {reserva.FechaHasta:dd/MM/yyyy}
+                    Personas: {reserva.CantidadPersonas} ({reserva.CantidadAdultos} adultos, {reserva.CantidadMenores} menores)
+
+                    Para coordinar el pago y confirmarla, escribinos por WhatsApp al 11 2645-2644.
+                    """
+            };
+
+            await EnviarAsync(mensaje, reserva.Id);
+        }
+
+        private async Task EnviarAsync(MimeMessage mensaje, int reservaId)
+        {
+            var host = _config["Notificaciones:Email:SmtpHost"];
+            var portTexto = _config["Notificaciones:Email:SmtpPort"];
+            var usuario = _config["Notificaciones:Email:Usuario"];
+            var appPassword = _config["Notificaciones:Email:AppPassword"];
+
+            if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(appPassword))
+            {
+                _logger.LogWarning("Notificación de email omitida: falta completar Notificaciones:Email en appsettings.json");
+                return;
+            }
+
+            var puerto = int.TryParse(portTexto, out var p) ? p : 587;
+
             try
             {
                 using var client = new SmtpClient();
@@ -64,7 +107,7 @@ namespace GestionCabanas.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "No se pudo enviar el email de notificación para la reserva {ReservaId}", reserva.Id);
+                _logger.LogError(ex, "No se pudo enviar el email de notificación para la reserva {ReservaId}", reservaId);
             }
         }
     }

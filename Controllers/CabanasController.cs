@@ -122,6 +122,7 @@ namespace GestionCabanas.Controllers
                 CabanaId = modelo.CabanaId,
                 NombreHuesped = modelo.NombreHuesped,
                 Telefono = modelo.Telefono,
+                Email = modelo.Email,
                 FechaDesde = modelo.FechaDesde,
                 FechaHasta = modelo.FechaHasta,
                 CantidadPersonas = modelo.CantidadPersonas,
@@ -132,6 +133,10 @@ namespace GestionCabanas.Controllers
             await _db.SaveChangesAsync();
 
             await _email.NotificarNuevaSolicitudAsync(cabana, reserva);
+            if (!string.IsNullOrWhiteSpace(reserva.Email))
+            {
+                await _email.NotificarConfirmacionHuespedAsync(cabana, reserva);
+            }
 
             TempData["SolicitudEnviada"] = $"¡Listo! Recibimos tu solicitud para {cabana.Nombre}.";
             TempData["ReservaId"] = reserva.Id;
@@ -328,6 +333,7 @@ namespace GestionCabanas.Controllers
                     CabanaId = segmento.CabanaId,
                     NombreHuesped = modelo.NombreHuesped,
                     Telefono = modelo.Telefono,
+                    Email = modelo.Email,
                     FechaDesde = segmento.FechaDesde,
                     FechaHasta = segmento.FechaHasta,
                     CantidadPersonas = grupo.Total,
@@ -345,6 +351,10 @@ namespace GestionCabanas.Controllers
             {
                 var cabana = cabanas.First(c => c.Id == reserva.CabanaId);
                 await _email.NotificarNuevaSolicitudAsync(cabana, reserva);
+                if (!string.IsNullOrWhiteSpace(reserva.Email))
+                {
+                    await _email.NotificarConfirmacionHuespedAsync(cabana, reserva);
+                }
             }
 
             decimal? total = 0;
@@ -361,7 +371,8 @@ namespace GestionCabanas.Controllers
                 desde = modelo.Segmentos.Min(s => s.FechaDesde).ToString("dd/MM/yyyy"),
                 hasta = modelo.Segmentos.Max(s => s.FechaHasta).ToString("dd/MM/yyyy"),
                 nombreHuesped = reservasCreadas[0].NombreHuesped,
-                cantidadPersonas = modelo.CantidadPersonas
+                cantidadPersonas = modelo.CantidadPersonas,
+                tieneEmail = !string.IsNullOrWhiteSpace(modelo.Email)
             });
         }
 

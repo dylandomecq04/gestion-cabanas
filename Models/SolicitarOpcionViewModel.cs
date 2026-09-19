@@ -12,6 +12,10 @@ namespace GestionCabanas.Models
         [StringLength(50)]
         public string? Telefono { get; set; }
 
+        [EmailAddress(ErrorMessage = "Ingresá un email válido")]
+        [StringLength(150)]
+        public string? Email { get; set; }
+
         [Range(1, PoliticaPrecios.MaxPersonasPorReserva, ErrorMessage = "Tiene que haber al menos un adulto (y hasta 8 personas en total)")]
         public int CantidadAdultos { get; set; } = 2;
 

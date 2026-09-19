@@ -19,6 +19,11 @@ namespace GestionCabanas.Models
         [StringLength(50)]
         public string? Telefono { get; set; }
 
+        [EmailAddress(ErrorMessage = "Ingresá un email válido")]
+        [StringLength(150)]
+        [Display(Name = "Email")]
+        public string? Email { get; set; }
+
         [Required(ErrorMessage = "La fecha de entrada es obligatoria")]
         [DataType(DataType.Date)]
         [Display(Name = "Fecha desde")]
