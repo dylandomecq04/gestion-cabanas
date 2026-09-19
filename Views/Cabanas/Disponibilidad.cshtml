@@ -262,7 +262,7 @@
 
         const __maxPersonas = @PoliticaPrecios.MaxPersonasPorReserva;
         const __patronTelefono = /^(?=(?:\D*\d){8,15}\D*$)\+?[\d\s\-.()]+$/;
-        const __patronEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+        const __patronEmail = /^[^@@\s]+@@[^@@\s]+\.[^@@\s]+$/;
         let __ultimaOpcionesBusqueda = [];
         let __datosHuesped = {};
 
@@ -292,7 +292,7 @@
                 return;
             }
             if (email && !__patronEmail.test(email)) {
-                mostrarErrorGeneral('Ingresá un email válido (ejemplo: nombre@dominio.com).');
+                mostrarErrorGeneral('Ingresá un email válido (ejemplo: nombre@@dominio.com).');
                 return;
             }
             if (adultos < 1) {
