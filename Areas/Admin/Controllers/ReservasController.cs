@@ -19,14 +19,30 @@ namespace GestionCabanas.Areas.Admin.Controllers
         private readonly GraphOneDriveService _oneDrive;
         private readonly ExcelEscrituraService _excelEscritura;
         private readonly IConfiguration _config;
+        private readonly INotificacionEmailService _email;
 
-        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad, GraphOneDriveService oneDrive, ExcelEscrituraService excelEscritura, IConfiguration config)
+        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad, GraphOneDriveService oneDrive, ExcelEscrituraService excelEscritura, IConfiguration config, INotificacionEmailService email)
         {
             _db = db;
             _disponibilidad = disponibilidad;
             _oneDrive = oneDrive;
             _excelEscritura = excelEscritura;
             _config = config;
+            _email = email;
+        }
+
+        private async Task NotificarConfirmacionAsync(Reserva reserva)
+        {
+            if (string.IsNullOrWhiteSpace(reserva.Email))
+            {
+                return;
+            }
+
+            var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == reserva.CabanaId);
+            if (cabana is not null)
+            {
+                await _email.NotificarReservaConfirmadaAsync(cabana, reserva);
+            }
         }
 
         private static string CalcularFirmaCalendario(List<Reserva> reservas, List<TarifaDia> tarifas, List<PromoEstadia> promos)
@@ -250,6 +266,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 : anterior.Estado == EstadoReserva.Confirmada
                     ? await _excelEscritura.LimpiarReservaAsync(reserva, anterior.CabanaId)
                     : null;
+            if (reserva.Estado == EstadoReserva.Confirmada && anterior.Estado != EstadoReserva.Confirmada)
+            {
+                await NotificarConfirmacionAsync(reserva);
+            }
+
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva actualizada correctamente."
                 : $"Reserva actualizada correctamente. {avisoExcel}";
@@ -278,6 +299,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             await _db.SaveChangesAsync();
 
             var avisoExcel = await _excelEscritura.EscribirReservaAsync(reserva, anterior);
+            await NotificarConfirmacionAsync(reserva);
             TempData["Mensaje"] = avisoExcel is null
                 ? "Reserva confirmada."
                 : $"Reserva confirmada. {avisoExcel}";

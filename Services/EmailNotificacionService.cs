@@ -82,6 +82,39 @@ namespace GestionCabanas.Services
             await EnviarAsync(mensaje, reserva.Id);
         }
 
+        public async Task NotificarReservaConfirmadaAsync(Cabana cabana, Reserva reserva)
+        {
+            var usuario = _config["Notificaciones:Email:Usuario"];
+
+            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(reserva.Email)
+                || !MailboxAddress.TryParse(reserva.Email, out var destino))
+            {
+                return;
+            }
+
+            var mensaje = new MimeMessage();
+            mensaje.From.Add(MailboxAddress.Parse(usuario));
+            mensaje.To.Add(destino);
+            mensaje.Subject = $"Tu reserva está confirmada - {cabana.Nombre}";
+            mensaje.Body = new TextPart("plain")
+            {
+                Text = $"""
+                    ¡Hola {reserva.NombreHuesped}!
+
+                    ¡Tu reserva está confirmada! 🏡
+
+                    Cabaña: {cabana.Nombre}
+                    Fechas: {reserva.FechaDesde:dd/MM/yyyy} – {reserva.FechaHasta:dd/MM/yyyy}
+                    Personas: {reserva.CantidadPersonas} ({reserva.CantidadAdultos} adultos, {reserva.CantidadMenores} menores)
+
+                    Cualquier consulta, escribinos por WhatsApp al 11 2645-2644.
+                    ¡Te esperamos!
+                    """
+            };
+
+            await EnviarAsync(mensaje, reserva.Id);
+        }
+
         private async Task EnviarAsync(MimeMessage mensaje, int reservaId)
         {
             var host = _config["Notificaciones:Email:SmtpHost"];
