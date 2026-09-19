@@ -133,7 +133,7 @@
         <div id="scroll-arriba-ancho" class="h-px"></div>
     </div>
 
-    <form id="form-tarifas" asp-action="GuardarTarifasCalendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-24">
+    <form id="form-tarifas" asp-action="GuardarTarifasCalendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-44 sm:pb-24">
         <div id="scroll-tabla" class="scroll-fino overflow-x-auto rounded-2.5xl bg-white p-2 shadow-soft ring-1 ring-ink-100 sm:p-3">
             <table class="w-full border-separate text-xs [border-spacing:2px_7px] sm:[border-spacing:4px_10px]">
                 <thead>
@@ -401,50 +401,53 @@
 </div>
 
 <div id="barra-seleccion" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 shadow-lift backdrop-blur">
-    <div class="scroll-fino mx-auto flex max-w-5xl items-center gap-3 overflow-x-auto px-3 py-2.5 sm:flex-wrap sm:gap-4 sm:overflow-visible sm:px-4 sm:py-3">
-        <div id="texto-seleccion" class="shrink-0 whitespace-nowrap rounded-full bg-river-50 px-3 py-1.5 text-xs font-semibold text-river-800 sm:px-3.5 sm:py-2 sm:text-sm">
+    @* En el celu la barra son dos renglones sin scroll: arriba contador + precios + tilde de aplicar,
+       abajo las acciones. En pantallas grandes vuelve a ser un solo renglón. *@
+    <div class="mx-auto flex max-w-5xl flex-wrap items-end gap-x-2 gap-y-2 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:items-center sm:gap-4 sm:px-4 sm:py-3">
+        <div id="texto-seleccion" class="flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-river-50 px-2.5 text-xs font-semibold text-river-800 sm:h-auto sm:px-3.5 sm:py-2 sm:text-sm">
             0 días seleccionados
         </div>
 
         <div class="hidden h-9 w-px bg-ink-200 sm:block"></div>
 
-        <div class="flex shrink-0 items-end gap-2 sm:flex-wrap sm:gap-3">
+        <div class="flex min-w-0 flex-1 items-end gap-1.5 sm:flex-none sm:gap-3">
             @foreach (var tramo in new[] { 2, 4, 6 })
             {
-                <div class="w-20 shrink-0 sm:w-28">
-                    <label class="mb-1 block text-xs font-medium text-ink-500">Para @tramo</label>
+                <div class="min-w-0 flex-1 sm:w-28 sm:flex-none">
+                    <label class="mb-0.5 block text-[11px] font-medium text-ink-500 sm:mb-1 sm:text-xs">Para @tramo</label>
                     <input id="bulk-precio-@tramo" type="text" inputmode="numeric" placeholder="$"
                            title="@(tramo > 2 ? $"Solo se aplica a las cabañas con lugar para {tramo} personas" : "")"
                            oninput="formatearMiles(this)"
-                           class="h-9 w-full rounded-xl border border-ink-200 px-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 disabled:cursor-not-allowed disabled:bg-ink-50 sm:h-10 sm:px-3" />
+                           class="h-9 w-full rounded-xl border border-ink-200 px-2 text-sm text-ink-900 shadow-sm transition placeholder:text-xs focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 disabled:cursor-not-allowed disabled:bg-ink-50 sm:h-10 sm:px-3 sm:placeholder:text-sm" />
                 </div>
             }
         </div>
 
-        <div class="flex shrink-0 items-center gap-2 sm:ml-auto">
-            <a id="link-cargar-reserva-bulk" href="#" class="hidden h-9 shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-3 text-xs font-semibold text-ink-700 transition hover:border-river-300 sm:h-10 sm:px-4 sm:text-sm">
-                ➕ Cargar reserva
+        <button type="button" onclick="aplicarSeleccion(false)" title="Aplicar precios (los campos vacíos no se modifican)" aria-label="Aplicar precios" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-river-700 text-white shadow-soft transition hover:bg-river-800 sm:order-last sm:-ml-2 sm:h-10 sm:w-10">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-4 w-4 sm:h-5 sm:w-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+        </button>
+
+        <div class="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:flex-nowrap">
+            <a id="link-cargar-reserva-bulk" href="#" class="hidden inline-flex h-9 flex-1 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-ink-200 px-2.5 text-xs font-semibold text-ink-700 transition hover:border-river-300 sm:h-10 sm:flex-none sm:gap-1.5 sm:px-4 sm:text-sm">
+                <span class="hidden sm:inline">➕</span> Cargar reserva
             </a>
-            <button type="button" onclick="abrirModalPromoDesdeSeleccion()" class="h-9 shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-3 text-xs font-semibold text-white shadow-soft transition hover:bg-violet-700 sm:h-10 sm:px-4 sm:text-sm">
-                🎉 Crear promo
+            <button type="button" onclick="abrirModalPromoDesdeSeleccion()" class="inline-flex h-9 flex-1 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full bg-violet-600 px-2.5 text-xs font-semibold text-white shadow-soft transition hover:bg-violet-700 sm:h-10 sm:flex-none sm:gap-1.5 sm:px-4 sm:text-sm">
+                <span class="hidden sm:inline">🎉</span> Crear promo
             </button>
-            <form id="form-eliminar-promo" class="shrink-0" asp-action="EliminarPromoCalendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post"
+            <form id="form-eliminar-promo" class="hidden flex-1 shrink-0 sm:flex-none" asp-action="EliminarPromoCalendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post"
                   onsubmit="return confirmarAccion(event, '¿Eliminar la promoción de los días seleccionados? No se puede deshacer.');">
                 <div id="eliminar-promo-inputs"></div>
-                <button type="submit" id="btn-eliminar-promo" class="hidden h-9 shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 sm:h-10 sm:px-4 sm:text-sm">
+                <button type="submit" id="btn-eliminar-promo" class="inline-flex h-9 w-full shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-rose-200 px-2.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 sm:h-10 sm:w-auto sm:gap-1.5 sm:px-4 sm:text-sm">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-3.5 w-3.5 shrink-0">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.166m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                     </svg>
                     Eliminar promo
                 </button>
             </form>
-            <button type="button" onclick="aplicarSeleccion(true)" title="Borrar los precios de los días seleccionados" class="h-9 shrink-0 whitespace-nowrap rounded-full border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 sm:h-10 sm:px-4 sm:text-sm">
+            <button type="button" onclick="aplicarSeleccion(true)" title="Borrar los precios de los días seleccionados" class="h-9 flex-1 shrink-0 whitespace-nowrap rounded-full border border-rose-200 px-2.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 sm:h-10 sm:flex-none sm:px-4 sm:text-sm">
                 Borrar precios
-            </button>
-            <button type="button" onclick="aplicarSeleccion(false)" title="Aplicar precios (los campos vacíos no se modifican)" aria-label="Aplicar precios" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-river-700 text-white shadow-soft transition hover:bg-river-800 sm:h-10 sm:w-10">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-4 w-4 sm:h-5 sm:w-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
             </button>
         </div>
     </div>
@@ -906,8 +909,10 @@
         function actualizarBarraSeleccion() {
             const barra = document.getElementById('barra-seleccion');
             const cantidadSeleccion = seleccionDias.size;
-            document.getElementById('texto-seleccion').textContent =
-                cantidadSeleccion + (cantidadSeleccion === 1 ? ' día seleccionado' : ' días seleccionados');
+            // En el celu alcanza con "2 días"; el "seleccionados" solo se muestra en pantallas grandes.
+            document.getElementById('texto-seleccion').innerHTML =
+                cantidadSeleccion + (cantidadSeleccion === 1 ? ' día' : ' días') +
+                '<span class="hidden sm:inline">&nbsp;' + (cantidadSeleccion === 1 ? 'seleccionado' : 'seleccionados') + '</span>';
             barra.classList.toggle('hidden', seleccionDias.size === 0);
 
             const linkCargar = document.getElementById('link-cargar-reserva-bulk');
@@ -947,7 +952,7 @@
                 input.value = id;
                 contenedor.appendChild(input);
             });
-            document.getElementById('btn-eliminar-promo').classList.toggle('hidden', idsPromo.length === 0);
+            document.getElementById('form-eliminar-promo').classList.toggle('hidden', idsPromo.length === 0);
         }
 
         // Permite borrar la promo de una celda que tiene una reserva encima (donde no se
