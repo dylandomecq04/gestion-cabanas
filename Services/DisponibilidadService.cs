@@ -186,6 +186,7 @@ namespace GestionCabanas.Services
                         resultado.Total = precioPaquete;
                         resultado.PromoAplicada = true;
                         resultado.EtiquetaPromo = EtiquetaPaquete(promo, noches);
+                        await CargarPrecioSinPromoAsync(resultado, cabanaId, desde, hasta, tarifaGrupo);
                         return resultado;
                     }
                 }
@@ -195,6 +196,7 @@ namespace GestionCabanas.Services
                     resultado.Total = totalResto.HasValue ? promo.Precio3Noches.Value + totalResto.Value : null;
                     resultado.PromoAplicada = true;
                     resultado.EtiquetaPromo = EtiquetaPaquete(promo, 3);
+                    await CargarPrecioSinPromoAsync(resultado, cabanaId, desde, hasta, tarifaGrupo);
                     return resultado;
                 }
             }
@@ -207,6 +209,24 @@ namespace GestionCabanas.Services
             resultado.Total = await SumaDiariaAsync(cabanaId, desde, hasta, tarifaGrupo);
             resultado.EtiquetaTarifa = tarifaGrupo.Descripcion(_politica.RecargoAdultoExtraPorcentaje);
             return resultado;
+        }
+
+        /// <summary>
+        /// Con una promo aplicada, calcula cuánto costaría la misma estadía a tarifa normal para poder
+        /// mostrar el ahorro. Queda en null si no se puede calcular o si la promo no ahorra nada.
+        /// </summary>
+        private async Task CargarPrecioSinPromoAsync(ResultadoPrecio resultado, int cabanaId, DateTime desde, DateTime hasta, TarifaGrupo? tarifaGrupo)
+        {
+            if (tarifaGrupo is null || !resultado.Total.HasValue)
+            {
+                return;
+            }
+
+            var sinPromo = await SumaDiariaAsync(cabanaId, desde, hasta, tarifaGrupo);
+            if (sinPromo.HasValue && sinPromo.Value > resultado.Total.Value)
+            {
+                resultado.TotalSinPromo = sinPromo;
+            }
         }
 
         private async Task<PromoEstadia?> BuscarPromoCubriendoAsync(int cabanaId, DateTime desde, DateTime hasta)
@@ -225,6 +245,17 @@ namespace GestionCabanas.Services
             3 => promo.Precio3Noches,
             _ => null
         };
+
+        /// <summary>Total de la opción a tarifa normal, o null si ninguna promo ahorra o algún segmento no tiene precio.</summary>
+        private static decimal? CalcularTotalSinPromo(OpcionReserva opcion)
+        {
+            if (!opcion.Segmentos.Any(s => s.SubtotalSinPromo.HasValue) || opcion.Segmentos.Any(s => !s.Subtotal.HasValue))
+            {
+                return null;
+            }
+
+            return opcion.Segmentos.Sum(s => s.SubtotalSinPromo ?? s.Subtotal!.Value);
+        }
 
         private static string EtiquetaPaquete(PromoEstadia promo, int noches)
         {
@@ -500,6 +531,7 @@ namespace GestionCabanas.Services
                         Desde = segDesde,
                         Hasta = segHasta,
                         Subtotal = detalleSegmento.Total,
+                        SubtotalSinPromo = detalleSegmento.TotalSinPromo,
                         PromoAplicada = detalleSegmento.PromoAplicada,
                         EtiquetaPromo = detalleSegmento.EtiquetaPromo,
                         EtiquetaTarifa = detalleSegmento.EtiquetaTarifa,
@@ -511,6 +543,7 @@ namespace GestionCabanas.Services
                 }
 
                 opcion.Total = total;
+                opcion.TotalSinPromo = CalcularTotalSinPromo(opcion);
                 resultado.Opciones.Add(opcion);
             }
 
@@ -536,6 +569,7 @@ namespace GestionCabanas.Services
                         Desde = desde,
                         Hasta = hasta,
                         Subtotal = detalle.Total,
+                        SubtotalSinPromo = detalle.TotalSinPromo,
                         PromoAplicada = detalle.PromoAplicada,
                         EtiquetaPromo = detalle.EtiquetaPromo,
                         EtiquetaTarifa = detalle.EtiquetaTarifa,
@@ -547,6 +581,7 @@ namespace GestionCabanas.Services
                 }
 
                 opcion.Total = total;
+                opcion.TotalSinPromo = CalcularTotalSinPromo(opcion);
                 resultado.Opciones.Add(opcion);
             }
 

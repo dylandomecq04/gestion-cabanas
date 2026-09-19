@@ -180,6 +180,7 @@ namespace GestionCabanas.Controllers
                 valido = true,
                 disponible,
                 total = aviso is null ? detalle.Total : null,
+                totalSinPromo = aviso is null ? detalle.TotalSinPromo : null,
                 noches,
                 promoAplicada = detalle.PromoAplicada,
                 etiquetaPromo = detalle.EtiquetaPromo,
@@ -222,6 +223,7 @@ namespace GestionCabanas.Controllers
                 opciones = resultado.Opciones.Select(o => new
                 {
                     total = o.Total,
+                    totalSinPromo = o.TotalSinPromo,
                     repartida = o.Repartida,
                     contiguas = o.Contiguas,
                     promoAplicada = o.Segmentos.Any(s => s.PromoAplicada),
@@ -235,6 +237,7 @@ namespace GestionCabanas.Controllers
                         desde = s.Desde.ToString("yyyy-MM-dd"),
                         hasta = s.Hasta.ToString("yyyy-MM-dd"),
                         subtotal = s.Subtotal,
+                        subtotalSinPromo = s.SubtotalSinPromo,
                         promoAplicada = s.PromoAplicada,
                         etiquetaPromo = s.EtiquetaPromo,
                         etiquetaTarifa = s.EtiquetaTarifa

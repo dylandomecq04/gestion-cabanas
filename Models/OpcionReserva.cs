@@ -7,6 +7,9 @@ namespace GestionCabanas.Models
         public DateTime Desde { get; set; }
         public DateTime Hasta { get; set; }
         public decimal? Subtotal { get; set; }
+
+        /// <summary>Lo que costaría el segmento sin la promo (tarifa normal); sólo cuando la promo aplicada ahorra algo.</summary>
+        public decimal? SubtotalSinPromo { get; set; }
         public bool PromoAplicada { get; set; }
         public string? EtiquetaPromo { get; set; }
         public string? EtiquetaTarifa { get; set; }
@@ -21,6 +24,9 @@ namespace GestionCabanas.Models
     {
         public List<SegmentoOpcion> Segmentos { get; set; } = new();
         public decimal? Total { get; set; }
+
+        /// <summary>Lo que costaría la opción sin las promos; sólo cuando alguna promo ahorra algo.</summary>
+        public decimal? TotalSinPromo { get; set; }
 
         /// <summary>
         /// El grupo se reparte en dos cabañas que se ocupan a la vez, en las mismas fechas. Si es false,
@@ -46,6 +52,9 @@ namespace GestionCabanas.Models
     public class ResultadoPrecio
     {
         public decimal? Total { get; set; }
+
+        /// <summary>Lo que costaría la estadía a tarifa normal; sólo cuando se aplicó una promo que ahorra algo.</summary>
+        public decimal? TotalSinPromo { get; set; }
         public bool PromoAplicada { get; set; }
         public string? EtiquetaPromo { get; set; }
 
