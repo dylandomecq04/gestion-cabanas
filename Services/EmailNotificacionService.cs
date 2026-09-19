@@ -18,6 +18,8 @@ namespace GestionCabanas.Services
             _logger = logger;
         }
 
+        private static MailboxAddress Remitente(string usuario) => new("Sidharta Cabañas", usuario);
+
         public async Task NotificarNuevaSolicitudAsync(Cabana cabana, Reserva reserva)
         {
             var usuario = _config["Notificaciones:Email:Usuario"];
@@ -30,7 +32,7 @@ namespace GestionCabanas.Services
             }
 
             var mensaje = new MimeMessage();
-            mensaje.From.Add(MailboxAddress.Parse(usuario));
+            mensaje.From.Add(Remitente(usuario));
             mensaje.To.Add(MailboxAddress.Parse(destinatario));
             mensaje.Subject = $"Nueva solicitud de reserva - {cabana.Nombre}";
             mensaje.Body = new TextPart("plain")
@@ -61,7 +63,7 @@ namespace GestionCabanas.Services
             }
 
             var mensaje = new MimeMessage();
-            mensaje.From.Add(MailboxAddress.Parse(usuario));
+            mensaje.From.Add(Remitente(usuario));
             mensaje.To.Add(MailboxAddress.Parse(reserva.Email));
             mensaje.Subject = $"Recibimos tu solicitud de reserva - {cabana.Nombre}";
             mensaje.Body = new TextPart("plain")
@@ -93,7 +95,7 @@ namespace GestionCabanas.Services
             }
 
             var mensaje = new MimeMessage();
-            mensaje.From.Add(MailboxAddress.Parse(usuario));
+            mensaje.From.Add(Remitente(usuario));
             mensaje.To.Add(destino);
             mensaje.Subject = $"Tu reserva está confirmada - {cabana.Nombre}";
             mensaje.Body = new TextPart("plain")
