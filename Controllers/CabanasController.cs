@@ -132,7 +132,7 @@ namespace GestionCabanas.Controllers
             _db.Reservas.Add(reserva);
             await _db.SaveChangesAsync();
 
-            await _email.NotificarNuevaSolicitudAsync(cabana, reserva);
+            await _email.NotificarNuevaSolicitudAsync(cabana, reserva, $"{Request.Scheme}://{Request.Host}");
             if (!string.IsNullOrWhiteSpace(reserva.Email))
             {
                 await _email.NotificarConfirmacionHuespedAsync(cabana, reserva);
@@ -353,7 +353,7 @@ namespace GestionCabanas.Controllers
             foreach (var reserva in reservasCreadas)
             {
                 var cabana = cabanas.First(c => c.Id == reserva.CabanaId);
-                await _email.NotificarNuevaSolicitudAsync(cabana, reserva);
+                await _email.NotificarNuevaSolicitudAsync(cabana, reserva, $"{Request.Scheme}://{Request.Host}");
                 if (!string.IsNullOrWhiteSpace(reserva.Email))
                 {
                     await _email.NotificarConfirmacionHuespedAsync(cabana, reserva);

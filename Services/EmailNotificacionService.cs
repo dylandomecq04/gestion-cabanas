@@ -20,7 +20,7 @@ namespace GestionCabanas.Services
 
         private static MailboxAddress Remitente(string usuario) => new("Sidharta Cabañas", usuario);
 
-        public async Task NotificarNuevaSolicitudAsync(Cabana cabana, Reserva reserva)
+        public async Task NotificarNuevaSolicitudAsync(Cabana cabana, Reserva reserva, string urlBase)
         {
             var usuario = _config["Notificaciones:Email:Usuario"];
             var destinatario = _config["Notificaciones:Email:Destinatario"];
@@ -30,6 +30,8 @@ namespace GestionCabanas.Services
                 _logger.LogWarning("Notificación de email omitida: falta completar Notificaciones:Email en appsettings.json");
                 return;
             }
+
+            var urlPanel = $"{urlBase.TrimEnd('/')}/Admin/Reservas?estado=Pendiente&anio={reserva.FechaDesde.Year}&mes={reserva.FechaDesde.Month}";
 
             var mensaje = new MimeMessage();
             mensaje.From.Add(Remitente(usuario));
@@ -46,7 +48,8 @@ namespace GestionCabanas.Services
                     Personas: {reserva.CantidadPersonas} ({reserva.CantidadAdultos} adultos, {reserva.CantidadMenores} menores)
                     Teléfono: {reserva.Telefono}
 
-                    Entrá al panel de administración para confirmarla o rechazarla.
+                    Confirmala o rechazala desde el panel de administración:
+                    {urlPanel}
                     """
             };
 
