@@ -261,6 +261,8 @@
         }
 
         const __maxPersonas = @PoliticaPrecios.MaxPersonasPorReserva;
+        const __patronTelefono = /^(?=(?:\D*\d){8,15}\D*$)\+?[\d\s\-.()]+$/;
+        const __patronEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
         let __ultimaOpcionesBusqueda = [];
         let __datosHuesped = {};
 
@@ -283,6 +285,14 @@
             }
             if (!telefono) {
                 mostrarErrorGeneral('Ingresá un teléfono de contacto.');
+                return;
+            }
+            if (!__patronTelefono.test(telefono)) {
+                mostrarErrorGeneral('Ingresá un teléfono válido, con al menos 8 números.');
+                return;
+            }
+            if (email && !__patronEmail.test(email)) {
+                mostrarErrorGeneral('Ingresá un email válido (ejemplo: nombre@dominio.com).');
                 return;
             }
             if (adultos < 1) {

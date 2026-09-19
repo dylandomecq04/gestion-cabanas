@@ -10,10 +10,11 @@ namespace GestionCabanas.Models
 
         [Required(ErrorMessage = "Ingresá un teléfono de contacto")]
         [StringLength(50)]
+        [RegularExpression(ValidacionesContacto.PatronTelefono, ErrorMessage = ValidacionesContacto.MensajeTelefono)]
         public string? Telefono { get; set; }
 
-        [EmailAddress(ErrorMessage = "Ingresá un email válido")]
         [StringLength(150)]
+        [RegularExpression(ValidacionesContacto.PatronEmail, ErrorMessage = ValidacionesContacto.MensajeEmail)]
         public string? Email { get; set; }
 
         [Range(1, PoliticaPrecios.MaxPersonasPorReserva, ErrorMessage = "Tiene que haber al menos un adulto (y hasta 8 personas en total)")]
