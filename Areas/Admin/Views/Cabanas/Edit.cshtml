@@ -62,11 +62,11 @@
                 </div>
             }
         </div>
-        <p class="mb-3 text-xs text-ink-400">Arrastrá las fotos para ordenarlas. La primera es la portada que se muestra en el sitio público.</p>
+        <p class="mb-3 text-xs text-ink-400">Ordenalas arrastrándolas o con las flechitas de cada foto. La primera es la portada que se muestra en el sitio público.</p>
         <form id="form-reordenar-fotos" asp-action="ReordenarFotos" asp-route-cabanaId="@Model.Id" method="post"></form>
         <form id="form-eliminar-fotos-cabana" asp-action="EliminarFotos" asp-route-cabanaId="@Model.Id" method="post"
               onsubmit="return confirmarAccion(event, '¿Eliminar las fotos seleccionadas?');">
-            <div id="fotos-grid" class="grid grid-cols-3 gap-3">
+            <div id="fotos-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 @{ var fotosOrdenadas = Model.Fotos.OrderBy(f => f.Orden).ToList(); }
                 @for (var i = 0; i < fotosOrdenadas.Count; i++)
                 {
@@ -79,6 +79,16 @@
                         </label>
                         <button type="button" onclick="eliminarUnaFotoCabana(@foto.Id)"
                                 class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-soft transition hover:bg-rose-700">&times;</button>
+                        <div class="absolute bottom-1 right-1 flex gap-1">
+                            <button type="button" data-mover="-1" onclick="moverFotoCabana(this, -1)" aria-label="Mover la foto antes"
+                                    class="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-ink-700 shadow-soft transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-30">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                            </button>
+                            <button type="button" data-mover="1" onclick="moverFotoCabana(this, 1)" aria-label="Mover la foto después"
+                                    class="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-ink-700 shadow-soft transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-30">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                            </button>
+                        </div>
                     </div>
                 }
             </div>
@@ -104,9 +114,17 @@
 
             let arrastrada = null;
 
-            function actualizarBadgePortada() {
-                grid.querySelectorAll('.badge-portada').forEach((badge, i) => badge.classList.toggle('hidden', i !== 0));
+            // Deja al día la marca de "Portada" y las flechitas (la primera no puede ir más
+            // atrás ni la última más adelante).
+            function actualizarOrdenVisual() {
+                const items = Array.from(grid.querySelectorAll('.foto-item'));
+                items.forEach((item, i) => {
+                    item.querySelector('.badge-portada').classList.toggle('hidden', i !== 0);
+                    item.querySelector('[data-mover="-1"]').disabled = i === 0;
+                    item.querySelector('[data-mover="1"]').disabled = i === items.length - 1;
+                });
             }
+            actualizarOrdenVisual();
 
             async function guardarOrden() {
                 const form = document.getElementById('form-reordenar-fotos');
@@ -145,7 +163,7 @@
                     antes = e.clientX < rect.left + rect.width / 2;
                 }
                 item.parentNode.insertBefore(arrastrada, antes ? item : item.nextSibling);
-                actualizarBadgePortada();
+                actualizarOrdenVisual();
             });
 
             grid.addEventListener('drop', function (e) {
@@ -155,9 +173,23 @@
             grid.addEventListener('dragend', function () {
                 arrastrada?.classList.remove('opacity-40');
                 arrastrada = null;
-                actualizarBadgePortada();
+                actualizarOrdenVisual();
                 guardarOrden();
             });
+
+            // Alternativa al arrastre para el celu: cada clic mueve la foto un lugar. Si se toca
+            // varias veces seguidas se guarda una sola vez, con el orden final.
+            let temporizadorGuardado = null;
+            window.moverFotoCabana = function (boton, delta) {
+                const item = boton.closest('.foto-item');
+                const vecino = delta < 0 ? item.previousElementSibling : item.nextElementSibling;
+                if (!vecino) return;
+
+                grid.insertBefore(delta < 0 ? item : vecino, delta < 0 ? vecino : item);
+                actualizarOrdenVisual();
+                clearTimeout(temporizadorGuardado);
+                temporizadorGuardado = setTimeout(guardarOrden, 400);
+            };
         })();
 
         function obtenerCheckboxesFotosCabana() {
