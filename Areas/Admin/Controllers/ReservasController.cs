@@ -199,6 +199,22 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return Json(libres.Select(c => new { id = c.Id, nombre = c.Nombre }));
         }
 
+        /// <summary>
+        /// Lo usa el formulario de carga para sugerir Pagó / Pagar: el valor total de la estadía
+        /// según las tarifas cargadas, o null si no se puede calcular (sin tarifa, sin adultos, etc.).
+        /// </summary>
+        public async Task<IActionResult> TotalSugerido(int cabanaId, DateTime desde, DateTime hasta, int personas, int menores)
+        {
+            var adultos = personas - menores;
+            if (adultos < 1 || menores < 0 || hasta.Date <= desde.Date)
+            {
+                return Json(new { total = (decimal?)null });
+            }
+
+            var total = await _disponibilidad.CalcularValorTotalAsync(cabanaId, desde.Date, hasta.Date, new Huespedes(adultos, menores));
+            return Json(new { total });
+        }
+
         public async Task<IActionResult> Create(int? cabanaId, DateTime? fecha, DateTime? fechaHasta, string? vista, int? anio, int? mes, EstadoReserva? estado)
         {
             GuardarOrigen(vista, anio, mes);

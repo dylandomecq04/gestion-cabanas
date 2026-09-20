@@ -192,5 +192,72 @@
             inputDesde.addEventListener('change', actualizar);
             inputHasta.addEventListener('change', actualizar);
         })();
+
+        // Pagó y Pagar se completan solos con la mitad del valor total de la estadía; si se
+        // escribe a mano en alguno de los dos, se deja de pisarlos.
+        (function () {
+            const selectCabana = document.getElementById('CabanaId');
+            const inputDesde = document.getElementById('FechaDesde');
+            const inputHasta = document.getElementById('FechaHasta');
+            const inputPersonas = document.getElementById('CantidadPersonas');
+            const inputMenores = document.getElementById('CantidadMenores');
+            const pagoDisplay = document.getElementById('pago-display');
+            const pagoReal = document.getElementById('pago-real');
+            const valorDisplay = document.getElementById('valor-display');
+            const valorReal = document.getElementById('valor-real');
+            const urlTotal = '@Url.Action("TotalSugerido", "Reservas", new { area = "Admin" })';
+            let editadoAMano = pagoReal.value !== '' || valorReal.value !== '';
+            let pedido = 0;
+
+            function poner(display, real, monto) {
+                display.value = monto === null ? '' : monto.toLocaleString('es-AR');
+                real.value = monto === null ? '' : String(monto);
+            }
+
+            async function sugerir() {
+                if (editadoAMano) return;
+                if (!inputDesde.value || !inputHasta.value || inputHasta.value <= inputDesde.value) {
+                    poner(pagoDisplay, pagoReal, null);
+                    poner(valorDisplay, valorReal, null);
+                    return;
+                }
+
+                const actual = ++pedido;
+                const consulta = new URLSearchParams({
+                    cabanaId: selectCabana.value,
+                    desde: inputDesde.value,
+                    hasta: inputHasta.value,
+                    personas: inputPersonas.value || 0,
+                    menores: inputMenores.value || 0
+                });
+                try {
+                    const respuesta = await fetch(urlTotal + '?' + consulta);
+                    if (!respuesta.ok) return;
+                    const datos = await respuesta.json();
+                    if (actual !== pedido || editadoAMano) return;
+                    if (datos.total === null) {
+                        poner(pagoDisplay, pagoReal, null);
+                        poner(valorDisplay, valorReal, null);
+                        return;
+                    }
+                    const total = Math.round(datos.total);
+                    const mitad = Math.floor(total / 2);
+                    poner(pagoDisplay, pagoReal, mitad);
+                    poner(valorDisplay, valorReal, total - mitad);
+                } catch {
+                    // Sin conexión: se dejan los campos como estaban.
+                }
+            }
+
+            pagoDisplay.addEventListener('input', () => { editadoAMano = true; });
+            valorDisplay.addEventListener('input', () => { editadoAMano = true; });
+            for (const campo of [selectCabana, inputDesde, inputHasta]) {
+                campo.addEventListener('change', sugerir);
+            }
+            for (const campo of [inputPersonas, inputMenores]) {
+                campo.addEventListener('input', sugerir);
+            }
+            sugerir();
+        })();
     </script>
 }
