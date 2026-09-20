@@ -1,0 +1,314 @@
+@{
+    ViewData["Title"] = "Galería del predio";
+    var fotos = (List<ItemGaleria>)ViewBag.Fotos;
+    var reels = (List<ItemGaleria>)ViewBag.Reels;
+}
+
+<h1 class="mb-2 font-display text-2xl font-semibold text-ink-900">Galería del predio</h1>
+<p class="mb-6 text-sm text-ink-500">Lo que subas acá aparece en la sección <span class="font-medium text-ink-700">Galería</span> del sitio: los reels arriba y las fotos del lugar abajo, siempre lo más nuevo primero.</p>
+
+<div id="aviso-galeria" class="hidden mb-6 rounded-xl px-4 py-3 text-sm font-medium" role="status"></div>
+
+<div class="space-y-6">
+    @* ---------- Reels ---------- *@
+    <section data-galeria="reels" class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+        <h2 class="font-display text-lg font-semibold text-ink-900">Reels</h2>
+        <p class="mt-1 text-sm text-ink-500">Videos verticales del lugar. Formatos MP4, MOV o WEBM, hasta 100 MB cada uno. Conviene MP4: se ve en todos los celulares.</p>
+
+        <form id="form-subir-reels" asp-action="SubirReels" method="post" enctype="multipart/form-data" data-skip-loading
+              class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+                <label class="cursor-pointer whitespace-nowrap rounded-full bg-river-50 px-4 py-2 text-sm font-semibold text-river-700 transition hover:bg-river-100 focus-within:ring-4 focus-within:ring-river-100">
+                    Elegir archivos
+                    <input type="file" name="archivos" multiple accept=".mp4,.m4v,.mov,.webm,video/mp4,video/quicktime,video/webm" data-selector-archivos class="sr-only" />
+                </label>
+                <span data-nombre-archivos class="min-w-0 break-words text-sm text-ink-500">Ningún archivo elegido</span>
+            </div>
+            <button type="submit" class="whitespace-nowrap rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 sm:shrink-0">
+                Subir reels
+            </button>
+        </form>
+
+        <div class="mt-5">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                <h3 class="text-sm font-semibold text-ink-700">Reels publicados (@reels.Count)</h3>
+                @if (reels.Any())
+                {
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <label class="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-ink-500">
+                            <input type="checkbox" data-seleccionar-todo class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
+                            Seleccionar todo
+                        </label>
+                        <button type="button" data-eliminar-seleccion disabled
+                                class="whitespace-nowrap rounded-full bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
+                            Eliminar seleccionados (<span data-contador>0</span>)
+                        </button>
+                    </div>
+                }
+            </div>
+            <form asp-action="Eliminar" method="post" data-form-seleccion onsubmit="return confirmarAccion(event, '¿Eliminar los reels seleccionados?');">
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+                    @foreach (var reel in reels)
+                    {
+                        <div class="group relative overflow-hidden rounded-xl bg-ink-900">
+                            <label class="absolute left-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/80 shadow-soft">
+                                <input type="checkbox" name="ids" value="@reel.Id" data-item class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
+                            </label>
+                            <button type="button" onclick="eliminarUno(@reel.Id)" aria-label="Eliminar reel"
+                                    class="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-soft transition hover:bg-rose-700">&times;</button>
+                            <button type="button" onclick="abrirVisor('reel', '@reel.RutaArchivo')" aria-label="Ver reel" class="block w-full">
+                                <video src="@(reel.RutaArchivo)#t=0.1" preload="metadata" muted playsinline
+                                       class="pointer-events-none aspect-[9/16] w-full object-cover transition group-hover:opacity-90"></video>
+                                <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                    <span class="flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-ink-900 shadow-soft">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" class="ml-0.5 h-5 w-5"><path d="M8 5v14l11-7z" /></svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </form>
+            @if (!reels.Any())
+            {
+                <p class="text-sm text-ink-400">Todavía no hay reels cargados.</p>
+            }
+        </div>
+    </section>
+
+    @* ---------- Fotos ---------- *@
+    <section data-galeria="fotos" class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+        <h2 class="font-display text-lg font-semibold text-ink-900">Fotos del lugar</h2>
+        <p class="mt-1 text-sm text-ink-500">Formatos JPG, PNG o WEBP. Podés elegir varias de una vez.</p>
+
+        <form asp-action="SubirFotos" method="post" enctype="multipart/form-data" data-loading-text="Subiendo fotos..."
+              class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+                <label class="cursor-pointer whitespace-nowrap rounded-full bg-river-50 px-4 py-2 text-sm font-semibold text-river-700 transition hover:bg-river-100 focus-within:ring-4 focus-within:ring-river-100">
+                    Elegir archivos
+                    <input type="file" name="archivos" multiple accept=".jpg,.jpeg,.png,.webp" data-selector-archivos class="sr-only" />
+                </label>
+                <span data-nombre-archivos class="min-w-0 break-words text-sm text-ink-500">Ningún archivo elegido</span>
+            </div>
+            <button type="submit" class="whitespace-nowrap rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 sm:shrink-0">
+                Subir fotos
+            </button>
+        </form>
+
+        <div class="mt-5">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                <h3 class="text-sm font-semibold text-ink-700">Fotos publicadas (@fotos.Count)</h3>
+                @if (fotos.Any())
+                {
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <label class="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-ink-500">
+                            <input type="checkbox" data-seleccionar-todo class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
+                            Seleccionar todo
+                        </label>
+                        <button type="button" data-eliminar-seleccion disabled
+                                class="whitespace-nowrap rounded-full bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
+                            Eliminar seleccionadas (<span data-contador>0</span>)
+                        </button>
+                    </div>
+                }
+            </div>
+            <form asp-action="Eliminar" method="post" data-form-seleccion onsubmit="return confirmarAccion(event, '¿Eliminar las fotos seleccionadas?');">
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                    @foreach (var foto in fotos)
+                    {
+                        <div class="group relative overflow-hidden rounded-xl">
+                            <label class="absolute left-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/80 shadow-soft">
+                                <input type="checkbox" name="ids" value="@foto.Id" data-item class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
+                            </label>
+                            <button type="button" onclick="eliminarUno(@foto.Id)" aria-label="Eliminar foto"
+                                    class="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-soft transition hover:bg-rose-700">&times;</button>
+                            <button type="button" onclick="abrirVisor('foto', '@foto.RutaArchivo')" aria-label="Ver foto" class="block w-full">
+                                <img src="@foto.RutaArchivo" alt="" loading="lazy" class="h-28 w-full cursor-zoom-in object-cover transition group-hover:opacity-90 sm:h-32" />
+                            </button>
+                        </div>
+                    }
+                </div>
+            </form>
+            @if (!fotos.Any())
+            {
+                <p class="text-sm text-ink-400">Todavía no hay fotos cargadas.</p>
+            }
+        </div>
+    </section>
+</div>
+
+<form id="form-eliminar-uno" asp-action="Eliminar" method="post" class="hidden"
+      onsubmit="return confirmarAccion(event, '¿Eliminar este elemento?');">
+    <input type="hidden" id="id-eliminar-uno" name="ids" value="" />
+</form>
+
+<div id="visor-galeria" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-ink-950/80 p-4 backdrop-blur-sm" onclick="if (event.target === this) cerrarVisor();">
+    <button type="button" onclick="cerrarVisor()" aria-label="Cerrar" class="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+    </button>
+    <img id="visor-galeria-img" src="" alt="" class="hidden max-h-[85vh] max-w-full rounded-2xl object-contain shadow-lift" />
+    <video id="visor-galeria-video" controls playsinline class="hidden max-h-[85vh] max-w-full rounded-2xl bg-black shadow-lift"></video>
+</div>
+
+@section Scripts {
+    <script>
+        // ---------- Visor (foto o reel a pantalla completa) ----------
+        function abrirVisor(tipo, ruta) {
+            const img = document.getElementById('visor-galeria-img');
+            const video = document.getElementById('visor-galeria-video');
+            if (tipo === 'reel') {
+                video.src = ruta;
+                video.classList.remove('hidden');
+                video.play().catch(function () { });
+            } else {
+                img.src = ruta;
+                img.classList.remove('hidden');
+            }
+            document.getElementById('visor-galeria').classList.remove('hidden');
+        }
+
+        function cerrarVisor() {
+            const img = document.getElementById('visor-galeria-img');
+            const video = document.getElementById('visor-galeria-video');
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+            video.classList.add('hidden');
+            img.src = '';
+            img.classList.add('hidden');
+            document.getElementById('visor-galeria').classList.add('hidden');
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') cerrarVisor();
+        });
+
+        // ---------- Selección y borrado (una sección de reels y otra de fotos) ----------
+        function eliminarUno(id) {
+            document.getElementById('id-eliminar-uno').value = id;
+            document.getElementById('form-eliminar-uno').requestSubmit();
+        }
+
+        document.querySelectorAll('[data-galeria]').forEach(function (seccion) {
+            const form = seccion.querySelector('[data-form-seleccion]');
+            const todo = seccion.querySelector('[data-seleccionar-todo]');
+            const boton = seccion.querySelector('[data-eliminar-seleccion]');
+            const contador = seccion.querySelector('[data-contador]');
+            if (!form || !todo || !boton) return;
+
+            const items = Array.from(form.querySelectorAll('[data-item]'));
+
+            function actualizar() {
+                const marcados = items.filter(function (i) { return i.checked; });
+                contador.textContent = marcados.length;
+                boton.disabled = marcados.length === 0;
+                todo.checked = items.length > 0 && marcados.length === items.length;
+                todo.indeterminate = marcados.length > 0 && marcados.length < items.length;
+            }
+
+            items.forEach(function (i) { i.addEventListener('change', actualizar); });
+            todo.addEventListener('change', function () {
+                items.forEach(function (i) { i.checked = todo.checked; });
+                actualizar();
+            });
+            boton.addEventListener('click', function () { form.requestSubmit(); });
+        });
+
+        // ---------- Texto al lado del botón "Elegir archivos" ----------
+        document.querySelectorAll('[data-selector-archivos]').forEach(function (input) {
+            const texto = input.closest('form').querySelector('[data-nombre-archivos]');
+            input.addEventListener('change', function () {
+                const n = input.files.length;
+                texto.textContent = n === 0 ? 'Ningún archivo elegido' : n === 1 ? input.files[0].name : n + ' archivos elegidos';
+            });
+        });
+
+        // ---------- Subida de reels: de a uno, con barra de progreso real ----------
+        // Un video de celular pesa decenas de MB; subirlos de a uno muestra cuánto falta y evita
+        // que un solo request enorme falle y se pierdan todos.
+        (function () {
+            const form = document.getElementById('form-subir-reels');
+            const overlay = document.getElementById('overlay-cargando');
+            const barra = document.getElementById('overlay-cargando-barra');
+            const texto = document.getElementById('overlay-cargando-texto');
+
+            function subirUno(archivo, token, alAvanzar) {
+                return new Promise(function (resolve, reject) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', form.action);
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    xhr.upload.onprogress = function (e) { if (e.lengthComputable) alAvanzar(e.loaded / e.total); };
+                    xhr.onload = function () {
+                        try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(e); }
+                    };
+                    xhr.onerror = xhr.ontimeout = function () { reject(new Error('conexion')); };
+
+                    const datos = new FormData();
+                    datos.append('__RequestVerificationToken', token);
+                    datos.append('archivos', archivo);
+                    xhr.send(datos);
+                });
+            }
+
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                const archivos = Array.from(form.querySelector('input[type="file"]').files);
+                if (archivos.length === 0) {
+                    mostrarAviso('Elegí al menos un reel para subir.', true);
+                    return;
+                }
+
+                const token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+                form.querySelector('button[type="submit"]').disabled = true;
+                overlay.classList.remove('hidden');
+
+                let subidos = 0;
+                const fallos = [];
+                for (let i = 0; i < archivos.length; i++) {
+                    const archivo = archivos[i];
+                    texto.textContent = 'Subiendo reel ' + (i + 1) + ' de ' + archivos.length + '...';
+                    barra.style.width = (i / archivos.length * 100) + '%';
+                    try {
+                        const respuesta = await subirUno(archivo, token, function (avance) {
+                            barra.style.width = ((i + avance * 0.98) / archivos.length * 100) + '%';
+                        });
+                        if (respuesta.ok) subidos++; else fallos.push(respuesta.mensaje);
+                    } catch (e) {
+                        fallos.push('No se pudo subir "' + archivo.name + '": se cortó la conexión o venció la sesión.');
+                    }
+                }
+
+                try {
+                    sessionStorage.setItem('galeria-resultado', JSON.stringify({ subidos: subidos, fallos: fallos }));
+                } catch (e) { }
+                location.reload();
+            });
+        })();
+
+        // ---------- Aviso con el resultado de la última subida ----------
+        function mostrarAviso(mensaje, esError) {
+            const aviso = document.getElementById('aviso-galeria');
+            aviso.textContent = mensaje;
+            aviso.className = 'mb-6 rounded-xl px-4 py-3 text-sm font-medium ' +
+                (esError ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-200' : 'bg-river-50 text-river-800 ring-1 ring-river-100');
+            aviso.scrollIntoView({ block: 'nearest' });
+        }
+
+        (function () {
+            let resultado = null;
+            try {
+                resultado = JSON.parse(sessionStorage.getItem('galeria-resultado'));
+                sessionStorage.removeItem('galeria-resultado');
+            } catch (e) { }
+            if (!resultado) return;
+
+            const partes = [];
+            if (resultado.subidos > 0) {
+                partes.push(resultado.subidos === 1 ? 'Se subió 1 reel.' : 'Se subieron ' + resultado.subidos + ' reels.');
+            }
+            resultado.fallos.forEach(function (f) { partes.push(f); });
+            if (partes.length) mostrarAviso(partes.join(' '), resultado.fallos.length > 0);
+        })();
+    </script>
+}

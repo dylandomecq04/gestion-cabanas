@@ -52,6 +52,14 @@ public class HomeController : Controller
         return View(info);
     }
 
+    public async Task<IActionResult> Galeria()
+    {
+        var items = await _db.ItemsGaleria.OrderByDescending(i => i.Id).ToListAsync();
+        ViewBag.Reels = items.Where(i => i.Tipo == TipoItemGaleria.Reel).ToList();
+        ViewBag.Fotos = items.Where(i => i.Tipo == TipoItemGaleria.Foto).ToList();
+        return View();
+    }
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

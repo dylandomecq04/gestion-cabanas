@@ -1,0 +1,168 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Galería del predio";
+    var reels = (List<ItemGaleria>)ViewBag.Reels;
+    var fotos = (List<ItemGaleria>)ViewBag.Fotos;
+    var visorDatos = JsonSerializer.Serialize(new
+    {
+        reels = reels.Select(r => r.RutaArchivo),
+        fotos = fotos.Select(f => f.RutaArchivo)
+    });
+}
+
+<section class="mb-8 text-center sm:mb-10">
+    <p class="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-river-600">El predio</p>
+    <h1 class="font-display text-3xl font-semibold text-ink-900 sm:text-4xl">Galería del predio</h1>
+    <p class="mx-auto mt-3 max-w-xl text-sm text-ink-500 sm:text-base">Mirá cómo se vive el lugar: reels y fotos del entorno, el río y las cabañas.</p>
+</section>
+
+@if (!reels.Any() && !fotos.Any())
+{
+    <div class="mx-auto max-w-md rounded-2.5xl bg-white p-6 text-center shadow-soft ring-1 ring-ink-100">
+        <p class="font-display text-lg font-semibold text-ink-900">Muy pronto</p>
+        <p class="mt-1 text-sm text-ink-500">Todavía estamos armando la galería. Mientras tanto, mirá las novedades en nuestro Instagram.</p>
+        <a href="https://www.instagram.com/cabaniasidharta/" target="_blank" rel="noopener"
+           class="mt-4 inline-block rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">Ver Instagram</a>
+    </div>
+}
+
+@if (reels.Any())
+{
+    <section class="mb-12">
+        <h2 class="mb-4 font-display text-xl font-semibold text-ink-900">Reels</h2>
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            @for (var i = 0; i < reels.Count; i++)
+            {
+                <button type="button" onclick="abrirVisor('reels', @i)" aria-label="Reproducir reel @(i + 1)"
+                        class="group relative overflow-hidden rounded-2xl bg-ink-900 shadow-soft ring-1 ring-ink-100">
+                    <video src="@(reels[i].RutaArchivo)#t=0.1" preload="metadata" muted playsinline
+                           class="pointer-events-none aspect-[9/16] w-full object-cover transition duration-300 group-hover:scale-105"></video>
+                    <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-950/40 via-transparent to-transparent"></span>
+                    <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/85 text-ink-900 shadow-lift transition group-hover:scale-110">
+                            <svg viewBox="0 0 24 24" fill="currentColor" class="ml-0.5 h-6 w-6"><path d="M8 5v14l11-7z" /></svg>
+                        </span>
+                    </span>
+                </button>
+            }
+        </div>
+    </section>
+}
+
+@if (fotos.Any())
+{
+    <section>
+        <h2 class="mb-4 font-display text-xl font-semibold text-ink-900">Fotos del lugar</h2>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
+            @for (var i = 0; i < fotos.Count; i++)
+            {
+                <button type="button" onclick="abrirVisor('fotos', @i)" aria-label="Ampliar foto @(i + 1)"
+                        class="group overflow-hidden rounded-2xl bg-ink-100 shadow-soft ring-1 ring-ink-100">
+                    <img src="@fotos[i].RutaArchivo" alt="Foto del predio" loading="lazy"
+                         class="aspect-[4/3] w-full cursor-zoom-in object-cover transition duration-300 group-hover:scale-105" />
+                </button>
+            }
+        </div>
+    </section>
+}
+
+<div id="visor" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-ink-950/90 p-4 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-label="Galería" onclick="if (event.target === this) cerrarVisor();">
+    <button type="button" onclick="cerrarVisor()" aria-label="Cerrar"
+            class="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+    </button>
+    <button type="button" id="visor-anterior" onclick="moverVisor(-1)" aria-label="Anterior"
+            class="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25 sm:left-5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+    </button>
+    <button type="button" id="visor-siguiente" onclick="moverVisor(1)" aria-label="Siguiente"
+            class="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25 sm:right-5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+    </button>
+    <img id="visor-img" src="" alt="" class="hidden max-h-[85vh] max-w-full rounded-2xl object-contain shadow-lift" />
+    <video id="visor-video" controls playsinline class="hidden max-h-[85vh] max-w-full rounded-2xl bg-black shadow-lift"></video>
+    <p id="visor-contador" class="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs font-medium text-white"></p>
+</div>
+
+@section Scripts {
+    <script>
+        const visorDatos = @Html.Raw(visorDatos);
+        let visorGrupo = null;
+        let visorIndice = 0;
+
+        function mostrarEnVisor() {
+            const lista = visorDatos[visorGrupo];
+            const img = document.getElementById('visor-img');
+            const video = document.getElementById('visor-video');
+
+            video.pause();
+            if (visorGrupo === 'reels') {
+                img.classList.add('hidden');
+                img.removeAttribute('src');
+                video.src = lista[visorIndice];
+                video.classList.remove('hidden');
+                video.play().catch(function () { });
+            } else {
+                video.classList.add('hidden');
+                video.removeAttribute('src');
+                video.load();
+                img.src = lista[visorIndice];
+                img.classList.remove('hidden');
+            }
+
+            document.getElementById('visor-contador').textContent = (visorIndice + 1) + ' / ' + lista.length;
+            document.getElementById('visor-anterior').classList.toggle('hidden', lista.length < 2);
+            document.getElementById('visor-siguiente').classList.toggle('hidden', lista.length < 2);
+        }
+
+        function abrirVisor(grupo, indice) {
+            visorGrupo = grupo;
+            visorIndice = indice;
+            mostrarEnVisor();
+            document.getElementById('visor').classList.remove('hidden');
+            document.documentElement.classList.add('overflow-hidden');
+        }
+
+        function cerrarVisor() {
+            const video = document.getElementById('visor-video');
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+            document.getElementById('visor-img').removeAttribute('src');
+            document.getElementById('visor').classList.add('hidden');
+            document.documentElement.classList.remove('overflow-hidden');
+            visorGrupo = null;
+        }
+
+        function moverVisor(delta) {
+            if (!visorGrupo) return;
+            const total = visorDatos[visorGrupo].length;
+            visorIndice = (visorIndice + delta + total) % total;
+            mostrarEnVisor();
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (!visorGrupo) return;
+            if (event.key === 'Escape') cerrarVisor();
+            else if (event.key === 'ArrowLeft') moverVisor(-1);
+            else if (event.key === 'ArrowRight') moverVisor(1);
+        });
+
+        // Deslizar con el dedo para pasar al anterior o al siguiente. Se ignora si el toque
+        // empezó en el video, para no chocar con su barra de avance.
+        (function () {
+            const visor = document.getElementById('visor');
+            let inicioX = null;
+            visor.addEventListener('touchstart', function (e) {
+                inicioX = e.target.id === 'visor-video' ? null : e.touches[0].clientX;
+            }, { passive: true });
+            visor.addEventListener('touchend', function (e) {
+                if (inicioX === null) return;
+                const dx = e.changedTouches[0].clientX - inicioX;
+                inicioX = null;
+                if (Math.abs(dx) > 50) moverVisor(dx < 0 ? 1 : -1);
+            }, { passive: true });
+        })();
+    </script>
+}

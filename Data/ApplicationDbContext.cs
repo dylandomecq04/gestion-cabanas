@@ -19,6 +19,7 @@ namespace GestionCabanas.Data
         public DbSet<PreguntaFrecuente> PreguntasFrecuentes => Set<PreguntaFrecuente>();
         public DbSet<InicioSitio> InicioSitio => Set<InicioSitio>();
         public DbSet<FotoHero> FotosHero => Set<FotoHero>();
+        public DbSet<ItemGaleria> ItemsGaleria => Set<ItemGaleria>();
         public DbSet<PromoEstadia> PromosEstadia => Set<PromoEstadia>();
         public DbSet<OneDriveConexion> OneDriveConexiones => Set<OneDriveConexion>();
 
