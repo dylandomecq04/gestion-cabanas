@@ -1,0 +1,67 @@
+@{
+    var distribucion = new (string Icono, string Texto)[]
+    {
+        ("🛏️", "1 dormitorio con cama matrimonial"),
+        ("🛋️", "Cocina/comedor con una cama de una plaza y otra que se saca de abajo"),
+        ("🚿", "Baño con ducha con agua caliente")
+    };
+
+    var equipamiento = new (string Icono, string Texto)[]
+    {
+        ("📺", "TV Smart"),
+        ("❄️", "Split frío/calor"),
+        ("♨️", "Agua caliente"),
+        ("🍽️", "Vajilla"),
+        ("☕", "Pava eléctrica"),
+        ("🍳", "Horno a gas"),
+        ("🧊", "Heladera con freezer"),
+        ("🔦", "Luz de emergencia")
+    };
+}
+
+<section class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6" aria-labelledby="titulo-comodidades">
+    <h2 id="titulo-comodidades" class="font-display text-lg font-semibold text-ink-900 sm:text-xl">
+        <span aria-hidden="true">🌲</span> Comodidades
+    </h2>
+
+    <div class="mt-4">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-ink-400">Cómo son las cabañas</h3>
+        <ul class="mt-2 space-y-2">
+            @foreach (var item in distribucion)
+            {
+                <li class="flex items-center gap-3 rounded-2xl bg-sand-50 px-3.5 py-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg shadow-soft" aria-hidden="true">@item.Icono</span>
+                    <span class="min-w-0 text-sm leading-snug text-ink-700 sm:text-base">@item.Texto</span>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="mt-5">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-ink-400">Equipadas con</h3>
+        <ul class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <li class="col-span-2 flex items-center gap-3 rounded-2xl bg-river-50 px-3.5 py-3 ring-1 ring-river-100 sm:col-span-4">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg shadow-soft" aria-hidden="true">📶</span>
+                <span class="min-w-0 text-sm leading-snug text-river-900 sm:text-base">
+                    <span class="font-semibold">Wifi Starlink</span>
+                    <span class="text-river-800">· conexión espectacular</span>
+                </span>
+            </li>
+            @foreach (var item in equipamiento)
+            {
+                <li class="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-sand-50 px-2 py-3 text-center">
+                    <span class="text-xl" aria-hidden="true">@item.Icono</span>
+                    <span class="text-xs font-medium leading-tight text-ink-700 sm:text-sm">@item.Texto</span>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="mt-5">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-ink-400">Al aire libre</h3>
+        <div class="mt-2 flex items-center gap-3 rounded-2xl bg-sand-50 px-3.5 py-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg shadow-soft" aria-hidden="true">🔥</span>
+            <span class="min-w-0 text-sm leading-snug text-ink-700 sm:text-base">Parrilla con mesa y banco, en un área privada e iluminada</span>
+        </div>
+    </div>
+</section>
