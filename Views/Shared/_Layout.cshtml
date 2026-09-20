@@ -44,12 +44,14 @@
         </div>
     </header>
 
-    <main class="mx-auto min-h-[60vh] max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+    @* En el inicio el hero cierra la página: sin aire debajo y con footer oscuro, para que no aparezca una franja clara al final. *@
+    @{ var heroCompleto = ViewData["HeroCompleto"] as bool? == true; }
+    <main class="mx-auto min-h-[60vh] max-w-6xl px-4 pt-8 sm:px-6 sm:pt-10 @(heroCompleto ? "pb-0" : "pb-8 sm:pb-10")">
         @RenderBody()
     </main>
 
-    <footer class="mt-16 border-t border-ink-100 bg-white/60">
-        <div class="mx-auto max-w-6xl px-4 py-4 text-center text-xs text-ink-400 sm:px-6">
+    <footer class="border-t @(heroCompleto ? "border-white/10 bg-river-950" : "mt-16 border-ink-100 bg-white/60")">
+        <div class="mx-auto max-w-6xl px-4 py-4 text-center text-xs sm:px-6 @(heroCompleto ? "text-river-100/70" : "text-ink-400")">
             <p>&copy; @DateTime.Now.Year Cabañas Sidharta &middot; El Tigre, Delta del Paraná.</p>
         </div>
     </footer>
