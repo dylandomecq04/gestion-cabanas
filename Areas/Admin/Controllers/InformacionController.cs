@@ -50,7 +50,16 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             info.Direccion = modelo.Direccion;
             info.ComoLlegar = modelo.ComoLlegar;
+            info.ComoLlegarAuto = modelo.ComoLlegarAuto;
+            info.ComoLlegarTren = modelo.ComoLlegarTren;
+            info.EmbarcaderoNombre = modelo.EmbarcaderoNombre;
+            info.EmbarcaderoDireccion = modelo.EmbarcaderoDireccion;
+            info.EmbarcaderoTelefono = modelo.EmbarcaderoTelefono;
+            info.LanchasRemis = modelo.LanchasRemis;
             info.Comodidades = modelo.Comodidades;
+            info.DondeComprar = modelo.DondeComprar;
+            info.Actividades = modelo.Actividades;
+            info.Normas = modelo.Normas;
             info.InformacionAdicional = modelo.InformacionAdicional;
 
             await _db.SaveChangesAsync();

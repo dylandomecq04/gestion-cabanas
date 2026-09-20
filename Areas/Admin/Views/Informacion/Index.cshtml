@@ -2,6 +2,10 @@
 @{
     ViewData["Title"] = "Información del sitio";
     var preguntas = (List<PreguntaFrecuente>)ViewBag.Preguntas;
+    var campo = "w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100";
+    var etiqueta = "mb-1 block text-sm font-medium text-ink-700";
+    var ayuda = "mt-1 text-xs text-ink-400";
+    var titulo = "border-b border-ink-100 pb-2 text-xs font-semibold uppercase tracking-wide text-ink-400";
 }
 
 <h1 class="mb-6 font-display text-2xl font-semibold text-ink-900">Información del sitio</h1>
@@ -10,23 +14,83 @@
     <form asp-action="Guardar" method="post" class="space-y-4 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
         <div asp-validation-summary="All" class="@(ViewData.ModelState.IsValid ? "hidden" : "rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700")"></div>
 
+        <h2 class="@titulo">Cómo llegar</h2>
         <div>
-            <label asp-for="Direccion" class="mb-1 block text-sm font-medium text-ink-700"></label>
-            <input asp-for="Direccion" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <label asp-for="Direccion" class="@etiqueta"></label>
+            <input asp-for="Direccion" class="@campo" />
             <span asp-validation-for="Direccion" class="mt-1 block text-xs font-medium text-rose-600"></span>
+            <p class="@ayuda">Si la completás, aparece con un botón para abrirla en Google Maps.</p>
         </div>
         <div>
-            <label asp-for="ComoLlegar" class="mb-1 block text-sm font-medium text-ink-700"></label>
-            <textarea asp-for="ComoLlegar" rows="4" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+            <label asp-for="ComoLlegar" class="@etiqueta"></label>
+            <textarea asp-for="ComoLlegar" rows="5" class="@campo"></textarea>
+            <span asp-validation-for="ComoLlegar" class="mt-1 block text-xs font-medium text-rose-600"></span>
+            <p class="@ayuda">Texto de introducción, arriba de los pasos.</p>
         </div>
         <div>
-            <label asp-for="Comodidades" class="mb-1 block text-sm font-medium text-ink-700"></label>
-            <textarea asp-for="Comodidades" rows="5" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
-            <p class="mt-1 text-xs text-ink-400">Un ítem por línea (ej: "Pileta compartida"), se muestran como lista en el sitio.</p>
+            <label asp-for="ComoLlegarAuto" class="@etiqueta"></label>
+            <textarea asp-for="ComoLlegarAuto" rows="8" class="@campo"></textarea>
+            <span asp-validation-for="ComoLlegarAuto" class="mt-1 block text-xs font-medium text-rose-600"></span>
+            <p class="@ayuda">Un paso por línea; en el sitio se numeran solos. Sin escribir "1.", "2."…</p>
         </div>
         <div>
-            <label asp-for="InformacionAdicional" class="mb-1 block text-sm font-medium text-ink-700"></label>
-            <textarea asp-for="InformacionAdicional" rows="4" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100"></textarea>
+            <label asp-for="ComoLlegarTren" class="@etiqueta"></label>
+            <textarea asp-for="ComoLlegarTren" rows="6" class="@campo"></textarea>
+            <span asp-validation-for="ComoLlegarTren" class="mt-1 block text-xs font-medium text-rose-600"></span>
+            <p class="@ayuda">Un paso por línea, igual que en auto.</p>
+        </div>
+        <div>
+            <label asp-for="EmbarcaderoNombre" class="@etiqueta"></label>
+            <input asp-for="EmbarcaderoNombre" class="@campo" />
+            <span asp-validation-for="EmbarcaderoNombre" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+        <div>
+            <label asp-for="EmbarcaderoDireccion" class="@etiqueta"></label>
+            <input asp-for="EmbarcaderoDireccion" class="@campo" />
+            <span asp-validation-for="EmbarcaderoDireccion" class="mt-1 block text-xs font-medium text-rose-600"></span>
+            <p class="@ayuda">Con el nombre y esta dirección se arma el botón de Google Maps.</p>
+        </div>
+        <div>
+            <label asp-for="EmbarcaderoTelefono" class="@etiqueta"></label>
+            <input asp-for="EmbarcaderoTelefono" class="@campo" />
+            <span asp-validation-for="EmbarcaderoTelefono" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+        <div>
+            <label asp-for="LanchasRemis" class="@etiqueta"></label>
+            <textarea asp-for="LanchasRemis" rows="4" class="@campo"></textarea>
+            <span asp-validation-for="LanchasRemis" class="mt-1 block text-xs font-medium text-rose-600"></span>
+            <p class="@ayuda">Formato: Nombre | Teléfono | Nota (la nota es opcional). Ej: Ariel | +54 9 11 6292-8874 | Hasta 4 personas. El teléfono se puede tocar para llamar.</p>
+        </div>
+
+        <h2 class="@titulo pt-2">En el complejo y la zona</h2>
+        <div>
+            <label asp-for="Comodidades" class="@etiqueta"></label>
+            <textarea asp-for="Comodidades" rows="6" class="@campo"></textarea>
+            <span asp-validation-for="Comodidades" class="mt-1 block text-xs font-medium text-rose-600"></span>
+            <p class="@ayuda">Un ítem por línea (ej: "Pileta compartida"); se muestran como pastillas en el sitio.</p>
+        </div>
+        <div>
+            <label asp-for="DondeComprar" class="@etiqueta"></label>
+            <textarea asp-for="DondeComprar" rows="6" class="@campo"></textarea>
+            <span asp-validation-for="DondeComprar" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+        <div>
+            <label asp-for="Actividades" class="@etiqueta"></label>
+            <textarea asp-for="Actividades" rows="6" class="@campo"></textarea>
+            <span asp-validation-for="Actividades" class="mt-1 block text-xs font-medium text-rose-600"></span>
+        </div>
+
+        <h2 class="@titulo pt-2">Normas e información extra</h2>
+        <div>
+            <label asp-for="Normas" class="@etiqueta"></label>
+            <textarea asp-for="Normas" rows="12" class="@campo"></textarea>
+            <span asp-validation-for="Normas" class="mt-1 block text-xs font-medium text-rose-600"></span>
+            <p class="@ayuda">Una norma o aviso por línea.</p>
+        </div>
+        <div>
+            <label asp-for="InformacionAdicional" class="@etiqueta"></label>
+            <textarea asp-for="InformacionAdicional" rows="4" class="@campo"></textarea>
+            <span asp-validation-for="InformacionAdicional" class="mt-1 block text-xs font-medium text-rose-600"></span>
         </div>
         <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
             Guardar información
