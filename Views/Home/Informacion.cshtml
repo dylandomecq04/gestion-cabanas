@@ -8,88 +8,164 @@
     var linkMapa = !string.IsNullOrWhiteSpace(Model.Direccion)
         ? "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(Model.Direccion)
         : null;
+    var tieneComoLlegar = !string.IsNullOrWhiteSpace(Model.Direccion) || !string.IsNullOrWhiteSpace(Model.ComoLlegar);
 }
 
-<div class="mb-10 text-center">
+<section class="mb-6 text-center sm:mb-8">
+    <p class="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-river-600">Antes de venir</p>
     <h1 class="font-display text-3xl font-semibold text-ink-900 sm:text-4xl">Información</h1>
-    <p class="mt-2 text-ink-500">Cómo llegar, qué encontrás en el complejo y las dudas más frecuentes.</p>
-</div>
+    <p class="mx-auto mt-3 max-w-xl text-sm text-ink-500 sm:text-base">Cómo llegar, qué encontrás en el complejo y las dudas más frecuentes.</p>
+</section>
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <div class="rounded-2.5xl bg-white p-5 shadow-soft ring-1 ring-ink-100 sm:p-6">
-        <h2 class="font-display text-xl font-semibold text-ink-900">Cómo llegar</h2>
-        @if (!string.IsNullOrWhiteSpace(Model.Direccion))
-        {
-            <p class="mt-2 flex items-start gap-2 text-sm text-ink-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="mt-0.5 h-4 w-4 shrink-0 text-river-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+@* Accesos rápidos: en el celu la página es larga y las preguntas quedan al final. *@
+<nav aria-label="Ir a una sección" class="mx-auto mb-8 grid max-w-md grid-cols-3 gap-2 sm:mb-10">
+    <a href="#como-llegar" class="flex flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center text-xs font-semibold text-ink-700 shadow-soft ring-1 ring-ink-100 transition hover:text-river-700 hover:ring-river-200 sm:text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-river-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Cómo llegar
+    </a>
+    <a href="#comodidades" class="flex flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center text-xs font-semibold text-ink-700 shadow-soft ring-1 ring-ink-100 transition hover:text-river-700 hover:ring-river-200 sm:text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-river-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        Comodidades
+    </a>
+    <a href="#preguntas" class="flex flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center text-xs font-semibold text-ink-700 shadow-soft ring-1 ring-ink-100 transition hover:text-river-700 hover:ring-river-200 sm:text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-river-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Preguntas
+    </a>
+</nav>
+
+<div class="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
+    <section id="como-llegar" aria-labelledby="titulo-como-llegar" class="scroll-mt-24 rounded-2.5xl bg-white p-5 shadow-soft ring-1 ring-ink-100 sm:p-6">
+        <div class="flex items-center gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-river-50 text-river-700" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                @Model.Direccion
-            </p>
+            </span>
+            <h2 id="titulo-como-llegar" class="font-display text-lg font-semibold text-ink-900 sm:text-xl">Cómo llegar</h2>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Direccion))
+        {
+            <div class="mt-4 rounded-2xl bg-sand-50 px-4 py-3.5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-400">Dirección</p>
+                <p class="mt-1 break-words font-medium leading-snug text-ink-900">@Model.Direccion</p>
+            </div>
         }
         @if (linkMapa != null)
         {
-            <a href="@linkMapa" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-river-700 hover:gap-2">
+            <a href="@linkMapa" target="_blank" rel="noopener"
+               class="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-river-700 px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800 sm:inline-flex sm:w-auto">
                 Ver en Google Maps
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
             </a>
         }
         @if (!string.IsNullOrWhiteSpace(Model.ComoLlegar))
         {
-            <p class="mt-4 whitespace-pre-line leading-relaxed text-ink-600">@Model.ComoLlegar</p>
+            <p class="mt-4 whitespace-pre-line break-words text-sm leading-relaxed text-ink-600 sm:text-base">@Model.ComoLlegar</p>
         }
-    </div>
+        @if (!tieneComoLlegar)
+        {
+            <p class="mt-4 text-sm text-ink-400">Todavía no se cargó cómo llegar. Escribinos y te ayudamos.</p>
+        }
+    </section>
 
-    <div class="rounded-2.5xl bg-white p-5 shadow-soft ring-1 ring-ink-100 sm:p-6">
-        <h2 class="font-display text-xl font-semibold text-ink-900">Comodidades del complejo</h2>
+    <section id="comodidades" aria-labelledby="titulo-comodidades-complejo" class="scroll-mt-24 rounded-2.5xl bg-white p-5 shadow-soft ring-1 ring-ink-100 sm:p-6">
+        <div class="flex items-center gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-river-50 text-river-700" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+            </span>
+            <h2 id="titulo-comodidades-complejo" class="font-display text-lg font-semibold text-ink-900 sm:text-xl">Comodidades del complejo</h2>
+        </div>
+
         @if (comodidades.Any())
         {
-            <ul class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <ul class="mt-4 flex flex-wrap gap-2">
                 @foreach (var item in comodidades)
                 {
-                    <li class="flex items-center gap-2 text-sm text-ink-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-river-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <li class="flex max-w-full items-center gap-2 rounded-2xl bg-sand-50 px-3.5 py-2 text-sm leading-snug text-ink-700 ring-1 ring-sand-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-river-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
-                        @item
+                        <span class="min-w-0 break-words">@item</span>
                     </li>
                 }
             </ul>
         }
         else
         {
-            <p class="mt-2 text-sm text-ink-400">Todavía no se cargaron las comodidades.</p>
+            <p class="mt-4 text-sm text-ink-400">Todavía no se cargaron las comodidades.</p>
         }
-    </div>
+    </section>
 
     @if (!string.IsNullOrWhiteSpace(Model.InformacionAdicional))
     {
-        <div class="rounded-2.5xl bg-white p-5 shadow-soft ring-1 ring-ink-100 sm:p-6 lg:col-span-2">
-            <h2 class="font-display text-xl font-semibold text-ink-900">Información adicional</h2>
-            <p class="mt-2 whitespace-pre-line leading-relaxed text-ink-600">@Model.InformacionAdicional</p>
-        </div>
+        <section aria-labelledby="titulo-info-adicional" class="rounded-2.5xl bg-sand-100/70 p-5 ring-1 ring-sand-200 sm:p-6 lg:col-span-2">
+            <div class="flex items-center gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sand-700 shadow-soft" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                <h2 id="titulo-info-adicional" class="font-display text-lg font-semibold text-ink-900 sm:text-xl">Información adicional</h2>
+            </div>
+            <p class="mt-3 whitespace-pre-line break-words text-sm leading-relaxed text-ink-700 sm:text-base">@Model.InformacionAdicional</p>
+        </section>
     }
+</div>
 
-    <div class="rounded-2.5xl bg-white p-5 shadow-soft ring-1 ring-ink-100 sm:p-6 lg:col-span-2">
-        <h2 class="font-display text-xl font-semibold text-ink-900">Preguntas frecuentes</h2>
-        <div class="mt-4 divide-y divide-ink-100">
+<section id="preguntas" aria-labelledby="titulo-preguntas" class="mx-auto mt-10 max-w-3xl scroll-mt-24 sm:mt-12">
+    <div class="mb-4 flex items-center gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-river-50 text-river-700" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </span>
+        <h2 id="titulo-preguntas" class="font-display text-lg font-semibold text-ink-900 sm:text-xl">Preguntas frecuentes</h2>
+    </div>
+
+    @if (preguntas.Any())
+    {
+        <div class="space-y-2.5">
             @foreach (var pregunta in preguntas)
             {
-                <details class="group py-3">
-                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink-900 marker:content-none">
-                        @pregunta.Pregunta
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-ink-400 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
+                <details class="group rounded-2xl bg-white shadow-soft ring-1 ring-ink-100 transition open:ring-river-200">
+                    <summary class="flex min-h-[3.5rem] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-semibold leading-snug text-ink-900 marker:content-none sm:px-5 sm:text-base [&::-webkit-details-marker]:hidden">
+                        <span class="min-w-0 break-words">@pregunta.Pregunta</span>
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-50 text-ink-500 transition group-open:rotate-180 group-open:bg-river-100 group-open:text-river-700" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
                     </summary>
-                    <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-ink-600">@pregunta.Respuesta</p>
+                    <div class="px-4 pb-4 sm:px-5">
+                        <p class="whitespace-pre-line break-words border-t border-ink-100 pt-3 text-sm leading-relaxed text-ink-600 sm:text-base">@pregunta.Respuesta</p>
+                    </div>
                 </details>
             }
-            @if (!preguntas.Any())
-            {
-                <p class="py-3 text-sm text-ink-400">Todavía no hay preguntas frecuentes cargadas.</p>
-            }
         </div>
-    </div>
-</div>
+    }
+    else
+    {
+        <p class="rounded-2xl bg-white px-4 py-4 text-sm text-ink-400 shadow-soft ring-1 ring-ink-100">Todavía no hay preguntas frecuentes cargadas.</p>
+    }
+</section>
+
+<section class="mx-auto mt-10 max-w-3xl rounded-2.5xl bg-river-800 px-5 py-7 text-center text-white shadow-lift sm:mt-12 sm:px-8 sm:py-8">
+    <h2 class="font-display text-xl font-semibold sm:text-2xl">¿Listo para reservar?</h2>
+    <p class="mx-auto mt-2 max-w-md text-sm text-river-100 sm:text-base">Elegí tus fechas y mandá tu solicitud; nos contactamos con vos para confirmarla.</p>
+    <a asp-area="" asp-controller="Cabanas" asp-action="Disponibilidad"
+       class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-river-800 shadow-soft transition hover:bg-river-50 sm:w-auto">
+        Ver disponibilidad
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+    </a>
+</section>
