@@ -1,8 +1,15 @@
+@model Cabana
 @{
+    // Las de hasta 3 personas solo tienen la cama de una plaza en el living; la que se saca de abajo
+    // es la que suma el cuarto lugar en las demás.
+    var camasDelLiving = Model.Capacidad <= 3
+        ? "una cama de una plaza"
+        : "una cama de una plaza y otra que se saca de abajo";
+
     var distribucion = new (string Icono, string Texto)[]
     {
         ("🛏️", "1 dormitorio con cama matrimonial"),
-        ("🛋️", "Cocina/comedor con una cama de una plaza y otra que se saca de abajo"),
+        ("🛋️", $"Cocina/comedor con {camasDelLiving}"),
         ("🚿", "Baño con ducha con agua caliente")
     };
 
