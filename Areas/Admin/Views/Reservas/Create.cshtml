@@ -43,6 +43,10 @@
             <span asp-validation-for="FechaHasta" class="mt-1 block text-xs font-medium text-rose-600"></span>
         </div>
     </div>
+    <div id="disponibilidad" class="rounded-xl bg-river-50 px-4 py-3 text-sm">
+        <p id="disponibilidad-titulo" class="font-medium text-river-800"></p>
+        <div id="disponibilidad-lista" class="mt-2 flex flex-wrap gap-2"></div>
+    </div>
     <div class="grid grid-cols-2 items-end gap-4">
         <div>
             <label asp-for="CantidadPersonas" class="mb-1 block text-sm font-medium text-ink-700"></label>
@@ -102,5 +106,91 @@
             input.value = soloDigitos ? Number(soloDigitos).toLocaleString('es-AR') : '';
             document.getElementById(idCampoReal).value = soloDigitos;
         }
+
+        (function () {
+            const selectCabana = document.getElementById('CabanaId');
+            const inputDesde = document.getElementById('FechaDesde');
+            const inputHasta = document.getElementById('FechaHasta');
+            const titulo = document.getElementById('disponibilidad-titulo');
+            const lista = document.getElementById('disponibilidad-lista');
+            const urlDisponibles = '@Url.Action("CabanasDisponibles", "Reservas", new { area = "Admin" })';
+            let libres = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((List<Cabana>?)ViewBag.Libres ?? new List<Cabana>()).Select(c => new { id = c.Id, nombre = c.Nombre })));
+            let rangoValido = true;
+            let pedido = 0;
+
+            for (const opcion of selectCabana.options) {
+                opcion.dataset.nombre = opcion.textContent;
+            }
+
+            function fmt(iso) {
+                const [a, m, d] = iso.split('-');
+                return d + '/' + m + '/' + a;
+            }
+
+            function pintar() {
+                const idsLibres = new Set(libres.map(c => c.id));
+                for (const opcion of selectCabana.options) {
+                    opcion.textContent = idsLibres.has(Number(opcion.value)) || !rangoValido
+                        ? opcion.dataset.nombre
+                        : opcion.dataset.nombre + ' (ocupada)';
+                }
+
+                lista.replaceChildren();
+                if (!rangoValido) {
+                    titulo.textContent = 'Elegí una fecha de salida posterior a la de entrada para ver qué cabañas están libres.';
+                    return;
+                }
+
+                const rango = fmt(inputDesde.value) + ' al ' + fmt(inputHasta.value);
+                if (libres.length === 0) {
+                    titulo.textContent = 'No hay ninguna cabaña libre del ' + rango + '.';
+                    return;
+                }
+
+                titulo.textContent = (libres.length === 1 ? 'Cabaña libre' : 'Cabañas libres') + ' del ' + rango + ':';
+                for (const cabana of libres) {
+                    const elegida = Number(selectCabana.value) === cabana.id;
+                    const boton = document.createElement('button');
+                    boton.type = 'button';
+                    boton.textContent = cabana.nombre;
+                    boton.className = 'rounded-full px-3.5 py-1.5 text-sm font-semibold ring-1 transition ' +
+                        (elegida
+                            ? 'bg-river-700 text-white ring-river-700'
+                            : 'bg-white text-river-800 ring-river-300 hover:bg-river-100');
+                    boton.addEventListener('click', () => {
+                        selectCabana.value = cabana.id;
+                        pintar();
+                    });
+                    lista.appendChild(boton);
+                }
+            }
+
+            async function actualizar() {
+                rangoValido = !!inputDesde.value && !!inputHasta.value && inputHasta.value > inputDesde.value;
+                if (!rangoValido) {
+                    libres = [];
+                    pintar();
+                    return;
+                }
+
+                const actual = ++pedido;
+                try {
+                    const respuesta = await fetch(urlDisponibles + '?desde=' + inputDesde.value + '&hasta=' + inputHasta.value);
+                    if (!respuesta.ok) return;
+                    const datos = await respuesta.json();
+                    if (actual !== pedido) return;
+                    libres = datos;
+                    pintar();
+                } catch {
+                    // Sin conexión: se deja lo que ya se estaba mostrando.
+                }
+            }
+
+            rangoValido = !!inputDesde.value && !!inputHasta.value && inputHasta.value > inputDesde.value;
+            pintar();
+            selectCabana.addEventListener('change', pintar);
+            inputDesde.addEventListener('change', actualizar);
+            inputHasta.addEventListener('change', actualizar);
+        })();
     </script>
 }
