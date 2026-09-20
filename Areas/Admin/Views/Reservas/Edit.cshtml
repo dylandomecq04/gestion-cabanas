@@ -101,5 +101,31 @@
             input.value = soloDigitos ? Number(soloDigitos).toLocaleString('es-AR') : '';
             document.getElementById(idCampoReal).value = soloDigitos;
         }
+
+        // "Fecha hasta" no puede ser anterior ni igual a "Fecha desde": el calendario
+        // deshabilita esos días y abre en el día siguiente a la entrada.
+        (function () {
+            const inputDesde = document.getElementById('FechaDesde');
+            const inputHasta = document.getElementById('FechaHasta');
+
+            function masUnDia(iso) {
+                const [a, m, d] = iso.split('-').map(Number);
+                return new Date(Date.UTC(a, m - 1, d + 1)).toISOString().slice(0, 10);
+            }
+
+            function limitarHasta(corregirValor) {
+                if (!inputDesde.value) {
+                    inputHasta.min = '';
+                    return;
+                }
+                inputHasta.min = masUnDia(inputDesde.value);
+                if (corregirValor && (!inputHasta.value || inputHasta.value < inputHasta.min)) {
+                    inputHasta.value = inputHasta.min;
+                }
+            }
+
+            limitarHasta(false);
+            inputDesde.addEventListener('change', () => limitarHasta(true));
+        })();
     </script>
 }

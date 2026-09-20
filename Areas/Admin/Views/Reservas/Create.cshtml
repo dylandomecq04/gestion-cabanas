@@ -165,6 +165,24 @@
                 }
             }
 
+            // "Fecha hasta" no puede ser anterior ni igual a "Fecha desde": el calendario
+            // deshabilita esos días y abre en el día siguiente a la entrada.
+            function masUnDia(iso) {
+                const [a, m, d] = iso.split('-').map(Number);
+                return new Date(Date.UTC(a, m - 1, d + 1)).toISOString().slice(0, 10);
+            }
+
+            function limitarHasta(corregirValor) {
+                if (!inputDesde.value) {
+                    inputHasta.min = '';
+                    return;
+                }
+                inputHasta.min = masUnDia(inputDesde.value);
+                if (corregirValor && (!inputHasta.value || inputHasta.value < inputHasta.min)) {
+                    inputHasta.value = inputHasta.min;
+                }
+            }
+
             async function actualizar() {
                 rangoValido = !!inputDesde.value && !!inputHasta.value && inputHasta.value > inputDesde.value;
                 if (!rangoValido) {
@@ -187,8 +205,10 @@
             }
 
             rangoValido = !!inputDesde.value && !!inputHasta.value && inputHasta.value > inputDesde.value;
+            limitarHasta(false);
             pintar();
             selectCabana.addEventListener('change', pintar);
+            inputDesde.addEventListener('change', () => limitarHasta(true));
             inputDesde.addEventListener('change', actualizar);
             inputHasta.addEventListener('change', actualizar);
         })();
