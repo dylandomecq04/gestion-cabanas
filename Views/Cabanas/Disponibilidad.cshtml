@@ -41,14 +41,14 @@
         @if (permitirMesAnterior)
         {
             <a asp-action="Disponibilidad" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month"
-               class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">&larr; Mes anterior</a>
+               class="whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm">&larr; Mes anterior</a>
         }
         <a asp-action="Disponibilidad" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month"
-           class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">Mes siguiente &rarr;</a>
+           class="whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm">Mes siguiente &rarr;</a>
     </div>
 </div>
 
-<div id="tab-general" class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+<div id="tab-general" class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
     <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
         <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
     </div>
@@ -100,7 +100,7 @@
         <button type="button" id="btn-limpiar-seleccion" onclick="limpiarSeleccionGeneral()" class="hidden shrink-0 text-xs font-semibold text-river-600 underline underline-offset-2">Limpiar filtro</button>
     </div>
 
-    <div class="mt-6 rounded-2xl border border-ink-100 bg-sand-50 p-5">
+    <div class="mt-6 rounded-2xl border border-ink-100 bg-sand-50 p-4 sm:p-5">
         <h2 class="font-display text-base font-semibold text-ink-900">Reservar para estas fechas</h2>
         <p class="mt-1 text-sm text-ink-500">Completá tus datos para reservar las fechas elegidas arriba.</p>
 
@@ -150,7 +150,7 @@
 </style>
 
 <div id="modal-opciones" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm">
-    <div class="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2.5xl bg-white p-7 shadow-lift">
+    <div class="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2.5xl bg-white p-5 shadow-lift sm:p-7">
         <div id="modal-opciones-contenido"></div>
         <button type="button" id="btn-cerrar-modal-opciones" onclick="cerrarModalOpciones()" class="mt-5 text-sm font-medium text-ink-400 transition hover:text-ink-600">Cerrar</button>
     </div>
@@ -380,18 +380,18 @@
                     const detallePersonas = `${s.personas} ${s.personas === 1 ? 'persona' : 'personas'}` +
                         (s.menores > 0 ? ` (${s.adultos} ${s.adultos === 1 ? 'adulto' : 'adultos'} y ${s.menores} ${s.menores === 1 ? 'menor' : 'menores'})` : '');
                     const titulo = opcion.repartida
-                        ? `<strong class="text-ink-900">${s.cabanaNombre}</strong> · ${detallePersonas}`
-                        : `${formatearFechaCorta(s.desde)} – ${formatearFechaCorta(s.hasta)}: <strong class="text-ink-900">${s.cabanaNombre}</strong>`;
+                        ? `<strong class="whitespace-nowrap text-ink-900">${s.cabanaNombre}</strong> · ${detallePersonas}`
+                        : `<span class="whitespace-nowrap">${formatearFechaCorta(s.desde)} – ${formatearFechaCorta(s.hasta)}</span>: <strong class="whitespace-nowrap text-ink-900">${s.cabanaNombre}</strong>`;
                     return `<div class="flex justify-between gap-3 text-sm text-ink-600">
-                        <div>
+                        <div class="min-w-0">
                             <span>${titulo}</span>
                             ${promoHtml}
                         </div>
-                        <span class="text-right">${subtotalHtml}</span>
+                        <span class="shrink-0 whitespace-nowrap text-right">${subtotalHtml}</span>
                     </div>`;
                 }).join('');
                 const fechasRepartida = opcion.repartida
-                    ? `<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">${formatearFechaCorta(opcion.segmentos[0].desde)} – ${formatearFechaCorta(opcion.segmentos[0].hasta)} · 2 cabañas</div>`
+                    ? `<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400"><span class="whitespace-nowrap">${formatearFechaCorta(opcion.segmentos[0].desde)} – ${formatearFechaCorta(opcion.segmentos[0].hasta)}</span> · 2 cabañas</div>`
                     : '';
                 let cercania = '';
                 if (opcion.repartida && opcion.contiguas) {
@@ -412,9 +412,9 @@
                     <div class="space-y-1.5">${segmentosHtml}</div>
                     <div class="mt-2 flex items-center justify-between border-t border-ink-100 pt-2">
                         <span class="text-sm font-semibold text-ink-900">Total</span>
-                        <span class="text-right">
+                        <span class="shrink-0 whitespace-nowrap text-right">
                             ${opcion.totalSinPromo ? `<span class="block text-sm font-semibold text-ink-400 line-through decoration-rose-500">$${Number(opcion.totalSinPromo).toLocaleString('es-AR')}</span>` : ''}
-                            <span class="text-lg font-bold text-river-700">${totalTexto}</span>
+                            <span class="whitespace-nowrap text-lg font-bold text-river-700">${totalTexto}</span>
                         </span>
                     </div>
                     ${opcion.totalSinPromo ? `<div class="mt-1 text-right text-xs font-bold text-amber-700">Ahorrás $${Number(opcion.totalSinPromo - opcion.total).toLocaleString('es-AR')}</div>` : ''}

@@ -8,6 +8,9 @@
     bool permitirMesAnterior = ViewBag.PermitirMesAnterior;
     var mesTitulo = primerDia.ToString("MMMM yyyy");
     mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
+
+    // En el celu no hay lugar para "Lunes a viernes", así que se abrevia.
+    string etiquetaCorta(string clave) => clave switch { "Semana" => "Lun a vie", _ => clave == "Sabado" ? "Sábado" : "Domingo" };
 }
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -19,14 +22,14 @@
         @if (permitirMesAnterior)
         {
             <a asp-action="Precios" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month"
-               class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">&larr; Mes anterior</a>
+               class="whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm">&larr; Mes anterior</a>
         }
         <a asp-action="Precios" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month"
-           class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700">Mes siguiente &rarr;</a>
+           class="whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm">Mes siguiente &rarr;</a>
     </div>
 </div>
 
-<div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+<div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
     <form asp-action="AplicarPreciosPorDiaSemana" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post">
         <div class="mb-5">
             <label class="mb-2 block text-sm font-medium text-ink-700">Cabañas</label>
@@ -47,13 +50,13 @@
             y los primeros @Politica.Value.MenoresSinCargo menores no suman. Lo que dejes vacío no se modifica.
         </p>
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[420px] text-sm">
+            <table class="w-full text-sm sm:min-w-[420px]">
                 <thead>
                     <tr class="text-left text-xs font-semibold uppercase tracking-wide text-ink-400">
-                        <th class="py-2 pr-3"></th>
+                        <th class="py-2 pr-2 sm:pr-3"></th>
                         @foreach (var tramo in Cabana.TodosLosTramos)
                         {
-                            <th class="px-2 py-2 transition" data-columna-tramo="@tramo">Para @tramo</th>
+                            <th class="px-1 py-2 transition sm:px-2" data-columna-tramo="@tramo">Para @tramo</th>
                         }
                     </tr>
                 </thead>
@@ -61,15 +64,15 @@
                     @foreach (var (clave, etiqueta) in new[] { ("Semana", "Lunes a viernes"), ("Sabado", "Sábado"), ("Domingo", "Domingo") })
                     {
                         <tr>
-                            <td class="py-1.5 pr-3 font-medium text-ink-700">@etiqueta</td>
+                            <td class="whitespace-nowrap py-1.5 pr-2 font-medium text-ink-700 sm:pr-3"><span class="sm:hidden">@etiquetaCorta(clave)</span><span class="hidden sm:inline">@etiqueta</span></td>
                             @foreach (var tramo in Cabana.TodosLosTramos)
                             {
                                 var idReal = $"precio-{clave}-{tramo}-real";
-                                <td class="px-2 py-1.5">
+                                <td class="px-1 py-1.5 sm:px-2">
                                     <input type="text" inputmode="numeric" placeholder="$"
                                            data-tramo="@tramo" data-real="@idReal"
                                            oninput="formatearMilesConReal(this, '@idReal')"
-                                           class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-300" />
+                                           class="w-full min-w-0 rounded-xl border border-ink-200 px-1.5 py-2.5 text-sm text-ink-900 shadow-sm transition placeholder:text-xs focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-300 sm:px-3.5 sm:placeholder:text-sm" />
                                     <input type="hidden" id="@idReal" name="precio@(clave)@(tramo)" />
                                 </td>
                             }

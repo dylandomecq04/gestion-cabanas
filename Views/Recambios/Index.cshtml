@@ -78,7 +78,7 @@
                                 <a asp-controller="Recambios" asp-action="Cabana" asp-route-token="@token" asp-route-id="@cabana.Id"
                                    asp-route-anio="@dia.Year" asp-route-mes="@dia.Month"
                                    class="flex items-center justify-between gap-3 rounded-xl bg-sky-100 px-4 py-3 transition hover:bg-sky-200">
-                                    <span class="text-base font-semibold text-ink-900">@cabana.Nombre</span>
+                                    <span class="shrink-0 whitespace-nowrap text-base font-semibold text-ink-900">@cabana.Nombre</span>
                                     <span class="truncate text-sm text-rose-700" title="Sale: @sale!.NombreHuesped">↓ @sale.NombreHuesped</span>
                                 </a>
                             </li>
@@ -95,7 +95,7 @@
                 {
                     <a asp-controller="Recambios" asp-action="Cabana" asp-route-token="@token" asp-route-id="@cabana.Id"
                        asp-route-anio="@dia.Year" asp-route-mes="@dia.Month"
-                       class="inline-flex items-center rounded-full bg-sand-100 px-3 py-1.5 text-sm font-semibold text-ink-800 ring-1 ring-sand-200 transition hover:bg-sand-200">@cabana.Nombre</a>
+                       class="inline-flex items-center whitespace-nowrap rounded-full bg-sand-100 px-3 py-1.5 text-sm font-semibold text-ink-800 ring-1 ring-sand-200 transition hover:bg-sand-200">@cabana.Nombre</a>
                 }
             </div>
         </section>

@@ -10,7 +10,7 @@
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data"
-          class="space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+          class="space-y-4 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
         <input type="hidden" asp-for="Id" />
         <div asp-validation-summary="All" class="@(ViewData.ModelState.IsValid ? "hidden" : "rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700")"></div>
 
@@ -45,18 +45,18 @@
         </div>
     </form>
 
-    <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
-        <div class="mb-1 flex items-center justify-between">
+    <div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+        <div class="mb-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
             <h2 class="text-sm font-semibold text-ink-700">Fotos actuales</h2>
             @if (Model.Fotos.Any())
             {
-                <div class="flex items-center gap-3">
-                    <label class="flex items-center gap-1.5 text-xs font-medium text-ink-500">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <label class="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-ink-500">
                         <input type="checkbox" id="seleccionar-todas-fotos-cabana" onchange="toggleTodasFotosCabana(this)" class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
                         Seleccionar todo
                     </label>
                     <button type="button" id="btn-eliminar-fotos-cabana" onclick="eliminarSeleccionadasFotosCabana()" disabled
-                            class="rounded-full bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
+                            class="whitespace-nowrap rounded-full bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
                         Eliminar seleccionadas (<span id="contador-fotos-cabana">0</span>)
                     </button>
                 </div>

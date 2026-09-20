@@ -12,7 +12,7 @@
 
 <h1 class="mb-6 font-display text-2xl font-semibold text-ink-900">@titulo</h1>
 
-<form asp-action="Create" asp-route-vista="@vista" asp-route-anio="@anioOrigen" asp-route-mes="@mesOrigen" method="post" class="max-w-2xl space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100" data-loading-text="@(esSolicitud ? "Creando la solicitud..." : "Creando la reserva...")">
+<form asp-action="Create" asp-route-vista="@vista" asp-route-anio="@anioOrigen" asp-route-mes="@mesOrigen" method="post" class="max-w-2xl space-y-4 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6" data-loading-text="@(esSolicitud ? "Creando la solicitud..." : "Creando la reserva...")">
     @if (!ViewData.ModelState.IsValid)
     {
         <div asp-validation-summary="All" class="@(ViewData.ModelState.IsValid ? "hidden" : "rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700")"></div>
@@ -43,7 +43,7 @@
             <span asp-validation-for="FechaHasta" class="mt-1 block text-xs font-medium text-rose-600"></span>
         </div>
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-2 items-end gap-4">
         <div>
             <label asp-for="CantidadPersonas" class="mb-1 block text-sm font-medium text-ink-700"></label>
             <input asp-for="CantidadPersonas" class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />

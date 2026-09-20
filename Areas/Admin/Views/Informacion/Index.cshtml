@@ -7,7 +7,7 @@
 <h1 class="mb-6 font-display text-2xl font-semibold text-ink-900">Información del sitio</h1>
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <form asp-action="Guardar" method="post" class="space-y-4 rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
+    <form asp-action="Guardar" method="post" class="space-y-4 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
         <div asp-validation-summary="All" class="@(ViewData.ModelState.IsValid ? "hidden" : "rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700")"></div>
 
         <div>
@@ -33,10 +33,10 @@
         </button>
     </form>
 
-    <div class="rounded-2.5xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
-        <div class="mb-4 flex items-center justify-between">
+    <div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 class="font-display text-lg font-semibold text-ink-900">Preguntas frecuentes</h2>
-            <a asp-action="CrearPregunta" class="rounded-full bg-river-700 px-4 py-2 text-xs font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">+ Nueva pregunta</a>
+            <a asp-action="CrearPregunta" class="whitespace-nowrap rounded-full bg-river-700 px-4 py-2 text-xs font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">+ Nueva pregunta</a>
         </div>
 
         <div class="space-y-3">

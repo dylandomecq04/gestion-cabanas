@@ -28,11 +28,11 @@
     <h1 class="font-display text-2xl font-semibold text-ink-900">Reservas</h1>
     @if (filtro == EstadoReserva.Pendiente)
     {
-        <a asp-action="Create" asp-route-estado="@EstadoReserva.Pendiente" class="rounded-full bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-sky-600">+ Cargar solicitud</a>
+        <a asp-action="Create" asp-route-estado="@EstadoReserva.Pendiente" class="whitespace-nowrap rounded-full bg-sky-500 px-4 py-2 text-sm sm:px-5 sm:py-2.5 font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-sky-600">+ Cargar solicitud</a>
     }
     else
     {
-        <a asp-action="Create" asp-route-estado="@EstadoReserva.Confirmada" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">+ Cargar reserva</a>
+        <a asp-action="Create" asp-route-estado="@EstadoReserva.Confirmada" class="whitespace-nowrap rounded-full bg-river-700 px-4 py-2 text-sm sm:px-5 sm:py-2.5 font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">+ Cargar reserva</a>
     }
 </div>
 
@@ -44,10 +44,10 @@
             @await Component.InvokeAsync("PendientesBadge")
         </a>
     </div>
-    <div class="flex items-center gap-3 rounded-full bg-white px-2 py-1.5 shadow-soft ring-1 ring-ink-100">
+    <div class="flex items-center gap-1 rounded-full bg-white px-2 py-1.5 shadow-soft ring-1 ring-ink-100 sm:gap-3">
         <a asp-action="Index" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro"
            class="flex h-8 w-8 items-center justify-center rounded-full text-ink-500 transition hover:bg-sand-50 hover:text-river-700">&larr;</a>
-        <span class="min-w-[140px] text-center font-display text-sm font-semibold text-ink-800">@TituloMes(primerDia)</span>
+        <span class="min-w-[120px] whitespace-nowrap text-center font-display text-sm font-semibold text-ink-800 sm:min-w-[140px]">@TituloMes(primerDia)</span>
         <a asp-action="Index" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro"
            class="flex h-8 w-8 items-center justify-center rounded-full text-ink-500 transition hover:bg-sand-50 hover:text-river-700">&rarr;</a>
     </div>
@@ -62,7 +62,7 @@
         <input type="text" name="busqueda" value="@busqueda" placeholder="Ej: Juan Pérez" oninput="buscarReservasConDemora()"
                class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
     </div>
-    <div class="min-w-[180px]">
+    <div class="w-full sm:w-auto sm:min-w-[180px]">
         <label class="mb-1 block text-xs font-medium text-ink-600">Cabaña</label>
         <select name="cabanaId" onchange="document.getElementById('form-filtros').requestSubmit()"
                 class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">
@@ -84,7 +84,7 @@
 }
 @if (!Model.Any())
 {
-    <div class="rounded-2.5xl bg-white p-8 text-center text-sm text-ink-400 shadow-soft ring-1 ring-ink-100">No hay @sustantivo para mostrar en @(TituloMes(primerDia).ToLowerInvariant()).</div>
+    <div class="rounded-2.5xl bg-white p-6 text-center text-sm text-ink-400 shadow-soft ring-1 ring-ink-100 sm:p-8">No hay @sustantivo para mostrar en @(TituloMes(primerDia).ToLowerInvariant()).</div>
 }
 else
 {
@@ -92,7 +92,58 @@ else
     {
         <div class="mb-8">
             <h2 class="mb-3 font-display text-lg font-semibold text-ink-800">@grupo.Key</h2>
-            <div class="overflow-x-auto rounded-2.5xl bg-white shadow-soft ring-1 ring-ink-100">
+                        <div class="space-y-3 md:hidden">
+                @foreach (var r in grupo.OrderBy(r => r.FechaDesde))
+                {
+                    var personasTexto = $"{r.CantidadPersonas} {(r.CantidadPersonas == 1 ? "persona" : "personas")}"
+                        + (r.CantidadMenores > 0 ? $" ({r.CantidadMenores} menor{(r.CantidadMenores == 1 ? "" : "es")})" : "");
+                    <div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
+                        <p class="font-semibold text-ink-900">@r.NombreHuesped</p>
+                        <p class="mt-0.5 text-sm text-ink-600">
+                            <span class="whitespace-nowrap">@r.FechaDesde.ToString("dd/MM/yyyy")</span> &ndash; <span class="whitespace-nowrap">@r.FechaHasta.ToString("dd/MM/yyyy")</span>
+                        </p>
+                        <p class="mt-0.5 text-xs text-ink-500">@personasTexto</p>
+                        <dl class="mt-3 grid grid-cols-2 gap-2">
+                            <div class="rounded-xl bg-sand-50 px-3 py-2">
+                                <dt class="text-xs text-ink-400">Pagó</dt>
+                                <dd class="whitespace-nowrap text-sm font-semibold text-ink-800">@(r.Pago.HasValue ? "$" + r.Pago.Value.ToString("N0") : "-")</dd>
+                            </div>
+                            <div class="rounded-xl bg-sand-50 px-3 py-2">
+                                <dt class="text-xs text-ink-400">Pagar</dt>
+                                <dd class="whitespace-nowrap text-sm font-semibold text-ink-800">@(r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "-")</dd>
+                            </div>
+                        </dl>
+                        @if (!string.IsNullOrWhiteSpace(r.Telefono))
+                        {
+                            <p class="mt-2 break-words text-sm text-ink-500">Tel: @r.Telefono</p>
+                        }
+                        <div class="mt-3 flex items-center gap-2">
+                            @if (filtro == EstadoReserva.Pendiente)
+                            {
+                                <form asp-action="Confirmar" asp-route-id="@r.Id" method="post">
+                                    <button type="submit" class="h-9 rounded-full bg-river-600 px-4 text-xs font-semibold text-white transition hover:bg-river-700">Confirmar</button>
+                                </form>
+                            }
+                            <div class="ml-auto flex items-center gap-2">
+                                <a asp-action="Edit" asp-route-id="@r.Id" title="Editar" class="flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition hover:border-river-300 hover:text-river-700">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 6.75L17.25 9" />
+                                </svg>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@r.Id" asp-route-vista="Lista" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" onsubmit="return confirmarAccion(event, '¿Eliminar esta reserva? No se puede deshacer.');">
+                                    <button type="submit" title="Eliminar" class="flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:bg-rose-50">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.166m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="hidden overflow-x-auto rounded-2.5xl bg-white shadow-soft ring-1 ring-ink-100 md:block">
                 <table class="w-full text-left text-sm">
                     <thead class="border-b border-ink-100 bg-ink-50/60 text-xs font-semibold uppercase tracking-wide text-ink-500">
                         <tr>
