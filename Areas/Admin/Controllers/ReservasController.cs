@@ -168,52 +168,19 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 : RedirectToAction(nameof(Index));
         }
 
-        /// <summary>
-        /// Cabañas activas sin reservas confirmadas que se superpongan con el rango dado.
-        /// </summary>
-        private async Task<List<Cabana>> ObtenerCabanasLibresAsync(DateTime desde, DateTime hasta, int? idExcluir = null)
-        {
-            var libres = new List<Cabana>();
-            if (hasta <= desde)
-            {
-                return libres;
-            }
-
-            var activas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
-            foreach (var cabana in activas)
-            {
-                if (!await _disponibilidad.HaySuperposicionAsync(cabana.Id, desde, hasta, idExcluir))
-                {
-                    libres.Add(cabana);
-                }
-            }
-            return libres;
-        }
-
-        /// <summary>
-        /// Lo usa el formulario de carga para mostrar, al cambiar las fechas, qué cabañas están libres.
-        /// </summary>
-        public async Task<IActionResult> CabanasDisponibles(DateTime desde, DateTime hasta, int? idExcluir)
-        {
-            var libres = await ObtenerCabanasLibresAsync(desde.Date, hasta.Date, idExcluir);
-            return Json(libres.Select(c => new { id = c.Id, nombre = c.Nombre }));
-        }
-
         public async Task<IActionResult> Create(int? cabanaId, DateTime? fecha, DateTime? fechaHasta, string? vista, int? anio, int? mes, EstadoReserva? estado)
         {
             GuardarOrigen(vista, anio, mes);
             ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
 
             var fechaDesde = fecha ?? DateTime.Today;
-            var modelo = new Reserva
+            return View(new Reserva
             {
                 CabanaId = cabanaId ?? 0,
                 FechaDesde = fechaDesde,
                 FechaHasta = fechaHasta ?? fechaDesde.AddDays(1),
                 Estado = estado ?? EstadoReserva.Confirmada
-            };
-            ViewBag.Libres = await ObtenerCabanasLibresAsync(modelo.FechaDesde, modelo.FechaHasta);
-            return View(modelo);
+            });
         }
 
         [HttpPost]
@@ -226,7 +193,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
             {
                 GuardarOrigen(vista, anio, mes);
                 ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
-                ViewBag.Libres = await ObtenerCabanasLibresAsync(modelo.FechaDesde, modelo.FechaHasta);
                 return View(modelo);
             }
 
