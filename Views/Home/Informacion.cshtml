@@ -4,6 +4,32 @@
         .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .ToList();
 
+    // Las comodidades se cargan como texto libre desde el admin: el emoji se elige por palabra clave.
+    static readonly (string[] Palabras, string Emoji)[] EmojisComodidades =
+    {
+        (new[] { "pileta", "piscina" }, "🏊"),
+        (new[] { "vestuario", "ducha", "baño" }, "🚿"),
+        (new[] { "solárium", "solarium", "reposera" }, "☀️"),
+        (new[] { "pesca", "muelle" }, "🎣"),
+        (new[] { "wifi", "wi-fi", "internet" }, "📶"),
+        (new[] { "parrilla", "asador", "fogón", "fogon" }, "🔥"),
+        (new[] { "kayak", "canoa" }, "🛶"),
+        (new[] { "hamaca" }, "🌿"),
+        (new[] { "estacionamiento", "cochera" }, "🚗"),
+        (new[] { "aire acondicionado" }, "❄️"),
+        (new[] { "mascota", "perro" }, "🐾"),
+    };
+
+    static string EmojiComodidad(string texto)
+    {
+        var t = texto.ToLowerInvariant();
+        foreach (var (palabras, emoji) in EmojisComodidades)
+        {
+            if (palabras.Any(p => t.Contains(p))) return emoji;
+        }
+        return "✨";
+    }
+
     static string LinkLlamar(string telefono) =>
         "tel:" + new string(telefono.Where(c => char.IsDigit(c) || c == '+').ToArray());
 }
@@ -225,9 +251,7 @@
                 @foreach (var item in comodidades)
                 {
                     <li class="flex max-w-full items-center gap-2 rounded-2xl bg-sand-50 px-3.5 py-2 text-sm leading-snug text-ink-700 ring-1 ring-sand-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-river-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
+                        <span class="shrink-0 text-base leading-none" aria-hidden="true">@EmojiComodidad(item)</span>
                         <span class="min-w-0 break-words">@item</span>
                     </li>
                 }
