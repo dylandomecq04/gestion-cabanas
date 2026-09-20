@@ -33,5 +33,13 @@ namespace GestionCabanas.Models
         public int CabanaId { get; set; }
         public DateTime FechaDesde { get; set; }
         public DateTime FechaHasta { get; set; }
+
+        /// <summary>
+        /// Personas que se alojan en esta cabaña según la opción elegida. Sólo importa cuando el grupo se
+        /// reparte en dos cabañas, para saber cuál de los repartos ofrecidos se eligió; el servidor lo
+        /// compara con los que él mismo calcula. En 0 y 0 se toma el reparto más parejo.
+        /// </summary>
+        public int Adultos { get; set; }
+        public int Menores { get; set; }
     }
 }

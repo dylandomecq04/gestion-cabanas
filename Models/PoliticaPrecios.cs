@@ -89,24 +89,70 @@ namespace GestionCabanas.Models
                     continue;
                 }
 
-                // Adultos de la primera cabaña: los que le corresponden por proporción, dejando
-                // al menos uno en cada cabaña y sin que sobren menores de un lado.
-                var adultosMin = Math.Max(1, primera - Menores);
-                var adultosMax = Math.Min(Adultos - 1, primera);
-                if (adultosMin > adultosMax)
+                var reparto = Dividir(primera);
+                if (reparto is null)
                 {
                     continue;
                 }
 
-                var adultosPrimera = Math.Clamp((int)Math.Round((double)Adultos * primera / Total, MidpointRounding.AwayFromZero), adultosMin, adultosMax);
-                var menoresPrimera = primera - adultosPrimera;
-
-                mejor = (new Huespedes(adultosPrimera, menoresPrimera),
-                         new Huespedes(Adultos - adultosPrimera, Menores - menoresPrimera));
+                mejor = reparto;
                 mejorDiferencia = diferencia;
             }
 
             return mejor;
+        }
+
+        /// <summary>
+        /// Todos los repartos que se ofrecen entre dos cabañas: primero el más parejo y, para un grupo de 6,
+        /// también el de 4 en una cabaña y 2 en la otra (cambia el precio, porque cada una usa su tarifa).
+        /// El grupo más grande queda en la primera cabaña. Vacío si no se puede repartir.
+        /// </summary>
+        public List<(Huespedes Primera, Huespedes Segunda)> RepartosPosibles(int capacidadPrimera, int capacidadSegunda)
+        {
+            var repartos = new List<(Huespedes, Huespedes)>();
+            var parejo = RepartirEnDos(capacidadPrimera, capacidadSegunda);
+            if (parejo is null)
+            {
+                return repartos;
+            }
+
+            repartos.Add(parejo.Value);
+
+            // Una cabaña con el tramo de 4 personas y el resto en la otra. Si el parejo ya es así, no se repite.
+            const int tramoDeCuatro = 4;
+            var resto = Total - tramoDeCuatro;
+            if (resto >= 2 && tramoDeCuatro <= capacidadPrimera && resto <= capacidadSegunda
+                && parejo.Value.Primera.Total != tramoDeCuatro)
+            {
+                var conCuatro = Dividir(tramoDeCuatro);
+                if (conCuatro is not null)
+                {
+                    repartos.Add(conCuatro.Value);
+                }
+            }
+
+            return repartos;
+        }
+
+        /// <summary>
+        /// Deja <paramref name="primera"/> personas en la primera cabaña y el resto en la segunda. Los adultos
+        /// de la primera son los que le corresponden por proporción, con al menos uno en cada cabaña y sin que
+        /// sobren menores de un lado. Null si no se puede.
+        /// </summary>
+        private (Huespedes Primera, Huespedes Segunda)? Dividir(int primera)
+        {
+            var adultosMin = Math.Max(1, primera - Menores);
+            var adultosMax = Math.Min(Adultos - 1, primera);
+            if (adultosMin > adultosMax)
+            {
+                return null;
+            }
+
+            var adultosPrimera = Math.Clamp((int)Math.Round((double)Adultos * primera / Total, MidpointRounding.AwayFromZero), adultosMin, adultosMax);
+            var menoresPrimera = primera - adultosPrimera;
+
+            return (new Huespedes(adultosPrimera, menoresPrimera),
+                    new Huespedes(Adultos - adultosPrimera, Menores - menoresPrimera));
         }
     }
 }

@@ -246,6 +246,25 @@ namespace GestionCabanas.Controllers
             });
         }
 
+        /// <summary>
+        /// De los repartos que el servidor ofrece para el par de cabañas, el que eligió el cliente (por las
+        /// personas de cada cabaña). Si el cliente no mandó personas, se toma el más parejo. Null si lo que
+        /// mandó no coincide con ninguno de los ofrecidos.
+        /// </summary>
+        private static RepartoEnCabanas? ElegirReparto(List<RepartoEnCabanas> repartos, List<SegmentoInput> segmentos)
+        {
+            if (segmentos.All(s => s.Adultos == 0 && s.Menores == 0))
+            {
+                return repartos.FirstOrDefault();
+            }
+
+            return repartos.FirstOrDefault(r => segmentos.All(s =>
+            {
+                var grupo = s.CabanaId == r.Primera.Id ? r.HuespedesPrimera : r.HuespedesSegunda;
+                return grupo.Adultos == s.Adultos && grupo.Menores == s.Menores;
+            }));
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SolicitarOpcion(SolicitarOpcionViewModel modelo)
@@ -281,7 +300,7 @@ namespace GestionCabanas.Controllers
                 var mismasFechas = modelo.Segmentos.Count == 2 && cabanas.Count == 2
                     && primero.FechaDesde == modelo.Segmentos[1].FechaDesde && primero.FechaHasta == modelo.Segmentos[1].FechaHasta;
                 var reparto = mismasFechas && huespedes.Total >= PoliticaPrecios.DosCabanasDesdePersonas
-                    ? DisponibilidadService.RepartirEnCabanas(cabanas[0], cabanas[1], huespedes)
+                    ? ElegirReparto(DisponibilidadService.RepartirEnCabanas(cabanas[0], cabanas[1], huespedes), modelo.Segmentos)
                     : null;
 
                 if (reparto is null)

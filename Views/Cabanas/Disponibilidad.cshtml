@@ -445,6 +445,8 @@
                 params.append(`Segmentos[${i}].CabanaId`, s.cabanaId);
                 params.append(`Segmentos[${i}].FechaDesde`, s.desde);
                 params.append(`Segmentos[${i}].FechaHasta`, s.hasta);
+                params.append(`Segmentos[${i}].Adultos`, s.adultos);
+                params.append(`Segmentos[${i}].Menores`, s.menores);
             });
 
             const contenido = document.getElementById('modal-opciones-contenido');

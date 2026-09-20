@@ -329,14 +329,16 @@ namespace GestionCabanas.Services
         }
 
         /// <summary>
-        /// Reparte al grupo entre dos cabañas que se ocupan a la vez (la de mayor capacidad primero).
-        /// Devuelve null si no entran o si no hay al menos un adulto en cada una.
+        /// Formas de repartir al grupo entre dos cabañas que se ocupan a la vez (la de mayor capacidad primero):
+        /// el reparto más parejo y, para 6 personas, también el de 4 y 2. Vacío si no entran o si no hay al
+        /// menos un adulto en cada una.
         /// </summary>
-        public static RepartoEnCabanas? RepartirEnCabanas(Cabana una, Cabana otra, Huespedes huespedes)
+        public static List<RepartoEnCabanas> RepartirEnCabanas(Cabana una, Cabana otra, Huespedes huespedes)
         {
             var (primera, segunda) = una.Capacidad >= otra.Capacidad ? (una, otra) : (otra, una);
-            var reparto = huespedes.RepartirEnDos(primera.Capacidad, segunda.Capacidad);
-            return reparto is null ? null : new RepartoEnCabanas(primera, segunda, reparto.Value.Primera, reparto.Value.Segunda);
+            return huespedes.RepartosPosibles(primera.Capacidad, segunda.Capacidad)
+                .Select(r => new RepartoEnCabanas(primera, segunda, r.Primera, r.Segunda))
+                .ToList();
         }
 
         /// <summary>
@@ -396,11 +398,7 @@ namespace GestionCabanas.Services
                 {
                     for (var j = i + 1; j < activas.Count; j++)
                     {
-                        var reparto = RepartirEnCabanas(activas[i], activas[j], huespedes);
-                        if (reparto is not null)
-                        {
-                            repartos.Add(reparto);
-                        }
+                        repartos.AddRange(RepartirEnCabanas(activas[i], activas[j], huespedes));
                     }
                 }
             }
