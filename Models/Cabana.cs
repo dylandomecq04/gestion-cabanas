@@ -10,6 +10,10 @@ namespace GestionCabanas.Models
         [StringLength(100)]
         public string Nombre { get; set; } = string.Empty;
 
+        [StringLength(2000, ErrorMessage = "La descripción no puede pasar de 2000 caracteres")]
+        [Display(Name = "Descripción")]
+        public string? Descripcion { get; set; }
+
         [Range(1, 50, ErrorMessage = "La capacidad debe ser mayor a 0")]
         public int Capacidad { get; set; }
 

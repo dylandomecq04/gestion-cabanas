@@ -84,6 +84,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             }
 
             cabana.Nombre = modelo.Nombre;
+            cabana.Descripcion = modelo.Descripcion;
             cabana.Capacidad = modelo.Capacidad;
             cabana.Orden = modelo.Orden;
             cabana.Activa = modelo.Activa;
