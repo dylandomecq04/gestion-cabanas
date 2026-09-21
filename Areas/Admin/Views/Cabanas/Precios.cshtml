@@ -6,6 +6,7 @@
     DateTime mesAnterior = ViewBag.MesAnterior;
     DateTime mesSiguiente = ViewBag.MesSiguiente;
     bool permitirMesAnterior = ViewBag.PermitirMesAnterior;
+    decimal? descuentoFinDeSemana = ViewBag.DescuentoFinDeSemana;
     var mesTitulo = primerDia.ToString("MMMM yyyy");
     mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
 
@@ -95,6 +96,31 @@
         <div class="mt-4">
             <button type="submit" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
                 Aplicar
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="mt-6 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+    <form asp-action="GuardarDescuentoFinDeSemana" method="post">
+        <input type="hidden" name="anio" value="@primerDia.Year" />
+        <input type="hidden" name="mes" value="@primerDia.Month" />
+        <h2 class="font-display text-lg font-semibold text-ink-900">Descuento por sábado y domingo juntos</h2>
+        <p class="mt-1 text-sm text-ink-500">
+            Cuando una reserva incluye la noche del sábado y la del domingo siguiente, se le resta este monto al total de la cabaña
+            (uno por cada fin de semana completo). Cuenta el mes del sábado. Vacío o 0 = sin descuento en @mesTitulo.
+        </p>
+        <div class="mt-4 flex flex-wrap items-end gap-3">
+            <div class="w-full sm:w-56">
+                <label for="descuento-finde" class="mb-1 block text-sm font-medium text-ink-700">Monto a descontar</label>
+                <input type="text" id="descuento-finde" inputmode="numeric" placeholder="$"
+                       value="@(descuentoFinDeSemana.HasValue ? descuentoFinDeSemana.Value.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("es-AR")) : "")"
+                       oninput="formatearMilesConReal(this, 'descuento-finde-real')"
+                       class="w-full min-w-0 rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                <input type="hidden" id="descuento-finde-real" name="monto" value="@(descuentoFinDeSemana.HasValue ? ((long)descuentoFinDeSemana.Value).ToString() : "")" />
+            </div>
+            <button type="submit" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+                Guardar
             </button>
         </div>
     </form>
