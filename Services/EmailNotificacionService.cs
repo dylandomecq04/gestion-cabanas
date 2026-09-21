@@ -80,7 +80,7 @@ namespace GestionCabanas.Services
                     Fechas: {reserva.FechaDesde:dd/MM/yyyy} – {reserva.FechaHasta:dd/MM/yyyy}
                     Personas: {reserva.CantidadPersonas} ({reserva.CantidadAdultos} adultos, {reserva.CantidadMenores} menores)
 
-                    Para coordinar el pago y confirmarla, escribinos por WhatsApp al 11 2645-2644.
+                    Para coordinar el pago y confirmarla, escribinos por WhatsApp al 11 5629-3054.
                     """
             };
 
@@ -112,7 +112,7 @@ namespace GestionCabanas.Services
                     Fechas: {reserva.FechaDesde:dd/MM/yyyy} – {reserva.FechaHasta:dd/MM/yyyy}
                     Personas: {reserva.CantidadPersonas} ({reserva.CantidadAdultos} adultos, {reserva.CantidadMenores} menores)
 
-                    Cualquier consulta, escribinos por WhatsApp al 11 2645-2644.
+                    Cualquier consulta, escribinos por WhatsApp al 11 5629-3054.
                     ¡Te esperamos!
                     """
             };
