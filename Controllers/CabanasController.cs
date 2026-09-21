@@ -94,6 +94,10 @@ namespace GestionCabanas.Controllers
             {
                 ModelState.AddModelError(string.Empty, "Esas fechas ya no están disponibles para esta cabaña. Elegí otro rango.");
             }
+            else if (await _disponibilidad.ValidarFinDeSemanaLargoAsync(modelo.FechaDesde, modelo.FechaHasta) is { } avisoFinLargo)
+            {
+                ModelState.AddModelError(string.Empty, avisoFinLargo);
+            }
 
             if (modelo.CantidadPersonas > PoliticaPrecios.MaxPersonasPorReserva)
             {
@@ -157,8 +161,14 @@ namespace GestionCabanas.Controllers
             var detalle = await _disponibilidad.CalcularValorConDetalleAsync(id, desde.Value, hasta.Value, huespedes);
             var noches = (hasta.Value - desde.Value).Days;
 
+            var avisoFinLargo = await _disponibilidad.ValidarFinDeSemanaLargoAsync(desde.Value, hasta.Value);
+
             string? aviso = null;
-            if (adultos < 1)
+            if (avisoFinLargo is not null)
+            {
+                aviso = avisoFinLargo;
+            }
+            else if (adultos < 1)
             {
                 aviso = "Tiene que haber al menos un adulto.";
             }
@@ -210,6 +220,12 @@ namespace GestionCabanas.Controllers
             if (adultos + menores > PoliticaPrecios.MaxPersonasPorReserva)
             {
                 return Json(new { valido = false, mensaje = MensajeMaximoPersonas });
+            }
+
+            var avisoFinLargo = await _disponibilidad.ValidarFinDeSemanaLargoAsync(desde.Value, hasta.Value);
+            if (avisoFinLargo is not null)
+            {
+                return Json(new { valido = false, mensaje = avisoFinLargo });
             }
 
             var resultado = await _disponibilidad.BuscarOpcionesAsync(desde.Value.Date, hasta.Value.Date, new Huespedes(adultos, menores));
@@ -342,6 +358,11 @@ namespace GestionCabanas.Controllers
                 {
                     return Json(new { exito = false, mensaje = $"{cabana.Nombre} ya no está disponible para esas fechas. Volvé a buscar." });
                 }
+
+                if (await _disponibilidad.ValidarFinDeSemanaLargoAsync(segmento.FechaDesde, segmento.FechaHasta) is { } avisoFinLargo)
+                {
+                    return Json(new { exito = false, mensaje = avisoFinLargo });
+                }
             }
 
             var reservasCreadas = new List<Reserva>();
@@ -411,6 +432,7 @@ namespace GestionCabanas.Controllers
             ViewBag.Cabanas = cabanas;
             ViewBag.Reservas = reservas;
             ViewBag.Promos = promos;
+            ViewBag.FinesDeSemanaLargos = await CargarFinesDeSemanaLargosAsync(primerDia, ultimoDia);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
@@ -418,6 +440,13 @@ namespace GestionCabanas.Controllers
             ViewBag.PermitirMesAnterior = primerDia > new DateTime(hoy.Year, hoy.Month, 1);
 
             return View();
+        }
+
+        /// <summary>Los fines de semana largos que se reservan completos y caen en el mes que se está viendo (sin contar los que ya pasaron).</summary>
+        private async Task<List<FinDeSemanaLargo>> CargarFinesDeSemanaLargosAsync(DateTime primerDia, DateTime ultimoDia)
+        {
+            var desde = primerDia > DateTime.Today ? primerDia : DateTime.Today;
+            return await _disponibilidad.ObtenerFinesDeSemanaLargosExigidosAsync(desde, ultimoDia.AddDays(1));
         }
 
         private async Task CargarPrecioDesdeAsync(int cabanaId)
@@ -434,6 +463,7 @@ namespace GestionCabanas.Controllers
 
             ViewBag.Reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
             ViewBag.PromosEstadia = await _disponibilidad.ObtenerPromosEnRangoAsync(cabanaId, primerDia, ultimoDia);
+            ViewBag.FinesDeSemanaLargos = await CargarFinesDeSemanaLargosAsync(primerDia, ultimoDia);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);

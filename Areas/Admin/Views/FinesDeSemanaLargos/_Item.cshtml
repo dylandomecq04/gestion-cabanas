@@ -1,0 +1,30 @@
+@model FinDeSemanaLargo
+
+<div class="rounded-xl border border-ink-100 p-4">
+    <div class="flex flex-wrap items-start justify-between gap-2">
+        <p class="font-medium text-ink-900">@(string.IsNullOrWhiteSpace(Model.Nombre) ? "Fin de semana largo" : Model.Nombre)</p>
+        @if (Model.ExigeReservaCompleta)
+        {
+            <span class="rounded-full bg-river-50 px-2.5 py-0.5 text-xs font-semibold text-river-700">Solo se reserva completo</span>
+        }
+        else
+        {
+            <span class="rounded-full bg-ink-100 px-2.5 py-0.5 text-xs font-semibold text-ink-500">Sin restricción</span>
+        }
+    </div>
+    <p class="mt-1 text-sm text-ink-600">
+        <span class="whitespace-nowrap">@Model.FechaDesde.ToString("dddd d/M")</span> &rarr;
+        <span class="whitespace-nowrap">@Model.FechaHasta.ToString("dddd d/M")</span>
+        &middot; <span class="whitespace-nowrap">@Model.Noches noches</span>
+    </p>
+    <div class="mt-3 flex flex-wrap gap-2">
+        <form asp-action="Alternar" asp-route-id="@Model.Id" method="post">
+            <button type="submit" class="rounded-full border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-600 transition hover:border-river-300 hover:text-river-700">
+                @(Model.ExigeReservaCompleta ? "Quitar restricción" : "Activar restricción")
+            </button>
+        </form>
+        <form asp-action="Eliminar" asp-route-id="@Model.Id" method="post" onsubmit="return confirmarAccion(event, '¿Eliminar este fin de semana largo?');">
+            <button type="submit" class="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Eliminar</button>
+        </form>
+    </div>
+</div>

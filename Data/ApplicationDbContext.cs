@@ -23,6 +23,7 @@ namespace GestionCabanas.Data
         public DbSet<PromoEstadia> PromosEstadia => Set<PromoEstadia>();
         public DbSet<OneDriveConexion> OneDriveConexiones => Set<OneDriveConexion>();
         public DbSet<DescuentoFinDeSemana> DescuentosFinDeSemana => Set<DescuentoFinDeSemana>();
+        public DbSet<FinDeSemanaLargo> FinesDeSemanaLargos => Set<FinDeSemanaLargo>();
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {
@@ -89,6 +90,9 @@ namespace GestionCabanas.Data
             modelBuilder.Entity<DescuentoFinDeSemana>()
                 .HasIndex(d => new { d.Anio, d.Mes })
                 .IsUnique();
+
+            modelBuilder.Entity<FinDeSemanaLargo>()
+                .HasIndex(f => new { f.FechaDesde, f.FechaHasta });
         }
     }
 }

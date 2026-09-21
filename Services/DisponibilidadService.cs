@@ -34,6 +34,30 @@ namespace GestionCabanas.Services
             return await query.AnyAsync();
         }
 
+        /// <summary>Fines de semana largos con la restricción activa que tienen alguna noche dentro del rango [desde, hasta).</summary>
+        public async Task<List<FinDeSemanaLargo>> ObtenerFinesDeSemanaLargosExigidosAsync(DateTime desde, DateTime hasta)
+        {
+            return await _db.FinesDeSemanaLargos
+                .Where(f => f.ExigeReservaCompleta && f.FechaDesde < hasta.Date && f.FechaHasta > desde.Date)
+                .OrderBy(f => f.FechaDesde)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Aviso para el huésped si la estadía toca un fin de semana largo con la restricción activa y no lo
+        /// cubre entero (ej.: sólo el jueves de un jueves a domingo). Null si se puede reservar.
+        /// </summary>
+        public async Task<string?> ValidarFinDeSemanaLargoAsync(DateTime desde, DateTime hasta)
+        {
+            if (hasta.Date <= desde.Date)
+            {
+                return null;
+            }
+
+            var fines = await ObtenerFinesDeSemanaLargosExigidosAsync(desde, hasta);
+            return fines.FirstOrDefault(f => f.EstadiaIncompleta(desde, hasta))?.MensajeReservaCompleta();
+        }
+
         public async Task<List<Reserva>> ObtenerConfirmadasAsync(int cabanaId, DateTime? desde = null)
         {
             var query = _db.Reservas.Where(r => r.CabanaId == cabanaId && r.Estado == EstadoReserva.Confirmada);
@@ -447,6 +471,15 @@ namespace GestionCabanas.Services
 
             var fechas = Enumerable.Range(0, noches).Select(i => desde.AddDays(i)).ToList();
 
+            // En un fin de semana largo que se reserva completo, ninguna cabaña puede quedar con sólo una parte:
+            // el cambio de cabaña no puede caer en el medio.
+            var finesExigidos = await ObtenerFinesDeSemanaLargosExigidosAsync(desde, hasta);
+            bool CorteProhibido(int dia)
+            {
+                var fecha = desde.AddDays(dia).Date;
+                return finesExigidos.Any(f => f.FechaDesde.Date < fecha && fecha < f.FechaHasta.Date);
+            }
+
             if (cabanas.Count == 0 && repartos.Count == 0)
             {
                 resultado.CobreTotal = false;
@@ -526,6 +559,11 @@ namespace GestionCabanas.Services
 
                 for (var fin = inicio + 1; fin <= noches - (tramosRestantes - 1); fin++)
                 {
+                    if (CorteProhibido(fin))
+                    {
+                        continue;
+                    }
+
                     foreach (var c in CabanasQueCubren(inicio, fin))
                     {
                         if (actual.Count > 0 && actual[^1].CabanaIndex == c)
@@ -629,6 +667,13 @@ namespace GestionCabanas.Services
             {
                 resultado.CobreTotal = false;
                 resultado.Mensaje = "No encontramos una cabaña, ni dos cabañas a la vez, libres durante todas esas fechas para el grupo. Probá con otras fechas o escribinos y lo coordinamos.";
+                return resultado;
+            }
+
+            if (resultado.Opciones.Count == 0 && finesExigidos.Count > 0)
+            {
+                resultado.CobreTotal = false;
+                resultado.Mensaje = "El fin de semana largo se reserva completo y no hay una cabaña libre durante todos esos días. Probá con otras fechas o escribinos y lo coordinamos.";
                 return resultado;
             }
 

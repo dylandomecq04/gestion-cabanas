@@ -1,0 +1,104 @@
+@model FinDeSemanaLargo
+@{
+    ViewData["Title"] = "Fines de semana largos";
+    var proximos = (List<FinDeSemanaLargo>)ViewBag.Proximos;
+    var pasados = (List<FinDeSemanaLargo>)ViewBag.Pasados;
+    var campo = "w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100";
+    var etiqueta = "mb-1 block text-sm font-medium text-ink-700";
+    var ayuda = "mt-1 text-xs text-ink-400";
+}
+
+<h1 class="font-display text-2xl font-semibold text-ink-900">Fines de semana largos</h1>
+<p class="mt-2 max-w-2xl text-sm text-ink-500">
+    Cuando un fin de semana largo tiene activado <strong class="text-ink-700">«Solo se reserva completo»</strong>, desde el sitio
+    no se puede reservar una parte (por ejemplo, sólo el jueves de un jueves a domingo): hay que reservar todos los días.
+    Las reservas que cargues vos desde el panel no tienen esa restricción.
+</p>
+
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <form asp-action="Crear" method="post" class="space-y-4 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+        <h2 class="font-display text-lg font-semibold text-ink-900">Agregar un fin de semana largo</h2>
+
+        <div asp-validation-summary="All" class="@(ViewData.ModelState.IsValid ? "hidden" : "rounded-xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700")"></div>
+
+        <div>
+            <label asp-for="Nombre" class="@etiqueta"></label>
+            <input asp-for="Nombre" maxlength="80" placeholder="Ej: Feriado de octubre" class="@campo" />
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+                <label asp-for="FechaDesde" class="@etiqueta"></label>
+                <input asp-for="FechaDesde" type="date" value="@Model.FechaDesde.ToString("yyyy-MM-dd")" class="@campo" />
+            </div>
+            <div>
+                <label asp-for="FechaHasta" class="@etiqueta"></label>
+                <input asp-for="FechaHasta" type="date" value="@Model.FechaHasta.ToString("yyyy-MM-dd")" class="@campo" />
+            </div>
+        </div>
+        <p id="resumen-noches" class="text-sm font-medium text-river-700"></p>
+        <p class="@ayuda">Cargalas como las de una reserva: el día de entrada y el día de salida. Ej: entrada jueves y salida lunes son 4 noches (jueves, viernes, sábado y domingo).</p>
+
+        <label class="flex items-start gap-3 rounded-xl border border-ink-100 p-3 text-sm text-ink-700">
+            <input asp-for="ExigeReservaCompleta" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300 text-river-700 focus:ring-river-200" />
+            <span>
+                <span class="font-semibold text-ink-900">Solo se reserva completo</span>
+                <span class="mt-0.5 block text-xs text-ink-500">Si lo desmarcás, se carga igual pero sin restricción. Después lo podés activar o quitar cuando quieras.</span>
+            </span>
+        </label>
+
+        <button type="submit" class="w-full rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 sm:w-auto">
+            Agregar
+        </button>
+    </form>
+
+    <div class="space-y-6">
+        <div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+            <h2 class="font-display text-lg font-semibold text-ink-900">Próximos</h2>
+            <div class="mt-4 space-y-3">
+                @foreach (var fin in proximos)
+                {
+                    @await Html.PartialAsync("_Item", fin)
+                }
+                @if (proximos.Count == 0)
+                {
+                    <p class="text-sm text-ink-400">Todavía no cargaste ningún fin de semana largo.</p>
+                }
+            </div>
+        </div>
+
+        @if (pasados.Count > 0)
+        {
+            <details class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+                <summary class="cursor-pointer font-display text-lg font-semibold text-ink-900">Anteriores (@pasados.Count)</summary>
+                <div class="mt-4 space-y-3">
+                    @foreach (var fin in pasados)
+                    {
+                        @await Html.PartialAsync("_Item", fin)
+                    }
+                </div>
+            </details>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const desde = document.getElementById('FechaDesde');
+            const hasta = document.getElementById('FechaHasta');
+            const resumen = document.getElementById('resumen-noches');
+
+            function actualizar() {
+                if (!desde.value || !hasta.value) { resumen.textContent = ''; return; }
+                const msPorDia = 24 * 60 * 60 * 1000;
+                const noches = Math.round((new Date(hasta.value + 'T00:00:00') - new Date(desde.value + 'T00:00:00')) / msPorDia);
+                resumen.textContent = noches > 0 ? noches + (noches === 1 ? ' noche' : ' noches') : '';
+            }
+
+            desde.addEventListener('input', actualizar);
+            hasta.addEventListener('input', actualizar);
+            actualizar();
+        })();
+    </script>
+}

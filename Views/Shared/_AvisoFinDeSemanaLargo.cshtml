@@ -1,0 +1,16 @@
+@model List<FinDeSemanaLargo>
+
+@foreach (var fin in Model)
+{
+    <div class="mb-3 flex items-start gap-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 sm:p-4">
+        <span class="text-lg leading-none" aria-hidden="true">🗓️</span>
+        <div class="min-w-0">
+            <p class="font-semibold">@(string.IsNullOrWhiteSpace(fin.Nombre) ? "Fin de semana largo" : fin.Nombre.Trim()): se reserva completo</p>
+            <p class="mt-0.5 text-amber-800">
+                Entrada el <span class="whitespace-nowrap font-semibold">@fin.FechaDesde.ToString("dddd d/M")</span>
+                y salida el <span class="whitespace-nowrap font-semibold">@fin.FechaHasta.ToString("dddd d/M")</span>
+                (@fin.Noches noches). No se puede reservar sólo una parte.
+            </p>
+        </div>
+    </div>
+}
