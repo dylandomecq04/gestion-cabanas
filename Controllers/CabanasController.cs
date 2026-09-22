@@ -440,7 +440,7 @@ namespace GestionCabanas.Controllers
             });
         }
 
-        public async Task<IActionResult> Disponibilidad(int? anio, int? mes)
+        public async Task<IActionResult> Disponibilidad(int? anio, int? mes, DateTime? desde, DateTime? hasta)
         {
             var hoy = DateTime.Today;
             var primerDia = new DateTime(anio ?? hoy.Year, mes ?? hoy.Month, 1);
@@ -460,6 +460,8 @@ namespace GestionCabanas.Controllers
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
             ViewBag.MesSiguiente = primerDia.AddMonths(1);
             ViewBag.PermitirMesAnterior = primerDia > new DateTime(hoy.Year, hoy.Month, 1);
+            ViewBag.SeleccionDesde = desde?.ToString("yyyy-MM-dd");
+            ViewBag.SeleccionHasta = hasta?.ToString("yyyy-MM-dd");
 
             return View();
         }

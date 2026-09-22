@@ -43,10 +43,12 @@
         @if (permitirMesAnterior)
         {
             <a asp-action="Disponibilidad" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month"
-               class="whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm">&larr; Mes anterior</a>
+               asp-route-desde="@ViewBag.SeleccionDesde" asp-route-hasta="@ViewBag.SeleccionHasta"
+               class="nav-mes-link whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm">&larr; Mes anterior</a>
         }
         <a asp-action="Disponibilidad" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month"
-           class="whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm">Mes siguiente &rarr;</a>
+           asp-route-desde="@ViewBag.SeleccionDesde" asp-route-hasta="@ViewBag.SeleccionHasta"
+           class="nav-mes-link whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm">Mes siguiente &rarr;</a>
     </div>
 </div>
 
@@ -187,8 +189,8 @@
 
 @section Scripts {
     <script>
-        let __generalDesde = '';
-        let __generalHasta = '';
+        let __generalDesde = @Html.Raw(ViewBag.SeleccionDesde is string sd ? $"'{sd}'" : "''");
+        let __generalHasta = @Html.Raw(ViewBag.SeleccionHasta is string sh ? $"'{sh}'" : "''");
         const __generalError = document.getElementById('general-error');
 
         function formatearFechaCorta(iso) {
@@ -267,6 +269,15 @@
             }
         }
 
+        function actualizarLinksNavegacionMes() {
+            document.querySelectorAll('.nav-mes-link').forEach(function (link) {
+                const url = new URL(link.href, window.location.origin);
+                if (__generalDesde) url.searchParams.set('desde', __generalDesde); else url.searchParams.delete('desde');
+                if (__generalHasta) url.searchParams.set('hasta', __generalHasta); else url.searchParams.delete('hasta');
+                link.href = url.toString();
+            });
+        }
+
         function actualizarResaltadoGeneral() {
             document.querySelectorAll('#tab-general .day-cell[data-fecha]').forEach(function (celda) {
                 const f = celda.dataset.fecha;
@@ -280,7 +291,10 @@
 
             actualizarResumenSeleccion();
             actualizarAvisoPromoFinde();
+            actualizarLinksNavegacionMes();
         }
+
+        actualizarResaltadoGeneral();
 
         function limpiarSeleccionGeneral() {
             __generalDesde = '';
