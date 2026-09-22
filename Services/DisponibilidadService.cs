@@ -243,11 +243,19 @@ namespace GestionCabanas.Services
                     resultado.Total = suma.Value - descuento;
                     resultado.TotalSinPromo = suma;
                     resultado.PromoAplicada = true;
-                    resultado.EtiquetaPromo = "Promo fin de semana";
+                    resultado.EtiquetaPromo = "Promo sábado y domingo";
+                    resultado.DescuentoFinDeSemana = descuento;
                 }
             }
 
             return resultado;
+        }
+
+        /// <summary>Montos del descuento de sábado y domingo cargados, por (año, mes del sábado). Para anunciarlos en los calendarios.</summary>
+        public async Task<Dictionary<(int Anio, int Mes), decimal>> ObtenerDescuentosFinDeSemanaAsync()
+        {
+            return (await _db.DescuentosFinDeSemana.Where(d => d.Monto > 0).ToListAsync())
+                .ToDictionary(d => (d.Anio, d.Mes), d => d.Monto);
         }
 
         /// <summary>
@@ -613,6 +621,7 @@ namespace GestionCabanas.Services
                         PromoAplicada = detalleSegmento.PromoAplicada,
                         EtiquetaPromo = detalleSegmento.EtiquetaPromo,
                         EtiquetaTarifa = detalleSegmento.EtiquetaTarifa,
+                        DescuentoFinDeSemana = detalleSegmento.DescuentoFinDeSemana,
                         Adultos = huespedes.Adultos,
                         Menores = huespedes.Menores
                     });
@@ -651,6 +660,7 @@ namespace GestionCabanas.Services
                         PromoAplicada = detalle.PromoAplicada,
                         EtiquetaPromo = detalle.EtiquetaPromo,
                         EtiquetaTarifa = detalle.EtiquetaTarifa,
+                        DescuentoFinDeSemana = detalle.DescuentoFinDeSemana,
                         Adultos = grupo.Adultos,
                         Menores = grupo.Menores
                     });

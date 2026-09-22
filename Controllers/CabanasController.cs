@@ -194,6 +194,7 @@ namespace GestionCabanas.Controllers
                 noches,
                 promoAplicada = detalle.PromoAplicada,
                 etiquetaPromo = detalle.EtiquetaPromo,
+                descuentoFinDeSemana = aviso is null ? detalle.DescuentoFinDeSemana : 0m,
                 etiquetaTarifa = aviso is null ? detalle.EtiquetaTarifa : null,
                 aviso
             });
@@ -256,6 +257,7 @@ namespace GestionCabanas.Controllers
                         subtotalSinPromo = s.SubtotalSinPromo,
                         promoAplicada = s.PromoAplicada,
                         etiquetaPromo = s.EtiquetaPromo,
+                        descuentoFinDeSemana = s.DescuentoFinDeSemana,
                         etiquetaTarifa = s.EtiquetaTarifa
                     })
                 })
@@ -432,6 +434,7 @@ namespace GestionCabanas.Controllers
             ViewBag.Cabanas = cabanas;
             ViewBag.Reservas = reservas;
             ViewBag.Promos = promos;
+            ViewBag.DescuentosFinDeSemana = await _disponibilidad.ObtenerDescuentosFinDeSemanaAsync();
             ViewBag.FinesDeSemanaLargos = await CargarFinesDeSemanaLargosAsync(primerDia, ultimoDia);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
@@ -463,6 +466,7 @@ namespace GestionCabanas.Controllers
 
             ViewBag.Reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
             ViewBag.PromosEstadia = await _disponibilidad.ObtenerPromosEnRangoAsync(cabanaId, primerDia, ultimoDia);
+            ViewBag.DescuentosFinDeSemana = await _disponibilidad.ObtenerDescuentosFinDeSemanaAsync();
             ViewBag.FinesDeSemanaLargos = await CargarFinesDeSemanaLargosAsync(primerDia, ultimoDia);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;

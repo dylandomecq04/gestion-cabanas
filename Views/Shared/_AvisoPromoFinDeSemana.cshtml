@@ -1,0 +1,17 @@
+@* Model: el monto del descuento de sábado y domingo del mes que se está viendo (null si no hay). *@
+@model decimal?
+
+@if (Model is decimal monto && monto > 0)
+{
+    <div class="mb-3 flex items-start gap-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 sm:p-4">
+        <span class="text-lg leading-none" aria-hidden="true">🎉</span>
+        <div class="min-w-0">
+            <p class="font-semibold">Promo sábado y domingo: <span class="whitespace-nowrap">$@monto.ToString("N0") de descuento</span></p>
+            <p class="mt-0.5 text-amber-800">
+                Reservá el <strong>sábado y el domingo juntos</strong> y te descontamos <span class="whitespace-nowrap font-semibold">$@monto.ToString("N0")</span>
+                del total, por cada fin de semana completo. Los días con la marca <span class="whitespace-nowrap rounded bg-white px-1 font-bold text-amber-700">@DescuentoFinDeSemana.TextoCorto(monto)</span>
+                del calendario participan. No se suma a otras promociones.
+            </p>
+        </div>
+    </div>
+}
