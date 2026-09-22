@@ -22,10 +22,10 @@
         return char.ToUpper(texto[0]) + texto.Substring(1);
     }
 
-    // Las solicitudes se muestran todas juntas (la más vieja primero, según cuándo se cargaron),
+    // Las solicitudes se muestran todas juntas (la más nueva primero, según cuándo se cargaron),
     // sin agrupar por cabaña. Las reservas confirmadas siguen agrupadas por cabaña y ordenadas por fecha de estadía.
     var grupos = esSolicitudes
-        ? new[] { ("", Model.OrderBy(r => r.FechaCreacion).AsEnumerable()) }
+        ? new[] { ("", Model.OrderByDescending(r => r.FechaCreacion).AsEnumerable()) }
         : Model.GroupBy(r => r.Cabana?.Nombre ?? "Sin cabaña").OrderBy(g => g.Key)
             .Select(g => (g.Key, g.OrderBy(r => r.FechaDesde).AsEnumerable()));
 

@@ -172,7 +172,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             }
 
             var reservas = esSolicitudes
-                ? await query.OrderBy(r => r.FechaCreacion).ToListAsync()
+                ? await query.OrderByDescending(r => r.FechaCreacion).ToListAsync()
                 : await query.OrderBy(r => r.FechaDesde).ThenBy(r => r.Cabana!.Nombre).ToListAsync();
             return View(reservas);
         }
