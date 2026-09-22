@@ -256,7 +256,7 @@ else
                                 }
                                 <td class="px-5 py-3 font-medium text-ink-900">@r.NombreHuesped</td>
                                 <td class="whitespace-nowrap px-3 py-3 text-ink-600">@r.FechaDesde.ToString("dd/MM/yyyy") &ndash; @r.FechaHasta.ToString("dd/MM/yyyy")</td>
-                                <td class="px-3 py-3 text-center text-ink-600">@r.CantidadPersonas@(r.CantidadMenores > 0 ? $" ({r.CantidadMenores} menor{(r.CantidadMenores == 1 ? "" : "es")})" : "")</td>
+                                <td class="whitespace-nowrap px-3 py-3 text-center text-ink-600">@r.CantidadPersonas@(r.CantidadMenores > 0 ? $" ({r.CantidadMenores} menor{(r.CantidadMenores == 1 ? "" : "es")})" : "")</td>
                                 <td class="px-3 py-3 text-ink-600">@(r.Pago.HasValue ? "$" + r.Pago.Value.ToString("N0") : "-")</td>
                                 <td class="px-3 py-3 text-ink-600">@(r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "-")</td>
                                 <td class="px-3 py-3 text-ink-500">@r.Telefono</td>
