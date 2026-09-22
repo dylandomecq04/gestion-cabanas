@@ -278,46 +278,51 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GuardarMinimosNoches(
-            int anio, int mes,
-            int? lunes, int? martes, int? miercoles, int? jueves, int? viernes, int? sabado, int? domingo)
+        public async Task<IActionResult> GuardarMinimoNoches(int anio, int mes, DayOfWeek dia, int? noches)
         {
-            var valores = new (DayOfWeek Dia, int? Noches)[]
+            if (!Enum.IsDefined(typeof(DayOfWeek), dia))
             {
-                (DayOfWeek.Monday, lunes),
-                (DayOfWeek.Tuesday, martes),
-                (DayOfWeek.Wednesday, miercoles),
-                (DayOfWeek.Thursday, jueves),
-                (DayOfWeek.Friday, viernes),
-                (DayOfWeek.Saturday, sabado),
-                (DayOfWeek.Sunday, domingo)
-            };
-
-            var existentes = await _db.MinimosNoches.ToDictionaryAsync(m => m.DiaSemana);
-
-            foreach (var (dia, noches) in valores)
-            {
-                existentes.TryGetValue(dia, out var actual);
-                if (!noches.HasValue || noches.Value <= 1)
-                {
-                    if (actual is not null)
-                    {
-                        _db.MinimosNoches.Remove(actual);
-                    }
-                }
-                else
-                {
-                    if (actual is null)
-                    {
-                        actual = new MinimoNoches { DiaSemana = dia };
-                        _db.MinimosNoches.Add(actual);
-                    }
-                    actual.Noches = Math.Min(noches.Value, 30);
-                }
+                return RedirectToAction(nameof(Precios), new { anio, mes });
             }
 
-            await _db.SaveChangesAsync();
-            TempData["Mensaje"] = "Mínimo de noches actualizado.";
+            var existente = await _db.MinimosNoches.FirstOrDefaultAsync(m => m.DiaSemana == dia);
+
+            if (!noches.HasValue || noches.Value <= 1)
+            {
+                if (existente is not null)
+                {
+                    _db.MinimosNoches.Remove(existente);
+                    await _db.SaveChangesAsync();
+                }
+                TempData["Mensaje"] = $"Sin restricción de mínimo de noches para el {MinimoNoches.NombreDia(dia)}.";
+            }
+            else
+            {
+                if (existente is null)
+                {
+                    existente = new MinimoNoches { DiaSemana = dia };
+                    _db.MinimosNoches.Add(existente);
+                }
+                existente.Noches = Math.Min(noches.Value, 30);
+                await _db.SaveChangesAsync();
+                TempData["Mensaje"] = $"Mínimo de noches para el {MinimoNoches.NombreDia(dia)}: {existente.Noches} noches.";
+            }
+
+            return RedirectToAction(nameof(Precios), new { anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarMinimoNoches(int anio, int mes, DayOfWeek dia)
+        {
+            var existente = await _db.MinimosNoches.FirstOrDefaultAsync(m => m.DiaSemana == dia);
+            if (existente is not null)
+            {
+                _db.MinimosNoches.Remove(existente);
+                await _db.SaveChangesAsync();
+                TempData["Mensaje"] = $"Se quitó el mínimo de noches para el {MinimoNoches.NombreDia(dia)}.";
+            }
+
             return RedirectToAction(nameof(Precios), new { anio, mes });
         }
 

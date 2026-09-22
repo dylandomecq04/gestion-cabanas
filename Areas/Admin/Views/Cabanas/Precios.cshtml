@@ -13,6 +13,17 @@
 
     // En el celu no hay lugar para "Lunes a viernes", así que se abrevia.
     string etiquetaCorta(string clave) => clave switch { "Semana" => "Lun a vie", _ => clave == "Sabado" ? "Sábado" : "Domingo" };
+
+    var diasSemana = new[]
+    {
+        (DayOfWeek.Monday, "Lunes"),
+        (DayOfWeek.Tuesday, "Martes"),
+        (DayOfWeek.Wednesday, "Miércoles"),
+        (DayOfWeek.Thursday, "Jueves"),
+        (DayOfWeek.Friday, "Viernes"),
+        (DayOfWeek.Saturday, "Sábado"),
+        (DayOfWeek.Sunday, "Domingo")
+    };
 }
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -128,42 +139,55 @@
 </div>
 
 <div class="mt-6 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
-    <form asp-action="GuardarMinimosNoches" method="post">
+    <h2 class="font-display text-lg font-semibold text-ink-900">Mínimo de noches por día</h2>
+    <p class="mt-1 text-sm text-ink-500">
+        Si la estadía incluye la noche de este día, tiene que durar al menos esta cantidad de noches
+        (ej.: sábado con mínimo 2 no deja reservar una sola noche). No afecta a las reservas que cargás vos desde el panel.
+    </p>
+    <form asp-action="GuardarMinimoNoches" method="post" class="mt-4 flex flex-wrap items-end gap-3">
         <input type="hidden" name="anio" value="@primerDia.Year" />
         <input type="hidden" name="mes" value="@primerDia.Month" />
-        <h2 class="font-display text-lg font-semibold text-ink-900">Mínimo de noches por día</h2>
-        <p class="mt-1 text-sm text-ink-500">
-            Si la estadía incluye la noche de alguno de estos días, tiene que durar al menos esta cantidad de noches
-            (ej.: sábado con mínimo 2 no deja reservar una sola noche). Vacío o 1 = sin restricción ese día. No afecta
-            a las reservas que cargás vos desde el panel.
-        </p>
-        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-            @foreach (var (campo, etiqueta, dia) in new[]
-            {
-                ("lunes", "Lunes", DayOfWeek.Monday),
-                ("martes", "Martes", DayOfWeek.Tuesday),
-                ("miercoles", "Miércoles", DayOfWeek.Wednesday),
-                ("jueves", "Jueves", DayOfWeek.Thursday),
-                ("viernes", "Viernes", DayOfWeek.Friday),
-                ("sabado", "Sábado", DayOfWeek.Saturday),
-                ("domingo", "Domingo", DayOfWeek.Sunday)
-            })
-            {
-                var valor = minimosNoches.GetValueOrDefault(dia);
-                <div>
-                    <label for="minimo-@campo" class="mb-1 block text-xs font-medium text-ink-700">@etiqueta</label>
-                    <input type="number" min="1" max="30" step="1" id="minimo-@campo" name="@campo"
-                           value="@(valor > 1 ? valor.ToString() : "")" placeholder="1"
-                           class="w-full min-w-0 rounded-xl border border-ink-200 px-2.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
-                </div>
-            }
+        <div class="w-full sm:w-40">
+            <label for="minimo-dia" class="mb-1 block text-sm font-medium text-ink-700">Día</label>
+            <select id="minimo-dia" name="dia"
+                    class="w-full min-w-0 rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">
+                @foreach (var (dia, etiqueta) in diasSemana)
+                {
+                    <option value="@((int)dia)">@etiqueta</option>
+                }
+            </select>
         </div>
-        <div class="mt-4">
-            <button type="submit" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
-                Guardar
-            </button>
+        <div class="w-full sm:w-36">
+            <label for="minimo-noches" class="mb-1 block text-sm font-medium text-ink-700">Mínimo de noches</label>
+            <input type="number" min="2" max="30" step="1" id="minimo-noches" name="noches" placeholder="2"
+                   class="w-full min-w-0 rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
         </div>
+        <button type="submit" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+            Guardar
+        </button>
     </form>
+
+    @if (minimosNoches.Count > 0)
+    {
+        <ul class="mt-5 divide-y divide-ink-100 border-t border-ink-100">
+            @foreach (var (dia, etiqueta) in diasSemana.Where(d => minimosNoches.ContainsKey(d.Item1)))
+            {
+                <li class="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                    <span class="text-sm text-ink-700"><span class="font-medium">@etiqueta</span>: mínimo @minimosNoches[dia] noches</span>
+                    <form asp-action="EliminarMinimoNoches" method="post">
+                        <input type="hidden" name="anio" value="@primerDia.Year" />
+                        <input type="hidden" name="mes" value="@primerDia.Month" />
+                        <input type="hidden" name="dia" value="@((int)dia)" />
+                        <button type="submit" class="text-xs font-medium text-red-600 transition hover:text-red-700">Quitar</button>
+                    </form>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p class="mt-4 text-sm text-ink-400">Todavía no hay restricciones cargadas.</p>
+    }
 </div>
 
 @section Scripts {
