@@ -38,7 +38,7 @@ namespace GestionCabanas.Controllers
             return View(cabanas);
         }
 
-        public async Task<IActionResult> Details(int id, int? anio, int? mes)
+        public async Task<IActionResult> Details(int id, int? anio, int? mes, DateTime? desde, DateTime? hasta)
         {
             var cabana = await _db.Cabanas
                 .Include(c => c.Fotos)
@@ -52,6 +52,8 @@ namespace GestionCabanas.Controllers
             ViewBag.Cabana = cabana;
             await CargarCalendarioAsync(id, anio, mes);
             await CargarPrecioDesdeAsync(id);
+            ViewBag.SeleccionDesde = desde?.ToString("yyyy-MM-dd");
+            ViewBag.SeleccionHasta = hasta?.ToString("yyyy-MM-dd");
 
             if (TempData["ReservaId"] is int reservaId)
             {
