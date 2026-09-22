@@ -1,4 +1,5 @@
 @model List<Reserva>
+@using PhoneNumbers
 @{
     ViewData["Title"] = "Reservas";
     EstadoReserva filtro = ViewBag.EstadoFiltro;
@@ -25,10 +26,32 @@
 
     string LinkWhatsApp(Reserva r)
     {
-        var digitos = new string((r.Telefono ?? "").Where(char.IsDigit).ToArray());
-        if (digitos.Length == 0) return "";
+        if (string.IsNullOrWhiteSpace(r.Telefono)) return "";
+        string digitos;
+        try
+        {
+            var util = PhoneNumberUtil.GetInstance();
+            var numero = util.Parse(r.Telefono, "AR");
+            if (!util.IsValidNumber(numero)) return "";
+            if (numero.CountryCode == 54)
+            {
+                // Los huéspedes son personas con celular: forzamos el "9" de
+                // WhatsApp aunque el teléfono se haya cargado sin el 15 ni el 9.
+                var nacional = util.GetNationalSignificantNumber(numero);
+                if (nacional.StartsWith("9")) nacional = nacional.Substring(1);
+                digitos = "549" + nacional;
+            }
+            else
+            {
+                digitos = util.Format(numero, PhoneNumberFormat.E164).TrimStart('+');
+            }
+        }
+        catch (NumberParseException)
+        {
+            return "";
+        }
         var mensaje = $"Hola! Me llegó tu solicitud de reserva del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy} a nombre de {r.NombreHuesped}. Te escribo para coordinar la reserva.";
-        return $"https://wa.me/549{digitos}?text={Uri.EscapeDataString(mensaje)}";
+        return $"https://wa.me/{digitos}?text={Uri.EscapeDataString(mensaje)}";
     }
 }
 
