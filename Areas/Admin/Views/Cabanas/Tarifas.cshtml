@@ -3,6 +3,7 @@
     var cabana = (Cabana)ViewBag.Cabana;
     var dias = (List<DiaTarifaVista>)ViewBag.Dias;
     var promos = (List<PromoEstadia>)ViewBag.PromosEstadia;
+    var fines = (List<FinDeSemanaLargo>)ViewBag.FinesDeSemanaLargos;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
     DateTime mesSiguiente = ViewBag.MesSiguiente;
@@ -61,17 +62,28 @@
         <div class="mt-1 grid grid-cols-7 gap-1">
             @foreach (var dia in celdas)
             {
+                var marco = dia is null ? null : FinDeSemanaLargo.ClasesMarco(fines, dia.Fecha);
                 if (dia is null)
                 {
                     <div></div>
                 }
                 else if (dia.Pasada)
                 {
-                    <div class="day-cell flex h-16 items-center justify-center rounded-lg bg-ink-50 text-[10px] text-ink-300">@dia.Fecha.Day</div>
+                    <div class="day-cell relative flex h-16 items-center justify-center rounded-lg bg-ink-50 text-[10px] text-ink-300">
+                        @if (marco is not null)
+                        {
+                            <span class="@marco"></span>
+                        }
+                        @dia.Fecha.Day
+                    </div>
                 }
                 else if (dia.Reservada)
                 {
-                    <div class="day-cell flex h-16 flex-col items-center justify-center gap-0.5 rounded-lg bg-river-100 font-medium text-river-700" title="Reservada">
+                    <div class="day-cell relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-lg bg-river-100 font-medium text-river-700" title="Reservada">
+                        @if (marco is not null)
+                        {
+                            <span class="@marco"></span>
+                        }
                         <span class="text-[9px] opacity-70">@dia.Fecha.Day</span>
                         <span class="text-[10px] font-bold uppercase"><span class="sm:hidden">Res.</span><span class="hidden sm:inline">Reservada</span></span>
                     </div>
@@ -85,6 +97,10 @@
                                 data-precio2="@Plano(dia.Precio2)" data-precio4="@Plano(dia.Precio4)" data-precio6="@Plano(dia.Precio6)"
                                 onclick="alternarSeleccionDia(this)"
                                 class="dia-editable day-cell relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-lg font-medium ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clases">
+                            @if (marco is not null)
+                            {
+                                <span class="@marco"></span>
+                            }
                             @if (dia.EnPromo)
                             {
                                 <span class="absolute -top-1.5 left-0.5 text-[7px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
@@ -114,6 +130,10 @@
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-amber-100"></span> Con promoción</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Reservada</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-ink-50"></span> Fecha pasada</span>
+            @if (fines.Count > 0)
+            {
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm border-2 border-amber-500"></span> Fin de semana largo (se reserva completo)</span>
+            }
         </div>
     </div>
 

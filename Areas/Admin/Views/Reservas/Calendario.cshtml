@@ -4,6 +4,13 @@
     var reservas = (List<Reserva>)ViewBag.Reservas;
     var tarifas = (List<TarifaDia>)ViewBag.Tarifas;
     var promos = (List<PromoEstadia>)ViewBag.Promos;
+    var fines = (List<FinDeSemanaLargo>)ViewBag.FinesDeSemanaLargos;
+    // Para que el script dibuje un marco alrededor de las columnas de cada fin de semana largo (primera y última noche).
+    var finesJson = System.Text.Json.JsonSerializer.Serialize(fines.Select(f => new
+    {
+        desde = f.FechaDesde.ToString("yyyy-MM-dd"),
+        hasta = f.FechaHasta.AddDays(-1).ToString("yyyy-MM-dd")
+    }));
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
@@ -127,6 +134,10 @@
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-ink-700">$</span> Precios de arriba a abajo: para 2 · 4 · 6 personas</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-river-700">↑</span> Ingresa ese día</span>
         <span class="flex shrink-0 items-center gap-1.5"><span class="font-bold text-rose-600">↓</span> Sale ese día</span>
+        @if (fines.Count > 0)
+        {
+            <span class="flex shrink-0 items-center gap-1.5"><span class="h-3 w-3 rounded-sm border-2 border-amber-500"></span> Fin de semana largo (se reserva completo)</span>
+        }
     </div>
 
     <div id="scroll-arriba" class="scroll-fino mb-1.5 overflow-x-auto overflow-y-hidden">
@@ -134,7 +145,7 @@
     </div>
 
     <form id="form-tarifas" asp-action="GuardarTarifasCalendario" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="pb-44 sm:pb-24">
-        <div id="scroll-tabla" class="scroll-fino overflow-x-auto rounded-2.5xl bg-white p-2 shadow-soft ring-1 ring-ink-100 sm:p-3">
+        <div id="scroll-tabla" class="scroll-fino relative overflow-x-auto rounded-2.5xl bg-white p-2 shadow-soft ring-1 ring-ink-100 sm:p-3">
             <table class="w-full border-separate text-xs [border-spacing:2px_7px] sm:[border-spacing:4px_10px]">
                 <thead>
                     <tr>
@@ -146,7 +157,7 @@
                                 : EsFinDeSemana(dia)
                                     ? "bg-sand-100 text-sand-800"
                                     : "text-ink-400";
-                            <th id="@(dia.Date == hoy ? "col-hoy" : null)" class="min-w-[60px] rounded-lg px-0.5 py-1.5 text-center font-semibold sm:min-w-[112px] sm:px-1 sm:py-2.5 @clasesHeader">
+                            <th id="@(dia.Date == hoy ? "col-hoy" : null)" data-fecha="@dia.ToString("yyyy-MM-dd")" class="min-w-[60px] rounded-lg px-0.5 py-1.5 text-center font-semibold sm:min-w-[112px] sm:px-1 sm:py-2.5 @clasesHeader">
                                 <div class="text-[10px] uppercase opacity-80 sm:text-xs">@diasSemana[IndiceDiaSemana(dia)]</div>
                                 <div class="text-sm sm:text-lg">@dia.Day</div>
                             </th>
@@ -796,6 +807,56 @@
                 arriba.scrollLeft = tabla.scrollLeft;
                 sincronizando = false;
             });
+        })();
+
+        // Marco alrededor de las columnas de cada fin de semana largo que se reserva completo. Se recalcula cada
+        // vez que la tabla cambia de tamaño (por ejemplo al ocultar solicitudes, que cambia el alto de las filas).
+        (function enmarcarFinesDeSemanaLargos() {
+            const fines = @Html.Raw(finesJson);
+            const contenedor = document.getElementById('scroll-tabla');
+            const tabla = contenedor ? contenedor.querySelector('table') : null;
+            if (!fines.length || !tabla) return;
+
+            const marcos = fines.map(() => {
+                const marco = document.createElement('div');
+                marco.className = 'marco-fin-largo pointer-events-none absolute z-10 hidden rounded-2xl border-2 border-amber-500';
+                contenedor.appendChild(marco);
+                return marco;
+            });
+
+            function dibujar() {
+                const base = contenedor.getBoundingClientRect();
+                const encabezados = Array.from(tabla.querySelectorAll('thead th[data-fecha]'));
+                const ultimaFila = tabla.querySelector('tbody tr:last-child');
+                if (!ultimaFila || encabezados.length === 0) return;
+
+                fines.forEach((fin, i) => {
+                    const columnas = encabezados.filter(th => th.dataset.fecha >= fin.desde && th.dataset.fecha <= fin.hasta);
+                    if (columnas.length === 0) { marcos[i].classList.add('hidden'); return; }
+
+                    const primera = columnas[0].getBoundingClientRect();
+                    const ultima = columnas[columnas.length - 1].getBoundingClientRect();
+                    const alto = ultimaFila.getBoundingClientRect();
+                    const izquierda = primera.left - base.left + contenedor.scrollLeft - 3;
+                    const arriba = primera.top - base.top + contenedor.scrollTop - 4;
+
+                    marcos[i].style.left = izquierda + 'px';
+                    marcos[i].style.top = arriba + 'px';
+                    marcos[i].style.width = (ultima.right - primera.left + 6) + 'px';
+                    marcos[i].style.height = (alto.bottom - primera.top + 8) + 'px';
+                    marcos[i].classList.remove('hidden');
+                });
+            }
+
+            dibujar();
+            // Las columnas se pueden correr sin que cambie el tamaño total de la tabla (por ejemplo cuando
+            // termina de cargar la tipografía), así que se observan también los encabezados.
+            const observador = new ResizeObserver(dibujar);
+            observador.observe(tabla);
+            tabla.querySelectorAll('thead th').forEach(th => observador.observe(th));
+            window.addEventListener('resize', dibujar);
+            window.addEventListener('load', dibujar);
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(dibujar);
         })();
 
         (function centrarScrollEnHoy() {

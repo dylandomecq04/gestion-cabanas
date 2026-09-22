@@ -40,6 +40,36 @@ namespace GestionCabanas.Models
             return toca && !cubreTodo;
         }
 
+        /// <summary>Si ese día es una de las noches del fin de semana largo (la de la salida ya no cuenta).</summary>
+        public bool IncluyeDia(DateTime dia) => dia.Date >= FechaDesde.Date && dia.Date < FechaHasta.Date;
+
+        /// <summary>
+        /// Clases del marco que se dibuja sobre cada celda de un calendario semanal (lunes a domingo) para
+        /// enmarcar el fin de semana largo: borde arriba y abajo en todos los días, y cerrado a los costados
+        /// en el primer día, en el último y donde la semana se corta. Null si el día no pertenece a ninguno.
+        /// Se usa dentro de la celda (que tiene que ser <c>relative</c>): el marco sobresale medio hueco
+        /// para que se una con el de la celda de al lado.
+        /// </summary>
+        public static string? ClasesMarco(IEnumerable<FinDeSemanaLargo> fines, DateTime dia)
+        {
+            var fin = fines.FirstOrDefault(f => f.IncluyeDia(dia));
+            if (fin is null)
+            {
+                return null;
+            }
+
+            var clases = "pointer-events-none absolute -inset-0.5 z-10 border-y-2 border-amber-500";
+            if (dia.Date == fin.FechaDesde.Date || dia.DayOfWeek == DayOfWeek.Monday)
+            {
+                clases += " rounded-l-xl border-l-2";
+            }
+            if (dia.Date == fin.FechaHasta.Date.AddDays(-1) || dia.DayOfWeek == DayOfWeek.Sunday)
+            {
+                clases += " rounded-r-xl border-r-2";
+            }
+            return clases;
+        }
+
         /// <summary>El aviso para el huésped cuando pide sólo una parte.</summary>
         public string MensajeReservaCompleta()
         {

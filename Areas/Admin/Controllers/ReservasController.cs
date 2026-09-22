@@ -466,6 +466,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.Reservas = reservas;
             ViewBag.Tarifas = tarifas;
             ViewBag.Promos = promos;
+            ViewBag.FinesDeSemanaLargos = await _disponibilidad.ObtenerFinesDeSemanaLargosExigidosAsync(primerDia, ultimoDia.AddDays(1));
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);

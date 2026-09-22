@@ -191,6 +191,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 .Where(p => p.CabanaId == id)
                 .OrderByDescending(p => p.FechaDesde)
                 .ToListAsync();
+            ViewBag.FinesDeSemanaLargos = await _disponibilidad.ObtenerFinesDeSemanaLargosExigidosAsync(primerDia, ultimoDia.AddDays(1));
             ViewBag.PrimerDia = primerDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
             ViewBag.MesSiguiente = primerDia.AddMonths(1);
