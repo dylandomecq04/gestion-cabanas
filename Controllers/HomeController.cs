@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using GestionCabanas.Data;
+using GestionCabanas.Services;
 using Microsoft.AspNetCore.Mvc;
 using GestionCabanas.Models;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,12 @@ namespace GestionCabanas.Controllers;
 public class HomeController : Controller
 {
     private readonly ApplicationDbContext _db;
+    private readonly DisponibilidadService _disponibilidad;
 
-    public HomeController(ApplicationDbContext db)
+    public HomeController(ApplicationDbContext db, DisponibilidadService disponibilidad)
     {
         _db = db;
+        _disponibilidad = disponibilidad;
     }
 
     public async Task<IActionResult> Index()
@@ -31,6 +34,9 @@ public class HomeController : Controller
 
         ViewBag.PromoIzquierda = promosParaHome.ElementAtOrDefault(0);
         ViewBag.PromoDerecha = promosParaHome.ElementAtOrDefault(1);
+
+        var descuentosFinde = await _disponibilidad.ObtenerDescuentosFinDeSemanaAsync();
+        ViewBag.HayPromoFinDeSemana = descuentosFinde.Keys.Any(k => k.Anio > hoy.Year || (k.Anio == hoy.Year && k.Mes >= hoy.Month));
 
         ViewBag.Inicio = await _db.InicioSitio.FirstOrDefaultAsync() ?? new InicioSitio();
         ViewBag.FotosHero = await _db.FotosHero.OrderBy(f => f.Orden).ToListAsync();

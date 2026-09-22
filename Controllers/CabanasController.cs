@@ -147,6 +147,23 @@ namespace GestionCabanas.Controllers
             return RedirectToAction(nameof(Details), new { id = modelo.CabanaId });
         }
 
+        /// <summary>
+        /// Cuánto se descuenta por reservar sábado y domingo juntos en el rango dado, sin importar la cabaña
+        /// (el descuento no depende de cuál sea). Lo usa el calendario de disponibilidad general para avisar
+        /// la promo apenas se elige un rango, antes de completar el formulario de contacto.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> DescuentoFinDeSemana(DateTime? desde, DateTime? hasta)
+        {
+            if (desde is null || hasta is null || hasta <= desde)
+            {
+                return Json(new { monto = 0m });
+            }
+
+            var monto = await _disponibilidad.DescuentoFinDeSemanaAsync(desde.Value.Date, hasta.Value.Date);
+            return Json(new { monto });
+        }
+
         [HttpGet]
         public async Task<IActionResult> CalcularTotal(int id, DateTime? desde, DateTime? hasta, int adultos = 2, int menores = 0)
         {

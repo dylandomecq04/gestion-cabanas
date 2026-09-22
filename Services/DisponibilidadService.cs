@@ -261,8 +261,9 @@ namespace GestionCabanas.Services
         /// <summary>
         /// Suma el descuento de fin de semana de cada sábado cuya noche y la del domingo siguiente
         /// están dentro de la estadía. El monto es el del mes del sábado; sin monto cargado no hay descuento.
+        /// No depende de la cabaña, así que también sirve para avisar la promo antes de elegir una.
         /// </summary>
-        private async Task<decimal> DescuentoFinDeSemanaAsync(DateTime desde, DateTime hasta)
+        public async Task<decimal> DescuentoFinDeSemanaAsync(DateTime desde, DateTime hasta)
         {
             var sabados = new List<DateTime>();
             for (var dia = desde.Date; dia.AddDays(1) < hasta.Date; dia = dia.AddDays(1))
