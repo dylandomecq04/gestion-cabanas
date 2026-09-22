@@ -58,6 +58,46 @@ namespace GestionCabanas.Services
             return fines.FirstOrDefault(f => f.EstadiaIncompleta(desde, hasta))?.MensajeReservaCompleta();
         }
 
+        /// <summary>Mínimo de noches configurado por día de la semana. Sin entrada para un día = sin restricción.</summary>
+        public async Task<Dictionary<DayOfWeek, int>> ObtenerMinimosNochesAsync()
+        {
+            return await _db.MinimosNoches.ToDictionaryAsync(m => m.DiaSemana, m => m.Noches);
+        }
+
+        /// <summary>
+        /// Aviso para el huésped si la estadía no llega al mínimo de noches que exige alguno de los días que
+        /// incluye (ej.: una sola noche de sábado con un mínimo de 2 noches cargado). Null si se puede reservar.
+        /// </summary>
+        public async Task<string?> ValidarMinimoNochesAsync(DateTime desde, DateTime hasta)
+        {
+            if (hasta.Date <= desde.Date)
+            {
+                return null;
+            }
+
+            var minimos = await ObtenerMinimosNochesAsync();
+            if (minimos.Count == 0)
+            {
+                return null;
+            }
+
+            var noches = (hasta.Date - desde.Date).Days;
+            DayOfWeek? diaExigente = null;
+            var maximoExigido = 0;
+            for (var dia = desde.Date; dia < hasta.Date; dia = dia.AddDays(1))
+            {
+                if (minimos.TryGetValue(dia.DayOfWeek, out var exigido) && exigido > noches && exigido > maximoExigido)
+                {
+                    maximoExigido = exigido;
+                    diaExigente = dia.DayOfWeek;
+                }
+            }
+
+            return diaExigente is null
+                ? null
+                : $"El mínimo de noches reservando el {MinimoNoches.NombreDia(diaExigente.Value)} es de {maximoExigido} noches.";
+        }
+
         public async Task<List<Reserva>> ObtenerConfirmadasAsync(int cabanaId, DateTime? desde = null)
         {
             var query = _db.Reservas.Where(r => r.CabanaId == cabanaId && r.Estado == EstadoReserva.Confirmada);

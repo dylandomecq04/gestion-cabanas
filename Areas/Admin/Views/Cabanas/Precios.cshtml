@@ -7,6 +7,7 @@
     DateTime mesSiguiente = ViewBag.MesSiguiente;
     bool permitirMesAnterior = ViewBag.PermitirMesAnterior;
     decimal? descuentoFinDeSemana = ViewBag.DescuentoFinDeSemana;
+    var minimosNoches = (Dictionary<DayOfWeek, int>)ViewBag.MinimosNoches;
     var mesTitulo = primerDia.ToString("MMMM yyyy");
     mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
 
@@ -119,6 +120,45 @@
                        class="w-full min-w-0 rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
                 <input type="hidden" id="descuento-finde-real" name="monto" value="@(descuentoFinDeSemana.HasValue ? ((long)descuentoFinDeSemana.Value).ToString() : "")" />
             </div>
+            <button type="submit" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+                Guardar
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="mt-6 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+    <form asp-action="GuardarMinimosNoches" method="post">
+        <input type="hidden" name="anio" value="@primerDia.Year" />
+        <input type="hidden" name="mes" value="@primerDia.Month" />
+        <h2 class="font-display text-lg font-semibold text-ink-900">Mínimo de noches por día</h2>
+        <p class="mt-1 text-sm text-ink-500">
+            Si la estadía incluye la noche de alguno de estos días, tiene que durar al menos esta cantidad de noches
+            (ej.: sábado con mínimo 2 no deja reservar una sola noche). Vacío o 1 = sin restricción ese día. No afecta
+            a las reservas que cargás vos desde el panel.
+        </p>
+        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+            @foreach (var (campo, etiqueta, dia) in new[]
+            {
+                ("lunes", "Lunes", DayOfWeek.Monday),
+                ("martes", "Martes", DayOfWeek.Tuesday),
+                ("miercoles", "Miércoles", DayOfWeek.Wednesday),
+                ("jueves", "Jueves", DayOfWeek.Thursday),
+                ("viernes", "Viernes", DayOfWeek.Friday),
+                ("sabado", "Sábado", DayOfWeek.Saturday),
+                ("domingo", "Domingo", DayOfWeek.Sunday)
+            })
+            {
+                var valor = minimosNoches.GetValueOrDefault(dia);
+                <div>
+                    <label for="minimo-@campo" class="mb-1 block text-xs font-medium text-ink-700">@etiqueta</label>
+                    <input type="number" min="1" max="30" step="1" id="minimo-@campo" name="@campo"
+                           value="@(valor > 1 ? valor.ToString() : "")" placeholder="1"
+                           class="w-full min-w-0 rounded-xl border border-ink-200 px-2.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+                </div>
+            }
+        </div>
+        <div class="mt-4">
             <button type="submit" class="rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
                 Guardar
             </button>

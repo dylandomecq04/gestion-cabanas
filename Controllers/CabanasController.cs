@@ -100,6 +100,10 @@ namespace GestionCabanas.Controllers
             {
                 ModelState.AddModelError(string.Empty, avisoFinLargo);
             }
+            else if (await _disponibilidad.ValidarMinimoNochesAsync(modelo.FechaDesde, modelo.FechaHasta) is { } avisoMinimoNoches)
+            {
+                ModelState.AddModelError(string.Empty, avisoMinimoNoches);
+            }
 
             if (modelo.CantidadPersonas > PoliticaPrecios.MaxPersonasPorReserva)
             {
@@ -187,6 +191,10 @@ namespace GestionCabanas.Controllers
             {
                 aviso = avisoFinLargo;
             }
+            else if (await _disponibilidad.ValidarMinimoNochesAsync(desde.Value, hasta.Value) is { } avisoMinimoNoches)
+            {
+                aviso = avisoMinimoNoches;
+            }
             else if (adultos < 1)
             {
                 aviso = "Tiene que haber al menos un adulto.";
@@ -246,6 +254,11 @@ namespace GestionCabanas.Controllers
             if (avisoFinLargo is not null)
             {
                 return Json(new { valido = false, mensaje = avisoFinLargo });
+            }
+
+            if (await _disponibilidad.ValidarMinimoNochesAsync(desde.Value, hasta.Value) is { } avisoMinimoNoches)
+            {
+                return Json(new { valido = false, mensaje = avisoMinimoNoches });
             }
 
             var resultado = await _disponibilidad.BuscarOpcionesAsync(desde.Value.Date, hasta.Value.Date, new Huespedes(adultos, menores));
@@ -383,6 +396,11 @@ namespace GestionCabanas.Controllers
                 if (await _disponibilidad.ValidarFinDeSemanaLargoAsync(segmento.FechaDesde, segmento.FechaHasta) is { } avisoFinLargo)
                 {
                     return Json(new { exito = false, mensaje = avisoFinLargo });
+                }
+
+                if (await _disponibilidad.ValidarMinimoNochesAsync(segmento.FechaDesde, segmento.FechaHasta) is { } avisoMinimoNoches)
+                {
+                    return Json(new { exito = false, mensaje = avisoMinimoNoches });
                 }
             }
 

@@ -210,6 +210,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 .Where(d => d.Anio == primerDia.Year && d.Mes == primerDia.Month)
                 .Select(d => (decimal?)d.Monto)
                 .FirstOrDefaultAsync();
+            ViewBag.MinimosNoches = await _disponibilidad.ObtenerMinimosNochesAsync();
             ViewBag.PrimerDia = primerDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
             ViewBag.MesSiguiente = primerDia.AddMonths(1);
@@ -272,6 +273,51 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 TempData["Mensaje"] = $"Descuento por sábado y domingo juntos en {mesTexto}: ${monto.Value:N0}.";
             }
 
+            return RedirectToAction(nameof(Precios), new { anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GuardarMinimosNoches(
+            int anio, int mes,
+            int? lunes, int? martes, int? miercoles, int? jueves, int? viernes, int? sabado, int? domingo)
+        {
+            var valores = new (DayOfWeek Dia, int? Noches)[]
+            {
+                (DayOfWeek.Monday, lunes),
+                (DayOfWeek.Tuesday, martes),
+                (DayOfWeek.Wednesday, miercoles),
+                (DayOfWeek.Thursday, jueves),
+                (DayOfWeek.Friday, viernes),
+                (DayOfWeek.Saturday, sabado),
+                (DayOfWeek.Sunday, domingo)
+            };
+
+            var existentes = await _db.MinimosNoches.ToDictionaryAsync(m => m.DiaSemana);
+
+            foreach (var (dia, noches) in valores)
+            {
+                existentes.TryGetValue(dia, out var actual);
+                if (!noches.HasValue || noches.Value <= 1)
+                {
+                    if (actual is not null)
+                    {
+                        _db.MinimosNoches.Remove(actual);
+                    }
+                }
+                else
+                {
+                    if (actual is null)
+                    {
+                        actual = new MinimoNoches { DiaSemana = dia };
+                        _db.MinimosNoches.Add(actual);
+                    }
+                    actual.Noches = Math.Min(noches.Value, 30);
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            TempData["Mensaje"] = "Mínimo de noches actualizado.";
             return RedirectToAction(nameof(Precios), new { anio, mes });
         }
 
