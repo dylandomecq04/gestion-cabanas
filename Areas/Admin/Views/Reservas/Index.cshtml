@@ -3,12 +3,13 @@
 @{
     ViewData["Title"] = "Reservas";
     EstadoReserva filtro = ViewBag.EstadoFiltro;
+    bool esSolicitudes = filtro == EstadoReserva.Pendiente;
     string? busqueda = ViewBag.Busqueda;
     int? cabanaIdFiltro = ViewBag.CabanaIdFiltro;
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
-    DateTime primerDia = ViewBag.PrimerDia;
-    DateTime mesAnterior = ViewBag.MesAnterior;
-    DateTime mesSiguiente = ViewBag.MesSiguiente;
+    DateTime? primerDia = ViewBag.PrimerDia;
+    DateTime? mesAnterior = ViewBag.MesAnterior;
+    DateTime? mesSiguiente = ViewBag.MesSiguiente;
 
     string ClasesTab(bool activo) => activo
         ? "rounded-full bg-river-700 px-4 py-2 text-sm font-semibold text-white shadow-soft"
@@ -20,9 +21,12 @@
         return char.ToUpper(texto[0]) + texto.Substring(1);
     }
 
-    var grupos = Model
-        .GroupBy(r => r.Cabana?.Nombre ?? "Sin cabaña")
-        .OrderBy(g => g.Key);
+    // Las solicitudes se muestran todas juntas (la más vieja primero, según cuándo se cargaron),
+    // sin agrupar por cabaña. Las reservas confirmadas siguen agrupadas por cabaña y ordenadas por fecha de estadía.
+    var grupos = esSolicitudes
+        ? new[] { ("", Model.OrderBy(r => r.FechaCreacion).AsEnumerable()) }
+        : Model.GroupBy(r => r.Cabana?.Nombre ?? "Sin cabaña").OrderBy(g => g.Key)
+            .Select(g => (g.Key, g.OrderBy(r => r.FechaDesde).AsEnumerable()));
 
     string LinkWhatsApp(Reserva r)
     {
@@ -69,25 +73,31 @@
 
 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
     <div class="flex flex-wrap gap-2">
-        <a asp-action="Index" asp-route-estado="Confirmada" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Confirmada)">Reservas</a>
-        <a asp-action="Index" asp-route-estado="Pendiente" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="inline-flex items-center gap-2 @ClasesTab(filtro == EstadoReserva.Pendiente)">
+        <a asp-action="Index" asp-route-estado="Confirmada" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="@ClasesTab(filtro == EstadoReserva.Confirmada)">Reservas</a>
+        <a asp-action="Index" asp-route-estado="Pendiente" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" class="inline-flex items-center gap-2 @ClasesTab(filtro == EstadoReserva.Pendiente)">
             Solicitudes
             @await Component.InvokeAsync("PendientesBadge")
         </a>
     </div>
-    <div class="flex items-center gap-1 rounded-full bg-white px-2 py-1.5 shadow-soft ring-1 ring-ink-100 sm:gap-3">
-        <a asp-action="Index" asp-route-anio="@mesAnterior.Year" asp-route-mes="@mesAnterior.Month" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro"
-           class="flex h-8 w-8 items-center justify-center rounded-full text-ink-500 transition hover:bg-sand-50 hover:text-river-700">&larr;</a>
-        <span class="min-w-[120px] whitespace-nowrap text-center font-display text-sm font-semibold text-ink-800 sm:min-w-[140px]">@TituloMes(primerDia)</span>
-        <a asp-action="Index" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro"
-           class="flex h-8 w-8 items-center justify-center rounded-full text-ink-500 transition hover:bg-sand-50 hover:text-river-700">&rarr;</a>
-    </div>
+    @if (!esSolicitudes)
+    {
+        <div class="flex items-center gap-1 rounded-full bg-white px-2 py-1.5 shadow-soft ring-1 ring-ink-100 sm:gap-3">
+            <a asp-action="Index" asp-route-anio="@mesAnterior!.Value.Year" asp-route-mes="@mesAnterior!.Value.Month" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro"
+               class="flex h-8 w-8 items-center justify-center rounded-full text-ink-500 transition hover:bg-sand-50 hover:text-river-700">&larr;</a>
+            <span class="min-w-[120px] whitespace-nowrap text-center font-display text-sm font-semibold text-ink-800 sm:min-w-[140px]">@TituloMes(primerDia!.Value)</span>
+            <a asp-action="Index" asp-route-anio="@mesSiguiente!.Value.Year" asp-route-mes="@mesSiguiente!.Value.Month" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro"
+               class="flex h-8 w-8 items-center justify-center rounded-full text-ink-500 transition hover:bg-sand-50 hover:text-river-700">&rarr;</a>
+        </div>
+    }
 </div>
 
 <form id="form-filtros" asp-action="Index" method="get" class="mb-6 flex flex-wrap items-end gap-3 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
     <input type="hidden" name="estado" value="@filtro" />
-    <input type="hidden" name="anio" value="@primerDia.Year" />
-    <input type="hidden" name="mes" value="@primerDia.Month" />
+    @if (!esSolicitudes)
+    {
+        <input type="hidden" name="anio" value="@primerDia!.Value.Year" />
+        <input type="hidden" name="mes" value="@primerDia!.Value.Month" />
+    }
     <div class="min-w-[200px] flex-1">
         <label class="mb-1 block text-xs font-medium text-ink-600">Buscar por huésped</label>
         <input type="text" name="busqueda" value="@busqueda" placeholder="Ej: Juan Pérez" oninput="buscarReservasConDemora()"
@@ -104,36 +114,61 @@
             }
         </select>
     </div>
-    @if (!string.IsNullOrWhiteSpace(busqueda) || cabanaIdFiltro.HasValue)
+    @if (esSolicitudes)
     {
-        <a asp-action="Index" asp-route-estado="@filtro" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-ink-300">Limpiar filtros</a>
+        <div class="w-full sm:w-auto sm:min-w-[180px]">
+            <label class="mb-1 block text-xs font-medium text-ink-600">Mes de la estadía</label>
+            <input type="month" id="mes-filtro-input" value="@(primerDia.HasValue ? primerDia.Value.ToString("yyyy-MM") : "")"
+                   onchange="aplicarFiltroMes(this.value)"
+                   class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <input type="hidden" name="anio" id="input-anio" value="@primerDia?.Year" />
+            <input type="hidden" name="mes" id="input-mes" value="@primerDia?.Month" />
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(busqueda) || cabanaIdFiltro.HasValue || (esSolicitudes && primerDia.HasValue))
+    {
+        <a asp-action="Index" asp-route-estado="@filtro" class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-ink-300">Limpiar filtros</a>
     }
 </form>
 
 @{
-    string sustantivo = filtro == EstadoReserva.Pendiente ? "solicitudes" : "reservas";
+    string sustantivo = esSolicitudes ? "solicitudes" : "reservas";
+    string mensajeVacio = primerDia.HasValue
+        ? $"No hay {sustantivo} para mostrar en {TituloMes(primerDia.Value).ToLowerInvariant()}."
+        : $"No hay {sustantivo} para mostrar.";
 }
 @if (!Model.Any())
 {
-    <div class="rounded-2.5xl bg-white p-6 text-center text-sm text-ink-400 shadow-soft ring-1 ring-ink-100 sm:p-8">No hay @sustantivo para mostrar en @(TituloMes(primerDia).ToLowerInvariant()).</div>
+    <div class="rounded-2.5xl bg-white p-6 text-center text-sm text-ink-400 shadow-soft ring-1 ring-ink-100 sm:p-8">@mensajeVacio</div>
 }
 else
 {
     @foreach (var grupo in grupos)
     {
         <div class="mb-8">
-            <h2 class="mb-3 font-display text-lg font-semibold text-ink-800">@grupo.Key</h2>
+            @if (!esSolicitudes)
+            {
+                <h2 class="mb-3 font-display text-lg font-semibold text-ink-800">@grupo.Item1</h2>
+            }
                         <div class="space-y-3 md:hidden">
-                @foreach (var r in grupo.OrderBy(r => r.FechaDesde))
+                @foreach (var r in grupo.Item2)
                 {
                     var personasTexto = $"{r.CantidadPersonas} {(r.CantidadPersonas == 1 ? "persona" : "personas")}"
                         + (r.CantidadMenores > 0 ? $" ({r.CantidadMenores} menor{(r.CantidadMenores == 1 ? "" : "es")})" : "");
                     <div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
+                        @if (esSolicitudes)
+                        {
+                            <p class="text-xs font-medium text-river-700">@(r.Cabana?.Nombre ?? "Sin cabaña")</p>
+                        }
                         <p class="font-semibold text-ink-900">@r.NombreHuesped</p>
                         <p class="mt-0.5 text-sm text-ink-600">
                             <span class="whitespace-nowrap">@r.FechaDesde.ToString("dd/MM/yyyy")</span> &ndash; <span class="whitespace-nowrap">@r.FechaHasta.ToString("dd/MM/yyyy")</span>
                         </p>
                         <p class="mt-0.5 text-xs text-ink-500">@personasTexto</p>
+                        @if (esSolicitudes)
+                        {
+                            <p class="mt-0.5 text-xs text-ink-400">Solicitud creada el @r.FechaCreacion.ToString("dd/MM/yyyy")</p>
+                        }
                         <dl class="mt-3 grid grid-cols-2 gap-2">
                             <div class="rounded-xl bg-sand-50 px-3 py-2">
                                 <dt class="text-xs text-ink-400">Pagó</dt>
@@ -171,7 +206,7 @@ else
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 6.75L17.25 9" />
                                 </svg>
                                 </a>
-                                <form asp-action="Delete" asp-route-id="@r.Id" asp-route-vista="Lista" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" onsubmit="return confirmarAccion(event, '¿Eliminar esta reserva? No se puede deshacer.');">
+                                <form asp-action="Delete" asp-route-id="@r.Id" asp-route-vista="Lista" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" asp-route-anio="@primerDia?.Year" asp-route-mes="@primerDia?.Month" method="post" onsubmit="return confirmarAccion(event, '¿Eliminar esta reserva? No se puede deshacer.');">
                                     <button type="submit" title="Eliminar" class="flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:bg-rose-50">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.166m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -187,25 +222,41 @@ else
                 <table class="w-full text-left text-sm">
                     <thead class="border-b border-ink-100 bg-ink-50/60 text-xs font-semibold uppercase tracking-wide text-ink-500">
                         <tr>
+                            @if (esSolicitudes)
+                            {
+                                <th class="px-3 py-3">Cabaña</th>
+                            }
                             <th class="px-5 py-3">Huésped</th>
                             <th class="px-3 py-3">Fechas</th>
                             <th class="px-3 py-3 text-center">Personas</th>
                             <th class="px-3 py-3">Pagó</th>
                             <th class="px-3 py-3">Pagar</th>
                             <th class="px-3 py-3">Contacto</th>
+                            @if (esSolicitudes)
+                            {
+                                <th class="px-3 py-3">Solicitud creada</th>
+                            }
                             <th class="px-5 py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-ink-100">
-                        @foreach (var r in grupo.OrderBy(r => r.FechaDesde))
+                        @foreach (var r in grupo.Item2)
                         {
                             <tr class="transition hover:bg-sand-50/60">
+                                @if (esSolicitudes)
+                                {
+                                    <td class="whitespace-nowrap px-3 py-3 text-ink-600">@(r.Cabana?.Nombre ?? "Sin cabaña")</td>
+                                }
                                 <td class="px-5 py-3 font-medium text-ink-900">@r.NombreHuesped</td>
                                 <td class="whitespace-nowrap px-3 py-3 text-ink-600">@r.FechaDesde.ToString("dd/MM/yyyy") &ndash; @r.FechaHasta.ToString("dd/MM/yyyy")</td>
                                 <td class="px-3 py-3 text-center text-ink-600">@r.CantidadPersonas@(r.CantidadMenores > 0 ? $" ({r.CantidadMenores} menor{(r.CantidadMenores == 1 ? "" : "es")})" : "")</td>
                                 <td class="px-3 py-3 text-ink-600">@(r.Pago.HasValue ? "$" + r.Pago.Value.ToString("N0") : "-")</td>
                                 <td class="px-3 py-3 text-ink-600">@(r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "-")</td>
                                 <td class="px-3 py-3 text-ink-500">@r.Telefono</td>
+                                @if (esSolicitudes)
+                                {
+                                    <td class="whitespace-nowrap px-3 py-3 text-ink-500">@r.FechaCreacion.ToString("dd/MM/yyyy")</td>
+                                }
                                 <td class="px-5 py-3">
                                     <div class="flex justify-center gap-2 whitespace-nowrap">
                                         @if (filtro == EstadoReserva.Pendiente)
@@ -229,7 +280,7 @@ else
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 6.75L17.25 9" />
                                             </svg>
                                         </a>
-                                        <form asp-action="Delete" asp-route-id="@r.Id" asp-route-vista="Lista" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" onsubmit="return confirmarAccion(event, '¿Eliminar esta reserva? No se puede deshacer.');">
+                                        <form asp-action="Delete" asp-route-id="@r.Id" asp-route-vista="Lista" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" asp-route-anio="@primerDia?.Year" asp-route-mes="@primerDia?.Month" method="post" onsubmit="return confirmarAccion(event, '¿Eliminar esta reserva? No se puede deshacer.');">
                                             <button type="submit" title="Eliminar" class="flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:bg-rose-50">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-3.5 w-3.5">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.166m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -257,6 +308,13 @@ else
             __buscarReservasTimeout = setTimeout(() => {
                 document.getElementById('form-filtros').requestSubmit();
             }, 450);
+        }
+
+        function aplicarFiltroMes(valor) {
+            const [anio, mes] = valor ? valor.split('-') : ['', ''];
+            document.getElementById('input-anio').value = anio;
+            document.getElementById('input-mes').value = mes ? parseInt(mes, 10) : '';
+            document.getElementById('form-filtros').requestSubmit();
         }
 
         (function () {

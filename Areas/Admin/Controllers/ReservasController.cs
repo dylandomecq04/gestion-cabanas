@@ -111,16 +111,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes)
         {
-            var hoy = DateTime.Today;
-            var anioActual = anio ?? hoy.Year;
-            var mesActual = mes ?? hoy.Month;
-            var primerDia = new DateTime(anioActual, mesActual, 1);
-            var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
-
             var estadoEfectivo = estado ?? EstadoReserva.Confirmada;
+            var esSolicitudes = estadoEfectivo == EstadoReserva.Pendiente;
 
             var query = _db.Reservas.Include(r => r.Cabana)
-                .Where(r => r.FechaDesde >= primerDia && r.FechaDesde <= ultimoDia)
                 .Where(r => r.Estado == estadoEfectivo)
                 .AsQueryable();
             if (!string.IsNullOrWhiteSpace(busqueda))
@@ -132,17 +126,40 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 query = query.Where(r => r.CabanaId == cabanaId.Value);
             }
 
+            // Las solicitudes se listan todas por defecto (más vieja primero); el mes es un filtro
+            // opcional. Las reservas confirmadas siguen mostrándose mes a mes, como antes.
+            DateTime? primerDia = null;
+            if (esSolicitudes)
+            {
+                if (anio.HasValue && mes.HasValue)
+                {
+                    primerDia = new DateTime(anio.Value, mes.Value, 1);
+                }
+            }
+            else
+            {
+                var hoy = DateTime.Today;
+                primerDia = new DateTime(anio ?? hoy.Year, mes ?? hoy.Month, 1);
+            }
+            if (primerDia.HasValue)
+            {
+                var ultimoDia = primerDia.Value.AddMonths(1).AddDays(-1);
+                query = query.Where(r => r.FechaDesde >= primerDia && r.FechaDesde <= ultimoDia);
+            }
+
             ViewBag.EstadoFiltro = estadoEfectivo;
             ViewBag.Busqueda = busqueda;
             ViewBag.CabanaIdFiltro = cabanaId;
             ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
-            ViewBag.Anio = anioActual;
-            ViewBag.Mes = mesActual;
+            ViewBag.Anio = primerDia?.Year;
+            ViewBag.Mes = primerDia?.Month;
             ViewBag.PrimerDia = primerDia;
-            ViewBag.MesAnterior = primerDia.AddMonths(-1);
-            ViewBag.MesSiguiente = primerDia.AddMonths(1);
+            ViewBag.MesAnterior = primerDia?.AddMonths(-1);
+            ViewBag.MesSiguiente = primerDia?.AddMonths(1);
 
-            var reservas = await query.OrderBy(r => r.FechaDesde).ThenBy(r => r.Cabana!.Nombre).ToListAsync();
+            var reservas = esSolicitudes
+                ? await query.OrderBy(r => r.FechaCreacion).ToListAsync()
+                : await query.OrderBy(r => r.FechaDesde).ThenBy(r => r.Cabana!.Nombre).ToListAsync();
             return View(reservas);
         }
 
