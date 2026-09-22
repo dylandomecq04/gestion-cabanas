@@ -22,6 +22,14 @@
     var grupos = Model
         .GroupBy(r => r.Cabana?.Nombre ?? "Sin cabaña")
         .OrderBy(g => g.Key);
+
+    string LinkWhatsApp(Reserva r)
+    {
+        var digitos = new string((r.Telefono ?? "").Where(char.IsDigit).ToArray());
+        if (digitos.Length == 0) return "";
+        var mensaje = $"Hola! Me llegó tu solicitud de reserva del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy} a nombre de {r.NombreHuesped}. Te escribo para coordinar la reserva.";
+        return $"https://wa.me/549{digitos}?text={Uri.EscapeDataString(mensaje)}";
+    }
 }
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -123,6 +131,15 @@ else
                                 <form asp-action="Confirmar" asp-route-id="@r.Id" method="post">
                                     <button type="submit" class="h-9 rounded-full bg-river-600 px-4 text-xs font-semibold text-white transition hover:bg-river-700">Confirmar</button>
                                 </form>
+                                var linkWa = LinkWhatsApp(r);
+                                @if (linkWa != "")
+                                {
+                                    <a href="@linkWa" target="_blank" rel="noopener" title="Avisar por WhatsApp" class="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 text-emerald-600 transition hover:bg-emerald-50">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4">
+                                            <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.27 4.9L2 22l5.25-1.38a9.94 9.94 0 004.79 1.22h.01c5.52 0 10-4.48 10-10s-4.48-9.84-10.01-9.84zm5.88 14.15c-.25.7-1.45 1.34-2 1.42-.51.08-1.15.11-1.86-.12-.43-.13-.98-.31-1.68-.61-2.96-1.28-4.89-4.26-5.04-4.46-.15-.2-1.2-1.6-1.2-3.05s.75-2.17 1.02-2.46c.25-.29.55-.36.73-.36.19 0 .37 0 .53.01.17.01.4-.06.62.48.25.6.85 2.07.92 2.22.08.15.13.32.02.52-.1.2-.15.32-.3.5-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.29.76 1.26 1.64 2.04 1.13 1 2.08 1.32 2.37 1.47.29.15.46.13.63-.07.17-.2.72-.84.92-1.13.19-.29.39-.24.65-.14.27.1 1.7.8 1.99.95.29.15.48.22.55.34.07.13.07.72-.18 1.42z"/>
+                                        </svg>
+                                    </a>
+                                }
                             }
                             <div class="ml-auto flex items-center gap-2">
                                 <a asp-action="Edit" asp-route-id="@r.Id" title="Editar" class="flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition hover:border-river-300 hover:text-river-700">
@@ -173,6 +190,15 @@ else
                                             <form asp-action="Confirmar" asp-route-id="@r.Id" method="post">
                                                 <button type="submit" class="rounded-full bg-river-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-river-700">Confirmar</button>
                                             </form>
+                                            var linkWaTabla = LinkWhatsApp(r);
+                                            @if (linkWaTabla != "")
+                                            {
+                                                <a href="@linkWaTabla" target="_blank" rel="noopener" title="Avisar por WhatsApp" class="flex h-7 w-7 items-center justify-center rounded-full border border-emerald-200 text-emerald-600 transition hover:bg-emerald-50">
+                                                    <svg viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5">
+                                                        <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.27 4.9L2 22l5.25-1.38a9.94 9.94 0 004.79 1.22h.01c5.52 0 10-4.48 10-10s-4.48-9.84-10.01-9.84zm5.88 14.15c-.25.7-1.45 1.34-2 1.42-.51.08-1.15.11-1.86-.12-.43-.13-.98-.31-1.68-.61-2.96-1.28-4.89-4.26-5.04-4.46-.15-.2-1.2-1.6-1.2-3.05s.75-2.17 1.02-2.46c.25-.29.55-.36.73-.36.19 0 .37 0 .53.01.17.01.4-.06.62.48.25.6.85 2.07.92 2.22.08.15.13.32.02.52-.1.2-.15.32-.3.5-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.29.76 1.26 1.64 2.04 1.13 1 2.08 1.32 2.37 1.47.29.15.46.13.63-.07.17-.2.72-.84.92-1.13.19-.29.39-.24.65-.14.27.1 1.7.8 1.99.95.29.15.48.22.55.34.07.13.07.72-.18 1.42z"/>
+                                                    </svg>
+                                                </a>
+                                            }
                                         }
                                         <a asp-action="Edit" asp-route-id="@r.Id" title="Editar" class="flex h-7 w-7 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition hover:border-river-300 hover:text-river-700">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-3.5 w-3.5">
