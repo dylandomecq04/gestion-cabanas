@@ -10,6 +10,7 @@
     DateTime? primerDia = ViewBag.PrimerDia;
     DateTime? mesAnterior = ViewBag.MesAnterior;
     DateTime? mesSiguiente = ViewBag.MesSiguiente;
+    List<DateTime> mesesConSolicitudes = esSolicitudes ? (List<DateTime>)ViewBag.MesesConSolicitudes : new();
 
     string ClasesTab(bool activo) => activo
         ? "rounded-full bg-river-700 px-4 py-2 text-sm font-semibold text-white shadow-soft"
@@ -118,9 +119,15 @@
     {
         <div class="w-full sm:w-auto sm:min-w-[180px]">
             <label class="mb-1 block text-xs font-medium text-ink-600">Mes de la estadía</label>
-            <input type="month" id="mes-filtro-input" value="@(primerDia.HasValue ? primerDia.Value.ToString("yyyy-MM") : "")"
-                   onchange="aplicarFiltroMes(this.value)"
-                   class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            <select id="mes-filtro-input" onchange="aplicarFiltroMes(this.value)"
+                    class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">
+                <option value="">Todos los meses</option>
+                @foreach (var m in mesesConSolicitudes)
+                {
+                    var valor = m.ToString("yyyy-MM");
+                    <option value="@valor" selected="@(primerDia.HasValue && primerDia.Value.Year == m.Year && primerDia.Value.Month == m.Month)">@TituloMes(m)</option>
+                }
+            </select>
             <input type="hidden" name="anio" id="input-anio" value="@primerDia?.Year" />
             <input type="hidden" name="mes" id="input-mes" value="@primerDia?.Month" />
         </div>

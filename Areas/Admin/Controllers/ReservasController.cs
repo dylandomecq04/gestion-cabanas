@@ -157,6 +157,20 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.MesAnterior = primerDia?.AddMonths(-1);
             ViewBag.MesSiguiente = primerDia?.AddMonths(1);
 
+            if (esSolicitudes)
+            {
+                var fechasSolicitudes = await _db.Reservas
+                    .Where(r => r.Estado == EstadoReserva.Pendiente)
+                    .Select(r => r.FechaDesde)
+                    .ToListAsync();
+                var meses = fechasSolicitudes.Select(f => new DateTime(f.Year, f.Month, 1)).Distinct();
+                if (primerDia.HasValue)
+                {
+                    meses = meses.Append(primerDia.Value).Distinct();
+                }
+                ViewBag.MesesConSolicitudes = meses.OrderBy(m => m).ToList();
+            }
+
             var reservas = esSolicitudes
                 ? await query.OrderBy(r => r.FechaCreacion).ToListAsync()
                 : await query.OrderBy(r => r.FechaDesde).ThenBy(r => r.Cabana!.Nombre).ToListAsync();
