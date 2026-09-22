@@ -38,9 +38,5 @@ namespace GestionCabanas.Models
 
             return montos.TryGetValue((sabado.Value.Year, sabado.Value.Month), out var monto) && monto > 0 ? monto : null;
         }
-
-        /// <summary>Texto corto para la celda del calendario: "−20 mil" si es redondo, "Promo" si no entra.</summary>
-        public static string TextoCorto(decimal monto) =>
-            monto % 1000 == 0 ? $"−{monto / 1000:0} mil" : "Promo";
     }
 }

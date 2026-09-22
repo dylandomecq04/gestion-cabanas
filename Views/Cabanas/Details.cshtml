@@ -13,7 +13,6 @@
     bool permitirMesAnterior = ViewBag.PermitirMesAnterior;
     var hoy = DateTime.Today;
     ViewData["Title"] = cabana.Nombre;
-    decimal? descuentoDelMes = descuentosFinde.TryGetValue((primerDia.Year, primerDia.Month), out var montoDelMes) ? montoDelMes : null;
 
     bool EstaOcupado(DateTime dia) => reservas.Any(r => r.FechaDesde <= dia && dia < r.FechaHasta);
     bool EnPromo(DateTime dia) => promos.Any(p => p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
@@ -186,7 +185,6 @@
             </div>
 
             <partial name="_AvisoFinDeSemanaLargo" model="fines" />
-            <partial name="_AvisoPromoFinDeSemana" model="descuentoDelMes" />
 
             <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
                 <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
@@ -214,19 +212,20 @@
                         var marco = FinDeSemanaLargo.ClasesMarco(fines, dia.Value);
                         var ocupado = EstaOcupado(dia.Value);
                         var enPromoDia = !ocupado && EnPromo(dia.Value);
-                        var montoFinde = ocupado || enPromoDia ? null : DescuentoFinDeSemana.MontoDelDia(descuentosFinde, dia.Value, hoy);
+                        var elegibleFinde = !ocupado && !enPromoDia && DescuentoFinDeSemana.MontoDelDia(descuentosFinde, dia.Value, hoy).HasValue;
                         var clases = ocupado
                             ? "bg-rose-100 text-rose-600 hover:bg-rose-200"
                             : "bg-river-100 text-river-700 hover:bg-river-200";
-                        var titulo = ocupado ? "Ocupada" : (enPromoDia ? "Disponible · con promoción" : (montoFinde.HasValue ? $"Disponible · promo sábado y domingo: ${montoFinde.Value:N0} de descuento" : "Disponible"));
+                        var titulo = ocupado ? "Ocupada" : (enPromoDia ? "Disponible · con promoción" : "Disponible");
                         if (marco is not null)
                         {
                             titulo += " · Fin de semana largo: se reserva completo";
                         }
                         <button type="button" onclick="seleccionarDiaCabana(this)" data-fecha="@dia.Value.ToString("yyyy-MM-dd")"
                                 data-clase-base="@clases"
+                                data-finde-promo="@(elegibleFinde ? "true" : null)"
                                 title="@titulo"
-                                class="day-cell relative flex h-14 flex-col items-center justify-center gap-0 rounded-lg text-sm font-semibold leading-none transition @clases @(enPromoDia || montoFinde.HasValue ? "promo-glow" : "")">
+                                class="day-cell relative flex h-14 flex-col items-center justify-center gap-0 rounded-lg text-sm font-semibold leading-none transition @clases @(enPromoDia ? "promo-glow" : "")">
                             @if (marco is not null)
                             {
                                 <span class="@marco"></span>
@@ -234,10 +233,6 @@
                             @if (enPromoDia)
                             {
                                 <span class="absolute -top-2 right-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
-                            }
-                            else if (montoFinde.HasValue)
-                            {
-                                <span class="absolute -top-2 right-0.5 whitespace-nowrap text-[9px] font-bold tracking-wide text-amber-700">@DescuentoFinDeSemana.TextoCorto(montoFinde.Value)</span>
                             }
                             @dia.Value.Day
                         </button>
@@ -247,10 +242,6 @@
             <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-500">
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Disponible</span>
                 <span class="flex items-center gap-1.5"><span class="promo-glow h-3 w-3 rounded-full bg-river-100"></span> Con promoción 🎉</span>
-                @if (descuentoDelMes.HasValue)
-                {
-                    <span class="flex items-center gap-1.5"><span class="whitespace-nowrap rounded bg-amber-100 px-1 text-[10px] font-bold text-amber-700">@DescuentoFinDeSemana.TextoCorto(descuentoDelMes.Value)</span> Sábado + domingo juntos</span>
-                }
                 <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> Ocupada</span>
                 @if (fines.Count > 0)
                 {
@@ -284,6 +275,20 @@
             animation: promoGlow 2.4s ease-in-out infinite;
         }
     </style>
+
+    <div id="modal-promo-finde" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-sm rounded-2.5xl bg-white p-6 text-center shadow-lift">
+            <span class="text-3xl" aria-hidden="true">🎉</span>
+            <h3 class="mt-2 font-display text-lg font-semibold text-ink-900">¿Sabías que...?</h3>
+            <p class="mt-2 text-sm text-ink-600">
+                Si te quedás también la noche del <strong>domingo</strong>, te hacemos un descuento especial en el total de tu estadía.
+                Elegí el <strong>lunes</strong> como fecha de salida para sumarla.
+            </p>
+            <button type="button" onclick="cerrarModalPromoFinde()" class="mt-4 rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+                Dale, ¡genial!
+            </button>
+        </div>
+    </div>
 
     <div class="lg:col-span-5">
         <div class="sticky top-24 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
@@ -427,9 +432,46 @@
             }
         }
 
+        let __avisoFindeMostrado = false;
+
+        function limpiarSugerenciaFinde() {
+            document.querySelectorAll('.day-cell.finde-hint').forEach(function (c) {
+                c.classList.remove('promo-glow', 'finde-hint');
+            });
+        }
+
+        function sugerirDomingoFinde(fechaDesde) {
+            limpiarSugerenciaFinde();
+            const btnDesde = document.querySelector(`.day-cell[data-fecha="${fechaDesde}"]`);
+            if (!btnDesde || btnDesde.dataset.findePromo !== 'true' || new Date(fechaDesde + 'T00:00:00').getDay() !== 6) {
+                return;
+            }
+
+            const [anio, mes, dia] = fechaDesde.split('-').map(Number);
+            const siguiente = new Date(anio, mes - 1, dia + 1);
+            const fechaSiguiente = `${siguiente.getFullYear()}-${String(siguiente.getMonth() + 1).padStart(2, '0')}-${String(siguiente.getDate()).padStart(2, '0')}`;
+            const btnDomingo = document.querySelector(`.day-cell[data-fecha="${fechaSiguiente}"]`);
+            if (!btnDomingo || btnDomingo.dataset.findePromo !== 'true') {
+                return;
+            }
+
+            btnDomingo.classList.add('promo-glow', 'finde-hint');
+            if (!__avisoFindeMostrado) {
+                __avisoFindeMostrado = true;
+                document.getElementById('modal-promo-finde').classList.remove('hidden');
+                document.getElementById('modal-promo-finde').classList.add('flex');
+            }
+        }
+
+        function cerrarModalPromoFinde() {
+            document.getElementById('modal-promo-finde').classList.add('hidden');
+            document.getElementById('modal-promo-finde').classList.remove('flex');
+        }
+
         function limpiarSeleccionCabana() {
             __inputDesde.value = '';
             __inputHasta.value = '';
+            limpiarSugerenciaFinde();
             actualizarResaltadoCalendario();
             actualizarResumenTotal();
         }
@@ -451,6 +493,11 @@
 
             __inputDesde.value = desde;
             __inputHasta.value = hasta;
+            if (desde && !hasta) {
+                sugerirDomingoFinde(desde);
+            } else {
+                limpiarSugerenciaFinde();
+            }
             actualizarResaltadoCalendario();
             actualizarResumenTotal();
         }
