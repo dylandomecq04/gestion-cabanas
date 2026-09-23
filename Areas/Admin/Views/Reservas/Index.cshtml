@@ -135,6 +135,21 @@
             "Estacionamiento: podés dejar el auto en cualquier lugar, menos en la puerta de la guardería.\n\n" +
             "Muchas gracias!";
     }
+
+    string LinkWhatsAppCancelacion(Reserva r)
+    {
+        var digitos = DigitosWhatsApp(r);
+        if (digitos == "") return "";
+        return $"https://wa.me/{digitos}?text={Uri.EscapeDataString(MensajeCancelacion(r))}";
+    }
+
+    string MensajeCancelacion(Reserva r)
+    {
+        return $"Hola, cómo estás?\n\n" +
+            $"Te escribimos para comentarte que tu solicitud de reserva a nombre de {r.NombreHuesped}, para la Cabaña {r.Cabana?.Nombre}, para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, quedó eliminada de nuestro sistema y no fue confirmada.\n\n" +
+            "Si todavía te interesa reservar, o si surge algún inconveniente, quedamos a disposición para coordinar una nueva fecha.\n\n" +
+            "Muchas gracias!";
+    }
 }
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -316,6 +331,18 @@ else
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 6.75L17.25 9" />
                                 </svg>
                                 </a>
+                                @if (esSolicitudes)
+                                {
+                                    var linkWaCancelacion = LinkWhatsAppCancelacion(r);
+                                    @if (linkWaCancelacion != "")
+                                    {
+                                        <a href="@linkWaCancelacion" target="_blank" rel="noopener" title="Avisar cancelación por WhatsApp" class="flex h-9 w-9 items-center justify-center rounded-full border border-red-300 text-red-600 transition hover:bg-red-50">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4">
+                                                <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.27 4.9L2 22l5.25-1.38a9.94 9.94 0 004.79 1.22h.01c5.52 0 10-4.48 10-10s-4.48-9.84-10.01-9.84zm5.88 14.15c-.25.7-1.45 1.34-2 1.42-.51.08-1.15.11-1.86-.12-.43-.13-.98-.31-1.68-.61-2.96-1.28-4.89-4.26-5.04-4.46-.15-.2-1.2-1.6-1.2-3.05s.75-2.17 1.02-2.46c.25-.29.55-.36.73-.36.19 0 .37 0 .53.01.17.01.4-.06.62.48.25.6.85 2.07.92 2.22.08.15.13.32.02.52-.1.2-.15.32-.3.5-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.29.76 1.26 1.64 2.04 1.13 1 2.08 1.32 2.37 1.47.29.15.46.13.63-.07.17-.2.72-.84.92-1.13.19-.29.39-.24.65-.14.27.1 1.7.8 1.99.95.29.15.48.22.55.34.07.13.07.72-.18 1.42z"/>
+                                            </svg>
+                                        </a>
+                                    }
+                                }
                                 <form asp-action="Delete" asp-route-id="@r.Id" asp-route-vista="Lista" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" asp-route-anio="@primerDia?.Year" asp-route-mes="@primerDia?.Month" method="post" onsubmit="return confirmarAccion(event, '¿Eliminar esta reserva? No se puede deshacer.');">
                                     <button type="submit" title="Eliminar" class="flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:bg-rose-50">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-4 w-4">
@@ -328,7 +355,10 @@ else
                     </div>
                 }
             </div>
-            <div class="hidden overflow-x-auto rounded-2.5xl bg-white shadow-soft ring-1 ring-ink-100 md:block">
+            <div class="tabla-scroll-top hidden overflow-x-auto overflow-y-hidden rounded-t-2.5xl bg-white ring-1 ring-ink-100 md:block" style="height: 14px;">
+                <div style="height: 1px;"></div>
+            </div>
+            <div class="tabla-scroll-bottom hidden overflow-x-auto rounded-b-2.5xl bg-white shadow-soft ring-1 ring-ink-100 md:block">
                 <table class="w-full text-left text-sm">
                     <thead class="border-b border-ink-100 bg-ink-50/60 text-xs font-semibold uppercase tracking-wide text-ink-500">
                         <tr>
@@ -462,6 +492,18 @@ else
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 6.75L17.25 9" />
                                             </svg>
                                         </a>
+                                        @if (esSolicitudes)
+                                        {
+                                            var linkWaCancelacionTabla = LinkWhatsAppCancelacion(r);
+                                            @if (linkWaCancelacionTabla != "")
+                                            {
+                                                <a href="@linkWaCancelacionTabla" target="_blank" rel="noopener" title="Avisar cancelación por WhatsApp" class="flex h-7 w-7 items-center justify-center rounded-full border border-red-300 text-red-600 transition hover:bg-red-50">
+                                                    <svg viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5">
+                                                        <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.27 4.9L2 22l5.25-1.38a9.94 9.94 0 004.79 1.22h.01c5.52 0 10-4.48 10-10s-4.48-9.84-10.01-9.84zm5.88 14.15c-.25.7-1.45 1.34-2 1.42-.51.08-1.15.11-1.86-.12-.43-.13-.98-.31-1.68-.61-2.96-1.28-4.89-4.26-5.04-4.46-.15-.2-1.2-1.6-1.2-3.05s.75-2.17 1.02-2.46c.25-.29.55-.36.73-.36.19 0 .37 0 .53.01.17.01.4-.06.62.48.25.6.85 2.07.92 2.22.08.15.13.32.02.52-.1.2-.15.32-.3.5-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.29.76 1.26 1.64 2.04 1.13 1 2.08 1.32 2.37 1.47.29.15.46.13.63-.07.17-.2.72-.84.92-1.13.19-.29.39-.24.65-.14.27.1 1.7.8 1.99.95.29.15.48.22.55.34.07.13.07.72-.18 1.42z"/>
+                                                    </svg>
+                                                </a>
+                                            }
+                                        }
                                         <form asp-action="Delete" asp-route-id="@r.Id" asp-route-vista="Lista" asp-route-estado="@filtro" asp-route-busqueda="@busqueda" asp-route-cabanaId="@cabanaIdFiltro" asp-route-anio="@primerDia?.Year" asp-route-mes="@primerDia?.Month" method="post" onsubmit="return confirmarAccion(event, '¿Eliminar esta reserva? No se puede deshacer.');">
                                             <button type="submit" title="Eliminar" class="flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-600 transition hover:bg-rose-50">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-3.5 w-3.5">
@@ -505,6 +547,40 @@ else
                 input.focus();
                 input.setSelectionRange(input.value.length, input.value.length);
             }
+        })();
+
+        (function () {
+            function sincronizarScrollTablas() {
+                document.querySelectorAll('.tabla-scroll-bottom').forEach(function (bottom) {
+                    const top = bottom.previousElementSibling;
+                    if (!top || !top.classList.contains('tabla-scroll-top')) return;
+
+                    const tabla = bottom.querySelector('table');
+                    const espaciador = top.firstElementChild;
+                    if (tabla && espaciador) {
+                        espaciador.style.width = tabla.scrollWidth + 'px';
+                    }
+
+                    if (top.dataset.sincronizado) return;
+                    top.dataset.sincronizado = '1';
+
+                    let sincronizando = false;
+                    top.addEventListener('scroll', function () {
+                        if (sincronizando) return;
+                        sincronizando = true;
+                        bottom.scrollLeft = top.scrollLeft;
+                        sincronizando = false;
+                    });
+                    bottom.addEventListener('scroll', function () {
+                        if (sincronizando) return;
+                        sincronizando = true;
+                        top.scrollLeft = bottom.scrollLeft;
+                        sincronizando = false;
+                    });
+                });
+            }
+            sincronizarScrollTablas();
+            window.addEventListener('resize', sincronizarScrollTablas);
         })();
 
         function pad(n) { return n.toString().padStart(2, '0'); }
