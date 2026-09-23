@@ -14,6 +14,12 @@ namespace GestionCabanas.Models
         public string? EtiquetaPromo { get; set; }
         public string? EtiquetaTarifa { get; set; }
 
+        /// <summary>El segmento termina un lunes tras sábado y domingo: se puede ofrecer la salida anticipada.</summary>
+        public bool ElegibleSalidaAnticipada { get; set; }
+
+        /// <summary>Monto configurado para ese fin de semana (0 si no corresponde o no hay monto cargado).</summary>
+        public decimal MontoSalidaAnticipada { get; set; }
+
         /// <summary>Personas que se alojan en esta cabaña (cuando el grupo se reparte en dos, sólo una parte).</summary>
         public int Adultos { get; set; }
         public int Menores { get; set; }
@@ -36,6 +42,12 @@ namespace GestionCabanas.Models
 
         /// <summary>Sólo para las repartidas: las dos cabañas quedan una al lado de la otra.</summary>
         public bool Contiguas { get; set; }
+
+        /// <summary>Al menos un segmento admite la salida anticipada del domingo a la noche.</summary>
+        public bool ElegibleSalidaAnticipada { get; set; }
+
+        /// <summary>Suma de lo que se descuenta en los segmentos elegibles si se elige la salida anticipada.</summary>
+        public decimal MontoSalidaAnticipada { get; set; }
     }
 
     /// <summary>Cómo se reparte un grupo entre dos cabañas que se ocupan a la vez.</summary>
@@ -60,6 +72,15 @@ namespace GestionCabanas.Models
 
         /// <summary>Qué tarifa se usó (p. ej. "Tarifa para 4 personas"); null si aplicó una promo.</summary>
         public string? EtiquetaTarifa { get; set; }
+
+        /// <summary>La estadía termina un lunes tras sábado y domingo: se puede ofrecer la salida anticipada.</summary>
+        public bool ElegibleSalidaAnticipada { get; set; }
+
+        /// <summary>Monto configurado para ese fin de semana (0 si no corresponde o no hay monto cargado).</summary>
+        public decimal MontoSalidaAnticipada { get; set; }
+
+        /// <summary>Se pidió la salida anticipada, era elegible y efectivamente se restó del total.</summary>
+        public bool SalidaAnticipadaAplicada { get; set; }
     }
 
     public class CabanaAlternativa

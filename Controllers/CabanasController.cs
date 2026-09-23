@@ -63,7 +63,8 @@ namespace GestionCabanas.Controllers
                 {
                     ViewBag.ValorTotalReserva = await _disponibilidad.CalcularValorTotalAsync(
                         id, reservaConfirmada.FechaDesde, reservaConfirmada.FechaHasta,
-                        new Huespedes(reservaConfirmada.CantidadAdultos, reservaConfirmada.CantidadMenores));
+                        new Huespedes(reservaConfirmada.CantidadAdultos, reservaConfirmada.CantidadMenores),
+                        reservaConfirmada.SalidaAnticipada);
                 }
             }
 
@@ -127,6 +128,10 @@ namespace GestionCabanas.Controllers
                 return View("Details", modelo);
             }
 
+            var salidaAnticipada = modelo.SalidaAnticipada
+                && DisponibilidadService.EsElegibleSalidaAnticipada(modelo.FechaDesde, modelo.FechaHasta)
+                && await _disponibilidad.MontoSalidaAnticipadaAsync(modelo.FechaHasta) > 0;
+
             var reserva = new Reserva
             {
                 CabanaId = modelo.CabanaId,
@@ -137,7 +142,8 @@ namespace GestionCabanas.Controllers
                 FechaHasta = modelo.FechaHasta,
                 CantidadPersonas = modelo.CantidadPersonas,
                 CantidadMenores = modelo.CantidadMenores,
-                Estado = EstadoReserva.Pendiente
+                Estado = EstadoReserva.Pendiente,
+                SalidaAnticipada = salidaAnticipada
             };
             _db.Reservas.Add(reserva);
             await _db.SaveChangesAsync();
@@ -154,7 +160,7 @@ namespace GestionCabanas.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> CalcularTotal(int id, DateTime? desde, DateTime? hasta, int adultos = 2, int menores = 0)
+        public async Task<IActionResult> CalcularTotal(int id, DateTime? desde, DateTime? hasta, int adultos = 2, int menores = 0, bool salidaAnticipada = false)
         {
             var cabana = await _db.Cabanas.FirstOrDefaultAsync(c => c.Id == id && c.Activa);
             if (cabana is null || desde is null || hasta is null || hasta <= desde)
@@ -164,7 +170,7 @@ namespace GestionCabanas.Controllers
 
             var disponible = !await _disponibilidad.HaySuperposicionAsync(id, desde.Value, hasta.Value);
             var huespedes = new Huespedes(adultos, menores);
-            var detalle = await _disponibilidad.CalcularValorConDetalleAsync(id, desde.Value, hasta.Value, huespedes);
+            var detalle = await _disponibilidad.CalcularValorConDetalleAsync(id, desde.Value, hasta.Value, huespedes, salidaAnticipada);
             var noches = (hasta.Value - desde.Value).Days;
 
             var avisoFinLargo = await _disponibilidad.ValidarFinDeSemanaLargoAsync(desde.Value, hasta.Value);
@@ -205,6 +211,9 @@ namespace GestionCabanas.Controllers
                 promoAplicada = detalle.PromoAplicada,
                 etiquetaPromo = detalle.EtiquetaPromo,
                 etiquetaTarifa = aviso is null ? detalle.EtiquetaTarifa : null,
+                elegibleSalidaAnticipada = aviso is null && detalle.ElegibleSalidaAnticipada,
+                montoSalidaAnticipada = detalle.MontoSalidaAnticipada,
+                salidaAnticipadaAplicada = detalle.SalidaAnticipadaAplicada,
                 aviso
             });
         }
@@ -258,6 +267,8 @@ namespace GestionCabanas.Controllers
                     repartida = o.Repartida,
                     contiguas = o.Contiguas,
                     promoAplicada = o.Segmentos.Any(s => s.PromoAplicada),
+                    elegibleSalidaAnticipada = o.ElegibleSalidaAnticipada,
+                    montoSalidaAnticipada = o.MontoSalidaAnticipada,
                     segmentos = o.Segmentos.Select(s => new
                     {
                         cabanaId = s.CabanaId,
@@ -271,7 +282,9 @@ namespace GestionCabanas.Controllers
                         subtotalSinPromo = s.SubtotalSinPromo,
                         promoAplicada = s.PromoAplicada,
                         etiquetaPromo = s.EtiquetaPromo,
-                        etiquetaTarifa = s.EtiquetaTarifa
+                        etiquetaTarifa = s.EtiquetaTarifa,
+                        elegibleSalidaAnticipada = s.ElegibleSalidaAnticipada,
+                        montoSalidaAnticipada = s.MontoSalidaAnticipada
                     })
                 })
             });
@@ -389,7 +402,8 @@ namespace GestionCabanas.Controllers
             foreach (var segmento in modelo.Segmentos)
             {
                 var grupo = grupoPorCabana[segmento.CabanaId];
-                var valor = await _disponibilidad.CalcularValorTotalAsync(segmento.CabanaId, segmento.FechaDesde, segmento.FechaHasta, grupo);
+                var detalle = await _disponibilidad.CalcularValorConDetalleAsync(
+                    segmento.CabanaId, segmento.FechaDesde, segmento.FechaHasta, grupo, modelo.SalidaAnticipada);
 
                 var reserva = new Reserva
                 {
@@ -402,7 +416,8 @@ namespace GestionCabanas.Controllers
                     CantidadPersonas = grupo.Total,
                     CantidadMenores = grupo.Menores,
                     Estado = EstadoReserva.Pendiente,
-                    Valor = valor
+                    Valor = detalle.Total,
+                    SalidaAnticipada = detalle.SalidaAnticipadaAplicada
                 };
                 _db.Reservas.Add(reserva);
                 reservasCreadas.Add(reserva);
@@ -435,7 +450,8 @@ namespace GestionCabanas.Controllers
                 hasta = modelo.Segmentos.Max(s => s.FechaHasta).ToString("dd/MM/yyyy"),
                 nombreHuesped = reservasCreadas[0].NombreHuesped,
                 cantidadPersonas = modelo.CantidadPersonas,
-                tieneEmail = !string.IsNullOrWhiteSpace(modelo.Email)
+                tieneEmail = !string.IsNullOrWhiteSpace(modelo.Email),
+                salidaAnticipada = reservasCreadas.Any(r => r.SalidaAnticipada)
             });
         }
 

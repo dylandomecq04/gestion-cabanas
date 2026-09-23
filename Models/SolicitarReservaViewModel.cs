@@ -43,5 +43,8 @@ namespace GestionCabanas.Models
         public int CantidadMenores { get; set; }
 
         public int CantidadPersonas => CantidadAdultos + CantidadMenores;
+
+        /// <summary>El huésped eligió salir el domingo a la noche en vez de quedarse hasta el lunes a la mañana.</summary>
+        public bool SalidaAnticipada { get; set; }
     }
 }

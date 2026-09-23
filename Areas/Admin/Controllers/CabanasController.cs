@@ -211,6 +211,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 .Include(p => p.Cabana)
                 .OrderByDescending(p => p.FechaDesde)
                 .ToListAsync();
+            ViewBag.DescuentoSalidaAnticipada = await _db.DescuentosSalidaAnticipada
+                .Where(d => d.Anio == primerDia.Year && d.Mes == primerDia.Month)
+                .Select(d => (decimal?)d.Monto)
+                .FirstOrDefaultAsync();
             ViewBag.PrimerDia = primerDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
             ViewBag.MesSiguiente = primerDia.AddMonths(1);
@@ -238,6 +242,42 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             TempData["Mensaje"] = $"Precios y disponibilidad de \"{cabana.Nombre}\" actualizados.";
             return RedirectToAction(nameof(Tarifas), new { id, anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GuardarDescuentoSalidaAnticipada(int anio, int mes, decimal? monto)
+        {
+            if (mes < 1 || mes > 12 || anio < 2000 || anio > 2100 || monto < 0)
+            {
+                return RedirectToAction(nameof(Precios));
+            }
+
+            var mesTexto = new DateTime(anio, mes, 1).ToString("MMMM yyyy");
+            var existente = await _db.DescuentosSalidaAnticipada.FirstOrDefaultAsync(d => d.Anio == anio && d.Mes == mes);
+
+            if (!monto.HasValue || monto.Value == 0)
+            {
+                if (existente is not null)
+                {
+                    _db.DescuentosSalidaAnticipada.Remove(existente);
+                    await _db.SaveChangesAsync();
+                }
+                TempData["Mensaje"] = $"Sin descuento por salida anticipada en {mesTexto}.";
+            }
+            else
+            {
+                if (existente is null)
+                {
+                    existente = new DescuentoSalidaAnticipada { Anio = anio, Mes = mes };
+                    _db.DescuentosSalidaAnticipada.Add(existente);
+                }
+                existente.Monto = monto.Value;
+                await _db.SaveChangesAsync();
+                TempData["Mensaje"] = $"Descuento por salida anticipada del domingo en {mesTexto}: ${monto.Value:N0}.";
+            }
+
+            return RedirectToAction(nameof(Precios), new { anio, mes });
         }
 
         [HttpPost]

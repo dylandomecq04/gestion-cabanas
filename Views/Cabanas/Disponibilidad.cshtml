@@ -302,6 +302,7 @@
         const __patronEmail = /^[^@@\s]+@@[^@@\s]+\.[^@@\s]+$/;
         let __ultimaOpcionesBusqueda = [];
         let __datosHuesped = {};
+        let __opcionesSalidaAnticipada = {};
 
         async function buscarOpcionesGeneral() {
             __generalError.classList.add('hidden');
@@ -357,10 +358,22 @@
                 }
 
                 __ultimaOpcionesBusqueda = data.opciones || [];
+                __opcionesSalidaAnticipada = {};
                 renderizarOpciones(data);
             } catch (e) {
                 contenido.innerHTML = '<p class="text-sm font-medium text-rose-600">Ocurrió un error buscando disponibilidad. Probá de nuevo.</p>';
             }
+        }
+
+        function actualizarTotalConSalidaAnticipada(idx, checked) {
+            __opcionesSalidaAnticipada[idx] = checked;
+            const opcion = __ultimaOpcionesBusqueda[idx];
+            if (!opcion || opcion.total === null) return;
+
+            const monto = checked ? (opcion.montoSalidaAnticipada || 0) : 0;
+            const nuevoTotal = opcion.total - monto;
+            const elTotal = document.querySelector(`[data-total-idx="${idx}"]`);
+            if (elTotal) elTotal.textContent = `$${Number(nuevoTotal).toLocaleString('es-AR')}`;
         }
 
         function renderizarOpciones(data) {
@@ -443,6 +456,14 @@
 
                 const claseCard = opcion.promoAplicada ? 'rounded-xl border-2 border-amber-300 bg-amber-50 p-4' : 'rounded-xl border border-ink-100 p-4';
 
+                const salidaAnticipadaHtml = (opcion.elegibleSalidaAnticipada && opcion.montoSalidaAnticipada > 0 && opcion.total !== null)
+                    ? `<label class="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                        <input type="checkbox" class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-700 focus:ring-amber-400"
+                               onchange="actualizarTotalConSalidaAnticipada(${idx}, this.checked)" />
+                        <span>Salgo el domingo a la noche (ahorrás $${Number(opcion.montoSalidaAnticipada).toLocaleString('es-AR')})</span>
+                    </label>`
+                    : '';
+
                 html += `<div class="${claseCard}">
                     ${fechasRepartida}
                     ${cercania}
@@ -451,10 +472,11 @@
                         <span class="text-sm font-semibold text-ink-900">Total</span>
                         <span class="shrink-0 whitespace-nowrap text-right">
                             ${opcion.totalSinPromo ? `<span class="block text-sm font-semibold text-ink-400 line-through decoration-rose-500">$${Number(opcion.totalSinPromo).toLocaleString('es-AR')}</span>` : ''}
-                            <span class="whitespace-nowrap text-lg font-bold text-river-700">${totalTexto}</span>
+                            <span class="whitespace-nowrap text-lg font-bold text-river-700" data-total-idx="${idx}">${totalTexto}</span>
                         </span>
                     </div>
                     ${opcion.totalSinPromo ? `<div class="mt-1 text-right text-xs font-bold text-amber-700">Ahorrás $${Number(opcion.totalSinPromo - opcion.total).toLocaleString('es-AR')}</div>` : ''}
+                    ${salidaAnticipadaHtml}
                     <button type="button" onclick="reservarOpcionGeneral(${idx})"
                             class="mt-3 w-full rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
                         ${opcion.repartida ? 'Reservar en estas dos cabañas' : (opcion.segmentos.length > 1 ? 'Reservar esta combinación' : 'Reservar esta opción')}
@@ -478,6 +500,7 @@
             params.append('Email', __datosHuesped.email);
             params.append('CantidadAdultos', __datosHuesped.adultos);
             params.append('CantidadMenores', __datosHuesped.menores);
+            params.append('SalidaAnticipada', __opcionesSalidaAnticipada[idx] ? 'true' : 'false');
             opcion.segmentos.forEach((s, i) => {
                 params.append(`Segmentos[${i}].CabanaId`, s.cabanaId);
                 params.append(`Segmentos[${i}].FechaDesde`, s.desde);
@@ -518,7 +541,8 @@
 
             const mensajeWhatsApp = encodeURIComponent(
                 `Hola! Soy ${data.nombreHuesped}. Quiero coordinar mi solicitud de reserva en ${cabanasTexto} ` +
-                `del ${data.desde} al ${data.hasta} para ${data.cantidadPersonas} personas. Valor total aproximado: ${totalTexto}.`
+                `del ${data.desde} al ${data.hasta} para ${data.cantidadPersonas} personas. Valor total aproximado: ${totalTexto}.` +
+                (data.salidaAnticipada ? ' Salgo el domingo a la noche.' : '')
             );
 
             const notaFinal = data.tieneEmail
@@ -527,6 +551,10 @@
 
             const filaTotal = data.total !== null
                 ? `<p class="mt-0.5">Total aprox. <span class="font-semibold text-ink-900">${totalTexto}</span></p>`
+                : '';
+
+            const filaSalidaAnticipada = data.salidaAnticipada
+                ? '<p class="mt-0.5 font-medium text-amber-700">Salís el domingo a la noche</p>'
                 : '';
 
             const botonCerrar = data.tieneEmail
@@ -548,6 +576,7 @@
                         <p class="font-semibold text-ink-900">${cabanasTexto}</p>
                         <p class="mt-0.5"><span class="whitespace-nowrap">${data.desde} – ${data.hasta}</span> · <span class="whitespace-nowrap">${personasTexto}</span></p>
                         ${filaTotal}
+                        ${filaSalidaAnticipada}
                     </div>
 
                     <div class="mt-3 flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-left text-sm text-amber-900">

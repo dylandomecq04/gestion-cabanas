@@ -212,10 +212,35 @@ namespace GestionCabanas.Services
                 .ToDictionary(g => g.Key, g => g.Min(t => t.Precio2!.Value));
         }
 
-        public async Task<decimal?> CalcularValorTotalAsync(int cabanaId, DateTime desde, DateTime hasta, Huespedes huespedes)
+        public async Task<decimal?> CalcularValorTotalAsync(int cabanaId, DateTime desde, DateTime hasta, Huespedes huespedes, bool salidaAnticipada = false)
         {
-            var detalle = await CalcularValorConDetalleAsync(cabanaId, desde, hasta, huespedes);
+            var detalle = await CalcularValorConDetalleAsync(cabanaId, desde, hasta, huespedes, salidaAnticipada);
             return detalle.Total;
+        }
+
+        /// <summary>
+        /// Una estadía admite la salida anticipada del domingo a la noche cuando termina un lunes
+        /// (salida normal a la mañana) y llega a cubrir tanto el sábado como el domingo anteriores.
+        /// </summary>
+        public static bool EsElegibleSalidaAnticipada(DateTime desde, DateTime hasta) =>
+            hasta.DayOfWeek == DayOfWeek.Monday && (hasta.Date - desde.Date).Days >= 2;
+
+        /// <summary>Monto configurado para el fin de semana que termina en esta salida (cuenta el mes del sábado); 0 si no hay nada cargado.</summary>
+        public async Task<decimal> MontoSalidaAnticipadaAsync(DateTime hasta)
+        {
+            var sabado = hasta.Date.AddDays(-2);
+            var monto = await _db.DescuentosSalidaAnticipada
+                .Where(d => d.Anio == sabado.Year && d.Mes == sabado.Month)
+                .Select(d => (decimal?)d.Monto)
+                .FirstOrDefaultAsync();
+            return monto ?? 0;
+        }
+
+        /// <summary>Montos de salida anticipada cargados, por (año, mes del sábado). Para mostrarlos en el panel de precios.</summary>
+        public async Task<Dictionary<(int Anio, int Mes), decimal>> ObtenerDescuentosSalidaAnticipadaAsync()
+        {
+            return (await _db.DescuentosSalidaAnticipada.Where(d => d.Monto > 0).ToListAsync())
+                .ToDictionary(d => (d.Anio, d.Mes), d => d.Monto);
         }
 
         /// <summary>
@@ -226,9 +251,10 @@ namespace GestionCabanas.Services
         /// sólo se aplica si cubre TODAS las noches de la estadía. Para estadías de más de 3
         /// noches con promo activa, las primeras 3 noches se cobran al precio del paquete de 3
         /// noches y el resto a precio normal. El precio del paquete no depende de la cantidad
-        /// de personas.
+        /// de personas. Si no aplicó ninguna promo y la estadía es elegible, informa el monto de
+        /// salida anticipada disponible y, si se pidió (<paramref name="salidaAnticipada"/>), lo resta.
         /// </summary>
-        public async Task<ResultadoPrecio> CalcularValorConDetalleAsync(int cabanaId, DateTime desde, DateTime hasta, Huespedes huespedes)
+        public async Task<ResultadoPrecio> CalcularValorConDetalleAsync(int cabanaId, DateTime desde, DateTime hasta, Huespedes huespedes, bool salidaAnticipada = false)
         {
             var resultado = new ResultadoPrecio();
             if (hasta <= desde)
@@ -273,6 +299,19 @@ namespace GestionCabanas.Services
             var suma = await SumaDiariaAsync(cabanaId, desde, hasta, tarifaGrupo);
             resultado.Total = suma;
             resultado.EtiquetaTarifa = tarifaGrupo.Descripcion(_politica.RecargoAdultoExtraPorcentaje);
+
+            if (suma.HasValue && EsElegibleSalidaAnticipada(desde, hasta))
+            {
+                var monto = await MontoSalidaAnticipadaAsync(hasta);
+                resultado.ElegibleSalidaAnticipada = monto > 0;
+                resultado.MontoSalidaAnticipada = monto;
+
+                if (salidaAnticipada && monto > 0)
+                {
+                    resultado.Total = suma.Value - Math.Min(monto, suma.Value);
+                    resultado.SalidaAnticipadaAplicada = true;
+                }
+            }
 
             return resultado;
         }
@@ -321,6 +360,14 @@ namespace GestionCabanas.Services
             }
 
             return opcion.Segmentos.Sum(s => s.SubtotalSinPromo ?? s.Subtotal!.Value);
+        }
+
+        /// <summary>Junta la elegibilidad y el monto de salida anticipada de los segmentos hacia la opción completa.</summary>
+        private static void AplicarElegibilidadSalidaAnticipada(OpcionReserva opcion)
+        {
+            var elegibles = opcion.Segmentos.Where(s => s.ElegibleSalidaAnticipada).ToList();
+            opcion.ElegibleSalidaAnticipada = elegibles.Count > 0;
+            opcion.MontoSalidaAnticipada = elegibles.Sum(s => s.MontoSalidaAnticipada);
         }
 
         private static string EtiquetaPaquete(PromoEstadia promo, int noches)
@@ -613,6 +660,8 @@ namespace GestionCabanas.Services
                         PromoAplicada = detalleSegmento.PromoAplicada,
                         EtiquetaPromo = detalleSegmento.EtiquetaPromo,
                         EtiquetaTarifa = detalleSegmento.EtiquetaTarifa,
+                        ElegibleSalidaAnticipada = detalleSegmento.ElegibleSalidaAnticipada,
+                        MontoSalidaAnticipada = detalleSegmento.MontoSalidaAnticipada,
                         Adultos = huespedes.Adultos,
                         Menores = huespedes.Menores
                     });
@@ -622,6 +671,7 @@ namespace GestionCabanas.Services
 
                 opcion.Total = total;
                 opcion.TotalSinPromo = CalcularTotalSinPromo(opcion);
+                AplicarElegibilidadSalidaAnticipada(opcion);
                 resultado.Opciones.Add(opcion);
             }
 
@@ -651,6 +701,8 @@ namespace GestionCabanas.Services
                         PromoAplicada = detalle.PromoAplicada,
                         EtiquetaPromo = detalle.EtiquetaPromo,
                         EtiquetaTarifa = detalle.EtiquetaTarifa,
+                        ElegibleSalidaAnticipada = detalle.ElegibleSalidaAnticipada,
+                        MontoSalidaAnticipada = detalle.MontoSalidaAnticipada,
                         Adultos = grupo.Adultos,
                         Menores = grupo.Menores
                     });
@@ -660,6 +712,7 @@ namespace GestionCabanas.Services
 
                 opcion.Total = total;
                 opcion.TotalSinPromo = CalcularTotalSinPromo(opcion);
+                AplicarElegibilidadSalidaAnticipada(opcion);
                 resultado.Opciones.Add(opcion);
             }
 

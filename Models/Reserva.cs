@@ -59,6 +59,10 @@ namespace GestionCabanas.Models
         [Display(Name = "Pagar")]
         public decimal? Valor { get; set; }
 
+        /// <summary>El huésped eligió salir el domingo a la noche en vez de quedarse hasta el lunes a la mañana.</summary>
+        [Display(Name = "Sale domingo a la noche")]
+        public bool SalidaAnticipada { get; set; }
+
         public DateTime FechaCreacion { get; set; } = DateTime.Now;
 
         [StringLength(200)]

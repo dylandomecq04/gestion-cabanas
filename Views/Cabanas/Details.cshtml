@@ -36,9 +36,10 @@
     if (reservaConfirmada != null)
     {
         var textoValor = valorTotal.HasValue ? $" Valor total aproximado: ${valorTotal.Value:N0}." : "";
+        var textoSalidaAnticipada = reservaConfirmada.SalidaAnticipada ? " Salgo el domingo a la noche." : "";
         mensajeWhatsApp = Uri.EscapeDataString(
             $"Hola! Soy {reservaConfirmada.NombreHuesped}. Quiero coordinar mi solicitud de reserva en {cabana.Nombre} " +
-            $"del {reservaConfirmada.FechaDesde:dd/MM/yyyy} al {reservaConfirmada.FechaHasta:dd/MM/yyyy} para {reservaConfirmada.CantidadPersonas} personas." + textoValor);
+            $"del {reservaConfirmada.FechaDesde:dd/MM/yyyy} al {reservaConfirmada.FechaHasta:dd/MM/yyyy} para {reservaConfirmada.CantidadPersonas} personas." + textoValor + textoSalidaAnticipada);
     }
     else
     {
@@ -65,6 +66,10 @@
                     @if (valorTotal.HasValue)
                     {
                         <p class="mt-0.5">Total aprox. <span class="font-semibold text-ink-900">$@valorTotal.Value.ToString("N0")</span></p>
+                    }
+                    @if (reservaConfirmada.SalidaAnticipada)
+                    {
+                        <p class="mt-0.5 font-medium text-amber-700">Salís el domingo a la noche</p>
                     }
                 }
             </div>
@@ -334,6 +339,12 @@
 
                 <div id="resumen-total" class="hidden"></div>
 
+                <label id="opcion-salida-anticipada" class="hidden items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900">
+                    <input asp-for="SalidaAnticipada" type="checkbox" onchange="actualizarResumenTotal()"
+                           class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-700 focus:ring-amber-400" />
+                    <span>Salgo el domingo a la noche en vez del lunes a la mañana <span id="opcion-salida-anticipada-monto" class="font-semibold"></span></span>
+                </label>
+
                 <button type="submit" class="w-full rounded-full bg-river-700 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800 hover:shadow-lift">
                     Enviar solicitud
                 </button>
@@ -377,6 +388,9 @@
         const __inputAdultos = document.getElementById('CantidadAdultos');
         const __inputMenores = document.getElementById('CantidadMenores');
         const __resumenTotal = document.getElementById('resumen-total');
+        const __checkboxSalidaAnticipada = document.getElementById('SalidaAnticipada');
+        const __opcionSalidaAnticipada = document.getElementById('opcion-salida-anticipada');
+        const __opcionSalidaAnticipadaMonto = document.getElementById('opcion-salida-anticipada-monto');
         let __ultimaConsulta = 0;
 
         function formatearFechaLarga(iso) {
@@ -491,13 +505,24 @@
             try {
                 const adultos = parseInt(__inputAdultos.value, 10) || 0;
                 const menores = parseInt(__inputMenores.value, 10) || 0;
-                const resp = await fetch(`/Cabanas/CalcularTotal?id=${__cabanaId}&desde=${desde}&hasta=${hasta}&adultos=${adultos}&menores=${menores}`);
+                const salidaAnticipada = !!(__checkboxSalidaAnticipada && __checkboxSalidaAnticipada.checked);
+                const resp = await fetch(`/Cabanas/CalcularTotal?id=${__cabanaId}&desde=${desde}&hasta=${hasta}&adultos=${adultos}&menores=${menores}&salidaAnticipada=${salidaAnticipada}`);
                 const data = await resp.json();
                 if (consultaId !== __ultimaConsulta) return;
 
                 if (!data.valido) {
                     __resumenTotal.classList.add('hidden');
                     return;
+                }
+
+                if (data.disponible && !data.aviso && data.elegibleSalidaAnticipada) {
+                    __opcionSalidaAnticipada.classList.remove('hidden');
+                    __opcionSalidaAnticipada.classList.add('flex');
+                    __opcionSalidaAnticipadaMonto.textContent = `(ahorrás $${Number(data.montoSalidaAnticipada).toLocaleString('es-AR')})`;
+                } else {
+                    __opcionSalidaAnticipada.classList.add('hidden');
+                    __opcionSalidaAnticipada.classList.remove('flex');
+                    if (__checkboxSalidaAnticipada) __checkboxSalidaAnticipada.checked = false;
                 }
 
                 __resumenTotal.classList.remove('hidden');
@@ -519,11 +544,14 @@
                             '<p class="text-xs font-medium text-amber-700">' + pluralizar(data.noches, 'noche', 'noches') + '</p>' +
                             (data.totalSinPromo ? '<p class="mt-1.5 inline-block rounded-full bg-amber-200 px-3 py-0.5 text-xs font-bold text-amber-900">Ahorrás $' + Number(data.totalSinPromo - data.total).toLocaleString('es-AR') + '</p>' : '');
                     } else {
+                        const notaSalidaAnticipada = data.salidaAnticipadaAplicada
+                            ? '<p class="mt-1.5 inline-block rounded-full bg-amber-100 px-3 py-0.5 text-xs font-bold text-amber-800">Incluye salida domingo a la noche: −$' + Number(data.montoSalidaAnticipada).toLocaleString('es-AR') + '</p>'
+                            : '';
                         __resumenTotal.className = 'rounded-2xl border-2 border-river-300 bg-river-50 px-5 py-4 text-center shadow-soft';
                         __resumenTotal.innerHTML =
                             '<p class="text-xs font-semibold uppercase tracking-wide text-river-600">Total estimado</p>' +
                             '<p class="mt-1 text-3xl font-bold text-river-800">$' + totalTexto + '</p>' +
-                            '<p class="text-xs font-medium text-river-600">' + pluralizar(data.noches, 'noche', 'noches') + '</p>' + notaTarifa;
+                            '<p class="text-xs font-medium text-river-600">' + pluralizar(data.noches, 'noche', 'noches') + '</p>' + notaTarifa + notaSalidaAnticipada;
                     }
                 } else {
                     __resumenTotal.className = 'rounded-2xl border-2 border-sand-200 bg-sand-100 px-5 py-4 text-center';
