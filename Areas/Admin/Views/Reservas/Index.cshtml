@@ -58,7 +58,9 @@
     {
         var digitos = DigitosWhatsApp(r);
         if (digitos == "") return "";
-        var mensaje = $"Hola, cómo estás?\n\nRecibí tu solicitud de reserva para el período del {r.FechaDesde:dd/MM/yyyy} a partir de las 12hs hasta {r.FechaHasta:dd/MM/yyyy} a las 10hs, a nombre de {r.NombreHuesped} en Cabaña {r.Cabana?.Nombre}. Te escribo para coordinar y confirmar la misma.\n\nPara poder mantener la reserva, contás con un plazo de 24 horas para realizar el pago. A continuación, te envío los datos de la cuenta.\n\nUna vez efectuado el pago, por favor enviame el comprobante para poder continuar con la confirmación de la reserva.\n\nMuchas gracias!";
+        var valorTexto = r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "a confirmar";
+        var senaTexto = r.Valor.HasValue ? "$" + Math.Round(r.Valor.Value * 0.5m).ToString("N0") : "a confirmar";
+        var mensaje = $"Hola, cómo estás?\n\nRecibí tu solicitud de reserva para el período del {r.FechaDesde:dd/MM/yyyy} a partir de las 12hs hasta {r.FechaHasta:dd/MM/yyyy} a las 10hs, a nombre de {r.NombreHuesped} en Cabaña {r.Cabana?.Nombre}. Te escribo para coordinar y confirmar la misma.\n\nEl valor total de la estadía es {valorTexto}. Para confirmar la reserva, se abona una seña del 50% ({senaTexto}) y el resto al llegar.\n\nPara poder mantener la reserva, contás con un plazo de 24 horas para realizar el pago de la seña. A continuación, te envío los datos de la cuenta.\n\nUna vez efectuado el pago, por favor enviame el comprobante para poder continuar con la confirmación de la reserva.\n\nMuchas gracias!";
         return $"https://wa.me/{digitos}?text={Uri.EscapeDataString(mensaje)}";
     }
 
@@ -250,16 +252,14 @@ else
                     <div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
                         @if (esSolicitudes)
                         {
-                            <div class="flex items-center justify-between gap-2">
-                                <p class="text-xs font-medium text-river-700">@(r.Cabana?.Nombre ?? "Sin cabaña")</p>
-                                <p class="text-xs text-ink-400">Creada el @r.FechaCreacion.ToString("dd/MM/yyyy")</p>
-                            </div>
+                            <p class="text-xs text-ink-400">Creada el @r.FechaCreacion.ToString("dd/MM/yyyy")</p>
                             <div class="mt-1 flex items-center justify-between gap-2">
+                                <p class="text-xs font-medium text-river-700">@(r.Cabana?.Nombre ?? "Sin cabaña")</p>
                                 <label class="flex items-center gap-1.5 text-xs font-medium text-ink-500">
                                     Contactada
                                     <input type="checkbox" class="toggle-contactado h-4 w-4 rounded border-ink-300 text-river-600 focus:ring-river-400" data-id="@r.Id" checked="@(r.Contactado ? "checked" : null)" />
+                                    <span class="fecha-contactado-mobile font-normal text-ink-400" data-id="@r.Id">@(r.FechaContactado.HasValue ? "· " + r.FechaContactado.Value.ToString("dd/MM/yyyy HH:mm") : "")</span>
                                 </label>
-                                <p class="fecha-contactado-mobile text-xs text-ink-400" data-id="@r.Id">@(r.FechaContactado.HasValue ? "el " + r.FechaContactado.Value.ToString("dd/MM/yyyy HH:mm") : "")</p>
                             </div>
                         }
                         <p class="mt-3 font-semibold text-ink-900">@r.NombreHuesped</p>
@@ -521,7 +521,7 @@ else
                 celda.textContent = formateada || '-';
             });
             document.querySelectorAll('.fecha-contactado-mobile[data-id="' + id + '"]').forEach(function (parrafo) {
-                parrafo.textContent = formateada ? 'el ' + formateada : '';
+                parrafo.textContent = formateada ? '· ' + formateada : '';
             });
         }
 
