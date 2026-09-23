@@ -335,12 +335,12 @@ else
                         <tr>
                             @if (esSolicitudes)
                             {
-                                <th class="px-3 py-3"><a href="@LinkOrden("cabana")" class="@ClaseHeaderOrden("cabana")">Cabaña@FlechaOrden("cabana")</a></th>
+                                <th class="px-3 py-3"><a href="@LinkOrden("cabana")" class="@ClaseHeaderOrden("cabana")">Cabaña@(FlechaOrden("cabana"))</a></th>
                             }
                             <th class="px-5 py-3">
                                 @if (esSolicitudes)
                                 {
-                                    <a href="@LinkOrden("huesped")" class="@ClaseHeaderOrden("huesped")">Huésped@FlechaOrden("huesped")</a>
+                                    <a href="@LinkOrden("huesped")" class="@ClaseHeaderOrden("huesped")">Huésped@(FlechaOrden("huesped"))</a>
                                 }
                                 else
                                 {
@@ -350,7 +350,7 @@ else
                             <th class="px-3 py-3">
                                 @if (esSolicitudes)
                                 {
-                                    <a href="@LinkOrden("fecha")" class="@ClaseHeaderOrden("fecha")">Fechas@FlechaOrden("fecha")</a>
+                                    <a href="@LinkOrden("fecha")" class="@ClaseHeaderOrden("fecha")">Fechas@(FlechaOrden("fecha"))</a>
                                 }
                                 else
                                 {
@@ -360,7 +360,7 @@ else
                             <th class="px-3 py-3 text-center">
                                 @if (esSolicitudes)
                                 {
-                                    <a href="@LinkOrden("personas")" class="@ClaseHeaderOrden("personas")">Personas@FlechaOrden("personas")</a>
+                                    <a href="@LinkOrden("personas")" class="@ClaseHeaderOrden("personas")">Personas@(FlechaOrden("personas"))</a>
                                 }
                                 else
                                 {
@@ -370,7 +370,7 @@ else
                             <th class="px-3 py-3">
                                 @if (esSolicitudes)
                                 {
-                                    <a href="@LinkOrden("pago")" class="@ClaseHeaderOrden("pago")">Pagó@FlechaOrden("pago")</a>
+                                    <a href="@LinkOrden("pago")" class="@ClaseHeaderOrden("pago")">Pagó@(FlechaOrden("pago"))</a>
                                 }
                                 else
                                 {
@@ -380,7 +380,7 @@ else
                             <th class="px-3 py-3">
                                 @if (esSolicitudes)
                                 {
-                                    <a href="@LinkOrden("pagar")" class="@ClaseHeaderOrden("pagar")">Pagar@FlechaOrden("pagar")</a>
+                                    <a href="@LinkOrden("pagar")" class="@ClaseHeaderOrden("pagar")">Pagar@(FlechaOrden("pagar"))</a>
                                 }
                                 else
                                 {
@@ -390,7 +390,7 @@ else
                             <th class="px-3 py-3">
                                 @if (esSolicitudes)
                                 {
-                                    <a href="@LinkOrden("contacto")" class="@ClaseHeaderOrden("contacto")">Contacto@FlechaOrden("contacto")</a>
+                                    <a href="@LinkOrden("contacto")" class="@ClaseHeaderOrden("contacto")">Contacto@(FlechaOrden("contacto"))</a>
                                 }
                                 else
                                 {
@@ -399,9 +399,9 @@ else
                             </th>
                             @if (esSolicitudes)
                             {
-                                <th class="px-3 py-3"><a href="@LinkOrden("creada")" class="@ClaseHeaderOrden("creada")">Solicitud creada@FlechaOrden("creada")</a></th>
-                                <th class="px-3 py-3 text-center"><a href="@LinkOrden("contactado")" class="@ClaseHeaderOrden("contactado")">Contactado@FlechaOrden("contactado")</a></th>
-                                <th class="px-3 py-3"><a href="@LinkOrden("fechacontactado")" class="@ClaseHeaderOrden("fechacontactado")">Fecha contactado@FlechaOrden("fechacontactado")</a></th>
+                                <th class="px-3 py-3"><a href="@LinkOrden("creada")" class="@ClaseHeaderOrden("creada")">Solicitud creada@(FlechaOrden("creada"))</a></th>
+                                <th class="px-3 py-3 text-center"><a href="@LinkOrden("contactado")" class="@ClaseHeaderOrden("contactado")">Contactado@(FlechaOrden("contactado"))</a></th>
+                                <th class="px-3 py-3"><a href="@LinkOrden("fechacontactado")" class="@ClaseHeaderOrden("fechacontactado")">Fecha contactado@(FlechaOrden("fechacontactado"))</a></th>
                             }
                             <th class="px-5 py-3 text-center">Acciones</th>
                         </tr>
