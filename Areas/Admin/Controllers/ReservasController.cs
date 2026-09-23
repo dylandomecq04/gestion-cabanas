@@ -109,7 +109,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return Json(new { firma, excelModificado });
         }
 
-        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes, bool? contactado, string? orden)
+        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes, bool? contactado, string? orden, bool desc = false)
         {
             var estadoEfectivo = estado ?? EstadoReserva.Confirmada;
             var esSolicitudes = estadoEfectivo == EstadoReserva.Pendiente;
@@ -156,6 +156,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.CabanaIdFiltro = cabanaId;
             ViewBag.ContactadoFiltro = contactado;
             ViewBag.Orden = orden;
+            ViewBag.OrdenDesc = desc;
             ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
             ViewBag.Anio = primerDia?.Year;
             ViewBag.Mes = primerDia?.Month;
@@ -178,20 +179,20 @@ namespace GestionCabanas.Areas.Admin.Controllers
             }
 
             // En Solicitudes se puede reordenar clickeando cualquier columna; por defecto queda la
-            // más nueva primero. En Reservas confirmadas el orden no cambia porque siguen agrupadas
-            // por cabaña en la vista.
+            // más nueva primero. Clickear de nuevo la misma columna invierte el orden (A-Z / Z-A).
+            // En Reservas confirmadas el orden no cambia porque siguen agrupadas por cabaña en la vista.
             var querySolicitudes = orden switch
             {
-                "cabana" => query.OrderBy(r => r.Cabana!.Nombre),
-                "huesped" => query.OrderBy(r => r.NombreHuesped),
-                "fecha" => query.OrderBy(r => r.FechaDesde),
-                "personas" => query.OrderBy(r => r.CantidadPersonas),
-                "pago" => query.OrderBy(r => r.Pago),
-                "pagar" => query.OrderBy(r => r.Valor),
-                "contacto" => query.OrderBy(r => r.Telefono),
-                "creada" => query.OrderBy(r => r.FechaCreacion),
-                "contactado" => query.OrderBy(r => r.Contactado),
-                "fechacontactado" => query.OrderBy(r => r.FechaContactado),
+                "cabana" => desc ? query.OrderByDescending(r => r.Cabana!.Nombre) : query.OrderBy(r => r.Cabana!.Nombre),
+                "huesped" => desc ? query.OrderByDescending(r => r.NombreHuesped) : query.OrderBy(r => r.NombreHuesped),
+                "fecha" => desc ? query.OrderByDescending(r => r.FechaDesde) : query.OrderBy(r => r.FechaDesde),
+                "personas" => desc ? query.OrderByDescending(r => r.CantidadPersonas) : query.OrderBy(r => r.CantidadPersonas),
+                "pago" => desc ? query.OrderByDescending(r => r.Pago) : query.OrderBy(r => r.Pago),
+                "pagar" => desc ? query.OrderByDescending(r => r.Valor) : query.OrderBy(r => r.Valor),
+                "contacto" => desc ? query.OrderByDescending(r => r.Telefono) : query.OrderBy(r => r.Telefono),
+                "creada" => desc ? query.OrderByDescending(r => r.FechaCreacion) : query.OrderBy(r => r.FechaCreacion),
+                "contactado" => desc ? query.OrderByDescending(r => r.Contactado) : query.OrderBy(r => r.Contactado),
+                "fechacontactado" => desc ? query.OrderByDescending(r => r.FechaContactado) : query.OrderBy(r => r.FechaContactado),
                 _ => query.OrderByDescending(r => r.FechaCreacion)
             };
 
