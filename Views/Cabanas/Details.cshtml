@@ -560,13 +560,15 @@
                             '<p class="text-xs font-medium text-amber-700">' + pluralizar(data.noches, 'noche', 'noches') + '</p>' +
                             (data.totalSinPromo ? '<p class="mt-1.5 inline-block rounded-full bg-amber-200 px-3 py-0.5 text-xs font-bold text-amber-900">Ahorrás $' + Number(data.totalSinPromo - data.total).toLocaleString('es-AR') + '</p>' : '');
                     } else {
+                        const totalAntesSalidaAnticipada = data.salidaAnticipadaAplicada ? (data.total + data.montoSalidaAnticipada) : null;
                         const notaSalidaAnticipada = data.salidaAnticipadaAplicada
-                            ? '<p class="mt-1.5 inline-block rounded-full bg-amber-100 px-3 py-0.5 text-xs font-bold text-amber-800">Incluye salida domingo a la noche: −$' + Number(data.montoSalidaAnticipada).toLocaleString('es-AR') + '</p>'
+                            ? '<p class="mt-1.5 inline-block rounded-full bg-amber-100 px-3 py-0.5 text-xs font-bold text-amber-800">Ahorrás $' + Number(data.montoSalidaAnticipada).toLocaleString('es-AR') + '</p>'
                             : '';
                         __resumenTotal.className = 'rounded-2xl border-2 border-river-300 bg-river-50 px-5 py-4 text-center shadow-soft';
                         __resumenTotal.innerHTML =
                             '<p class="text-xs font-semibold uppercase tracking-wide text-river-600">Total estimado</p>' +
-                            '<p class="mt-1 text-3xl font-bold text-river-800">$' + totalTexto + '</p>' +
+                            (totalAntesSalidaAnticipada ? '<p class="mt-1 text-lg font-semibold text-ink-400 line-through decoration-rose-500">$' + Number(totalAntesSalidaAnticipada).toLocaleString('es-AR') + '</p>' : '') +
+                            '<p class="' + (totalAntesSalidaAnticipada ? '' : 'mt-1 ') + 'text-3xl font-bold text-river-800">$' + totalTexto + '</p>' +
                             '<p class="text-xs font-medium text-river-600">' + pluralizar(data.noches, 'noche', 'noches') + '</p>' + notaTarifa + notaSalidaAnticipada;
                     }
                 } else {

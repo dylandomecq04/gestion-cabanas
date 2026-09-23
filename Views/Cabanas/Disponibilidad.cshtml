@@ -374,6 +374,18 @@
             const nuevoTotal = opcion.total - monto;
             const elTotal = document.querySelector(`[data-total-idx="${idx}"]`);
             if (elTotal) elTotal.textContent = `$${Number(nuevoTotal).toLocaleString('es-AR')}`;
+
+            const elTachado = document.querySelector(`[data-total-tachado-idx="${idx}"]`);
+            if (elTachado) {
+                if (checked) {
+                    elTachado.textContent = `$${Number(opcion.total).toLocaleString('es-AR')}`;
+                    elTachado.classList.remove('hidden');
+                    elTachado.classList.add('block');
+                } else {
+                    elTachado.classList.add('hidden');
+                    elTachado.classList.remove('block');
+                }
+            }
         }
 
         function renderizarOpciones(data) {
@@ -472,6 +484,7 @@
                         <span class="text-sm font-semibold text-ink-900">Total</span>
                         <span class="shrink-0 whitespace-nowrap text-right">
                             ${opcion.totalSinPromo ? `<span class="block text-sm font-semibold text-ink-400 line-through decoration-rose-500">$${Number(opcion.totalSinPromo).toLocaleString('es-AR')}</span>` : ''}
+                            <span class="hidden text-sm font-semibold text-ink-400 line-through decoration-rose-500" data-total-tachado-idx="${idx}"></span>
                             <span class="whitespace-nowrap text-lg font-bold text-river-700" data-total-idx="${idx}">${totalTexto}</span>
                         </span>
                     </div>
