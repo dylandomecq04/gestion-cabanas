@@ -177,13 +177,19 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 ViewBag.MesesConSolicitudes = meses.OrderBy(m => m).ToList();
             }
 
-            // En Solicitudes se puede reordenar clickeando las columnas Cabaña, Fechas o Contactado;
-            // por defecto queda la más nueva primero. En Reservas confirmadas el orden no cambia
-            // porque siguen agrupadas por cabaña en la vista.
+            // En Solicitudes se puede reordenar clickeando cualquier columna; por defecto queda la
+            // más nueva primero. En Reservas confirmadas el orden no cambia porque siguen agrupadas
+            // por cabaña en la vista.
             var querySolicitudes = orden switch
             {
                 "cabana" => query.OrderBy(r => r.Cabana!.Nombre),
+                "huesped" => query.OrderBy(r => r.NombreHuesped),
                 "fecha" => query.OrderBy(r => r.FechaDesde),
+                "personas" => query.OrderBy(r => r.CantidadPersonas),
+                "pago" => query.OrderBy(r => r.Pago),
+                "pagar" => query.OrderBy(r => r.Valor),
+                "contacto" => query.OrderBy(r => r.Telefono),
+                "creada" => query.OrderBy(r => r.FechaCreacion),
                 "contactado" => query.OrderBy(r => r.Contactado),
                 _ => query.OrderByDescending(r => r.FechaCreacion)
             };

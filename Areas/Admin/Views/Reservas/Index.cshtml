@@ -328,7 +328,16 @@ else
                             {
                                 <th class="px-3 py-3"><a href="@LinkOrden("cabana")" class="@ClaseHeaderOrden("cabana")">Cabaña</a></th>
                             }
-                            <th class="px-5 py-3">Huésped</th>
+                            <th class="px-5 py-3">
+                                @if (esSolicitudes)
+                                {
+                                    <a href="@LinkOrden("huesped")" class="@ClaseHeaderOrden("huesped")">Huésped</a>
+                                }
+                                else
+                                {
+                                    @:Huésped
+                                }
+                            </th>
                             <th class="px-3 py-3">
                                 @if (esSolicitudes)
                                 {
@@ -339,13 +348,49 @@ else
                                     @:Fechas
                                 }
                             </th>
-                            <th class="px-3 py-3 text-center">Personas</th>
-                            <th class="px-3 py-3">Pagó</th>
-                            <th class="px-3 py-3">Pagar</th>
-                            <th class="px-3 py-3">Contacto</th>
+                            <th class="px-3 py-3 text-center">
+                                @if (esSolicitudes)
+                                {
+                                    <a href="@LinkOrden("personas")" class="@ClaseHeaderOrden("personas")">Personas</a>
+                                }
+                                else
+                                {
+                                    @:Personas
+                                }
+                            </th>
+                            <th class="px-3 py-3">
+                                @if (esSolicitudes)
+                                {
+                                    <a href="@LinkOrden("pago")" class="@ClaseHeaderOrden("pago")">Pagó</a>
+                                }
+                                else
+                                {
+                                    @:Pagó
+                                }
+                            </th>
+                            <th class="px-3 py-3">
+                                @if (esSolicitudes)
+                                {
+                                    <a href="@LinkOrden("pagar")" class="@ClaseHeaderOrden("pagar")">Pagar</a>
+                                }
+                                else
+                                {
+                                    @:Pagar
+                                }
+                            </th>
+                            <th class="px-3 py-3">
+                                @if (esSolicitudes)
+                                {
+                                    <a href="@LinkOrden("contacto")" class="@ClaseHeaderOrden("contacto")">Contacto</a>
+                                }
+                                else
+                                {
+                                    @:Contacto
+                                }
+                            </th>
                             @if (esSolicitudes)
                             {
-                                <th class="px-3 py-3">Solicitud creada</th>
+                                <th class="px-3 py-3"><a href="@LinkOrden("creada")" class="@ClaseHeaderOrden("creada")">Solicitud creada</a></th>
                                 <th class="px-3 py-3 text-center"><a href="@LinkOrden("contactado")" class="@ClaseHeaderOrden("contactado")">Contactado</a></th>
                             }
                             <th class="px-5 py-3 text-center">Acciones</th>
