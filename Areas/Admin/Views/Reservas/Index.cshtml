@@ -6,6 +6,7 @@
     bool esSolicitudes = filtro == EstadoReserva.Pendiente;
     string? busqueda = ViewBag.Busqueda;
     int? cabanaIdFiltro = ViewBag.CabanaIdFiltro;
+    bool? contactadoFiltro = ViewBag.ContactadoFiltro;
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
     DateTime? primerDia = ViewBag.PrimerDia;
     DateTime? mesAnterior = ViewBag.MesAnterior;
@@ -181,8 +182,17 @@
             <input type="hidden" name="anio" id="input-anio" value="@primerDia?.Year" />
             <input type="hidden" name="mes" id="input-mes" value="@primerDia?.Month" />
         </div>
+        <div class="w-full sm:w-auto sm:min-w-[160px]">
+            <label class="mb-1 block text-xs font-medium text-ink-600">Contactado</label>
+            <select name="contactado" onchange="document.getElementById('form-filtros').requestSubmit()"
+                    class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">
+                <option value="" selected="@(contactadoFiltro is null)">Todas</option>
+                <option value="false" selected="@(contactadoFiltro == false)">No contactadas</option>
+                <option value="true" selected="@(contactadoFiltro == true)">Contactadas</option>
+            </select>
+        </div>
     }
-    @if (!string.IsNullOrWhiteSpace(busqueda) || cabanaIdFiltro.HasValue || (esSolicitudes && primerDia.HasValue))
+    @if (!string.IsNullOrWhiteSpace(busqueda) || cabanaIdFiltro.HasValue || (esSolicitudes && primerDia.HasValue) || contactadoFiltro.HasValue)
     {
         <a asp-action="Index" asp-route-estado="@filtro" class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-ink-300">Limpiar filtros</a>
     }

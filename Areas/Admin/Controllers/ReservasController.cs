@@ -109,7 +109,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return Json(new { firma, excelModificado });
         }
 
-        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes)
+        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes, bool? contactado)
         {
             var estadoEfectivo = estado ?? EstadoReserva.Confirmada;
             var esSolicitudes = estadoEfectivo == EstadoReserva.Pendiente;
@@ -124,6 +124,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
             if (cabanaId.HasValue)
             {
                 query = query.Where(r => r.CabanaId == cabanaId.Value);
+            }
+            if (esSolicitudes && contactado.HasValue)
+            {
+                query = query.Where(r => r.Contactado == contactado.Value);
             }
 
             // Las solicitudes se listan todas por defecto (más vieja primero); el mes es un filtro
@@ -150,6 +154,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.EstadoFiltro = estadoEfectivo;
             ViewBag.Busqueda = busqueda;
             ViewBag.CabanaIdFiltro = cabanaId;
+            ViewBag.ContactadoFiltro = contactado;
             ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
             ViewBag.Anio = primerDia?.Year;
             ViewBag.Mes = primerDia?.Month;
