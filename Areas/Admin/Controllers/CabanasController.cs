@@ -207,6 +207,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Id).ToListAsync();
             ViewBag.MinimosNoches = await _disponibilidad.ObtenerMinimosNochesAsync();
+            ViewBag.PromosEstadia = await _db.PromosEstadia
+                .Include(p => p.Cabana)
+                .OrderByDescending(p => p.FechaDesde)
+                .ToListAsync();
             ViewBag.PrimerDia = primerDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
             ViewBag.MesSiguiente = primerDia.AddMonths(1);
@@ -422,6 +426,82 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 await _db.SaveChangesAsync();
             }
             return RedirectToAction(nameof(Tarifas), new { id = cabanaId, anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearPromoEstadia(PromoEstadiaMultipleInput modelo, int? anio, int? mes)
+        {
+            if (modelo.CabanaIds is null || modelo.CabanaIds.Count == 0)
+            {
+                TempData["Mensaje"] = "Elegí al menos una cabaña para la promoción.";
+                return RedirectToAction(nameof(Precios), new { anio, mes });
+            }
+
+            if (modelo.FechaHasta.Date < modelo.FechaDesde.Date)
+            {
+                TempData["Mensaje"] = "El rango de fechas de la promoción no es válido.";
+                return RedirectToAction(nameof(Precios), new { anio, mes });
+            }
+
+            if (!modelo.Precio1Noche.HasValue && !modelo.Precio2Noches.HasValue && !modelo.Precio3Noches.HasValue)
+            {
+                TempData["Mensaje"] = "Cargá al menos un precio (1, 2 o 3 noches) para la promoción.";
+                return RedirectToAction(nameof(Precios), new { anio, mes });
+            }
+
+            var cabanaIdsValidos = await _db.Cabanas
+                .Where(c => modelo.CabanaIds.Contains(c.Id))
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            foreach (var cabanaId in cabanaIdsValidos)
+            {
+                _db.PromosEstadia.Add(new PromoEstadia
+                {
+                    CabanaId = cabanaId,
+                    Nombre = modelo.Nombre,
+                    Descripcion = modelo.Descripcion,
+                    FechaDesde = modelo.FechaDesde.Date,
+                    FechaHasta = modelo.FechaHasta.Date,
+                    Precio1Noche = modelo.Precio1Noche,
+                    Precio2Noches = modelo.Precio2Noches,
+                    Precio3Noches = modelo.Precio3Noches,
+                    Activa = true
+                });
+            }
+
+            await _db.SaveChangesAsync();
+            TempData["Mensaje"] = cabanaIdsValidos.Count > 1
+                ? $"Promoción creada para {cabanaIdsValidos.Count} cabañas."
+                : "Promoción creada.";
+            return RedirectToAction(nameof(Precios), new { anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AlternarPromoEstadiaEnPrecios(int id, int? anio, int? mes)
+        {
+            var promo = await _db.PromosEstadia.FindAsync(id);
+            if (promo is not null)
+            {
+                promo.Activa = !promo.Activa;
+                await _db.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Precios), new { anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarPromoEstadiaEnPrecios(int id, int? anio, int? mes)
+        {
+            var promo = await _db.PromosEstadia.FindAsync(id);
+            if (promo is not null)
+            {
+                _db.PromosEstadia.Remove(promo);
+                await _db.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Precios), new { anio, mes });
         }
 
         [HttpPost]
