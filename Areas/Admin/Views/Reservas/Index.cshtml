@@ -33,7 +33,7 @@
     {
         var digitos = DigitosWhatsApp(r);
         if (digitos == "") return "";
-        var mensaje = $"Hola, cómo estás?\n\nRecibí tu solicitud de reserva para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, a nombre de {r.NombreHuesped}. Te escribo para coordinar y confirmar la misma.\n\nPara poder mantener la reserva, contás con un plazo de 24 horas para realizar el pago. A continuación, te envío los datos de la cuenta.\n\nUna vez efectuado el pago, por favor enviame el comprobante para poder continuar con la confirmación de la reserva.\n\nMuchas gracias!";
+        var mensaje = $"Hola, cómo estás?\n\nRecibí tu solicitud de reserva para el período del {r.FechaDesde:dd/MM/yyyy} a partir de las 12hs hasta {r.FechaHasta:dd/MM/yyyy} a las 10hs, a nombre de {r.NombreHuesped} en Cabaña {r.Cabana?.Nombre}. Te escribo para coordinar y confirmar la misma.\n\nPara poder mantener la reserva, contás con un plazo de 24 horas para realizar el pago. A continuación, te envío los datos de la cuenta.\n\nUna vez efectuado el pago, por favor enviame el comprobante para poder continuar con la confirmación de la reserva.\n\nMuchas gracias!";
         return $"https://wa.me/{digitos}?text={Uri.EscapeDataString(mensaje)}";
     }
 
