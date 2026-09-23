@@ -144,6 +144,10 @@
         ? $"No hay {sustantivo} para mostrar en {TituloMes(primerDia.Value).ToLowerInvariant()}."
         : $"No hay {sustantivo} para mostrar.";
 }
+@if (esSolicitudes)
+{
+    <form id="form-token-contactado">@Html.AntiForgeryToken()</form>
+}
 @if (!Model.Any())
 {
     <div class="rounded-2.5xl bg-white p-6 text-center text-sm text-ink-400 shadow-soft ring-1 ring-ink-100 sm:p-8">@mensajeVacio</div>
@@ -165,7 +169,13 @@ else
                     <div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
                         @if (esSolicitudes)
                         {
-                            <p class="text-xs font-medium text-river-700">@(r.Cabana?.Nombre ?? "Sin cabaña")</p>
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-xs font-medium text-river-700">@(r.Cabana?.Nombre ?? "Sin cabaña")</p>
+                                <label class="flex items-center gap-1.5 text-xs font-medium text-ink-500">
+                                    Contactado
+                                    <input type="checkbox" class="toggle-contactado h-4 w-4 rounded border-ink-300 text-river-600 focus:ring-river-400" data-id="@r.Id" checked="@(r.Contactado ? "checked" : null)" />
+                                </label>
+                            </div>
                         }
                         <p class="font-semibold text-ink-900">@r.NombreHuesped</p>
                         <p class="mt-0.5 text-sm text-ink-600">
@@ -242,6 +252,7 @@ else
                             @if (esSolicitudes)
                             {
                                 <th class="px-3 py-3">Solicitud creada</th>
+                                <th class="px-3 py-3 text-center">Contactado</th>
                             }
                             <th class="px-5 py-3 text-center">Acciones</th>
                         </tr>
@@ -263,6 +274,9 @@ else
                                 @if (esSolicitudes)
                                 {
                                     <td class="whitespace-nowrap px-3 py-3 text-ink-500">@r.FechaCreacion.ToString("dd/MM/yyyy")</td>
+                                    <td class="px-3 py-3 text-center">
+                                        <input type="checkbox" class="toggle-contactado h-4 w-4 rounded border-ink-300 text-river-600 focus:ring-river-400" data-id="@r.Id" checked="@(r.Contactado ? "checked" : null)" />
+                                    </td>
                                 }
                                 <td class="px-5 py-3">
                                     <div class="flex justify-center gap-2 whitespace-nowrap">
@@ -331,5 +345,21 @@ else
                 input.setSelectionRange(input.value.length, input.value.length);
             }
         })();
+
+        document.querySelectorAll('.toggle-contactado').forEach(function (checkbox) {
+            checkbox.addEventListener('change', async function () {
+                const tokenInput = document.querySelector('#form-token-contactado input[name="__RequestVerificationToken"]');
+                const body = new URLSearchParams();
+                body.set('id', checkbox.dataset.id);
+                body.set('contactado', checkbox.checked);
+                body.set('__RequestVerificationToken', tokenInput.value);
+                try {
+                    const resp = await fetch('@Url.Action("ToggleContactado", "Reservas")', { method: 'POST', body });
+                    if (!resp.ok) throw new Error();
+                } catch {
+                    checkbox.checked = !checkbox.checked;
+                }
+            });
+        });
     </script>
 }

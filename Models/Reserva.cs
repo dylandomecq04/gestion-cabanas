@@ -48,6 +48,9 @@ namespace GestionCabanas.Models
 
         public EstadoReserva Estado { get; set; } = EstadoReserva.Pendiente;
 
+        [Display(Name = "Contactado")]
+        public bool Contactado { get; set; }
+
         [Range(0, 999999999)]
         [Display(Name = "Pagó")]
         public decimal? Pago { get; set; }

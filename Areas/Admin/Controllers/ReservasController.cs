@@ -433,6 +433,22 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleContactado(int id, bool contactado)
+        {
+            var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
+            if (reserva is null)
+            {
+                return NotFound();
+            }
+
+            reserva.Contactado = contactado;
+            await _db.SaveChangesAsync();
+
+            return Json(new { ok = true, contactado = reserva.Contactado });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> MoverCabana(int id, int nuevaCabanaId, string? vista, int? anio, int? mes)
         {
             var reserva = await _db.Reservas.FirstOrDefaultAsync(r => r.Id == id);
