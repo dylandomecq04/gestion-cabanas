@@ -22,7 +22,6 @@ namespace GestionCabanas.Data
         public DbSet<ItemGaleria> ItemsGaleria => Set<ItemGaleria>();
         public DbSet<PromoEstadia> PromosEstadia => Set<PromoEstadia>();
         public DbSet<OneDriveConexion> OneDriveConexiones => Set<OneDriveConexion>();
-        public DbSet<DescuentoFinDeSemana> DescuentosFinDeSemana => Set<DescuentoFinDeSemana>();
         public DbSet<FinDeSemanaLargo> FinesDeSemanaLargos => Set<FinDeSemanaLargo>();
         public DbSet<MinimoNoches> MinimosNoches => Set<MinimoNoches>();
 
@@ -87,10 +86,6 @@ namespace GestionCabanas.Data
 
             modelBuilder.Entity<PromoEstadia>()
                 .HasIndex(p => new { p.CabanaId, p.FechaDesde, p.FechaHasta });
-
-            modelBuilder.Entity<DescuentoFinDeSemana>()
-                .HasIndex(d => new { d.Anio, d.Mes })
-                .IsUnique();
 
             modelBuilder.Entity<FinDeSemanaLargo>()
                 .HasIndex(f => new { f.FechaDesde, f.FechaHasta });

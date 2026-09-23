@@ -226,8 +226,7 @@ namespace GestionCabanas.Services
         /// sólo se aplica si cubre TODAS las noches de la estadía. Para estadías de más de 3
         /// noches con promo activa, las primeras 3 noches se cobran al precio del paquete de 3
         /// noches y el resto a precio normal. El precio del paquete no depende de la cantidad
-        /// de personas. Si no se aplica ninguna promo y la estadía incluye sábado y domingo juntos, se
-        /// resta el descuento de fin de semana del mes por cada par.
+        /// de personas.
         /// </summary>
         public async Task<ResultadoPrecio> CalcularValorConDetalleAsync(int cabanaId, DateTime desde, DateTime hasta, Huespedes huespedes)
         {
@@ -275,55 +274,7 @@ namespace GestionCabanas.Services
             resultado.Total = suma;
             resultado.EtiquetaTarifa = tarifaGrupo.Descripcion(_politica.RecargoAdultoExtraPorcentaje);
 
-            if (suma.HasValue)
-            {
-                var descuento = Math.Min(await DescuentoFinDeSemanaAsync(desde, hasta), suma.Value);
-                if (descuento > 0)
-                {
-                    resultado.Total = suma.Value - descuento;
-                    resultado.TotalSinPromo = suma;
-                    resultado.PromoAplicada = true;
-                    resultado.EtiquetaPromo = "Promo sábado y domingo";
-                    resultado.DescuentoFinDeSemana = descuento;
-                }
-            }
-
             return resultado;
-        }
-
-        /// <summary>Montos del descuento de sábado y domingo cargados, por (año, mes del sábado). Para anunciarlos en los calendarios.</summary>
-        public async Task<Dictionary<(int Anio, int Mes), decimal>> ObtenerDescuentosFinDeSemanaAsync()
-        {
-            return (await _db.DescuentosFinDeSemana.Where(d => d.Monto > 0).ToListAsync())
-                .ToDictionary(d => (d.Anio, d.Mes), d => d.Monto);
-        }
-
-        /// <summary>
-        /// Suma el descuento de fin de semana de cada sábado cuya noche y la del domingo siguiente
-        /// están dentro de la estadía. El monto es el del mes del sábado; sin monto cargado no hay descuento.
-        /// No depende de la cabaña, así que también sirve para avisar la promo antes de elegir una.
-        /// </summary>
-        public async Task<decimal> DescuentoFinDeSemanaAsync(DateTime desde, DateTime hasta)
-        {
-            var sabados = new List<DateTime>();
-            for (var dia = desde.Date; dia.AddDays(1) < hasta.Date; dia = dia.AddDays(1))
-            {
-                if (dia.DayOfWeek == DayOfWeek.Saturday)
-                {
-                    sabados.Add(dia);
-                }
-            }
-
-            if (sabados.Count == 0)
-            {
-                return 0;
-            }
-
-            var anios = sabados.Select(s => s.Year).Distinct().ToList();
-            var montos = (await _db.DescuentosFinDeSemana.Where(d => anios.Contains(d.Anio)).ToListAsync())
-                .ToDictionary(d => (d.Anio, d.Mes), d => d.Monto);
-
-            return sabados.Sum(s => montos.GetValueOrDefault((s.Year, s.Month)));
         }
 
         /// <summary>
@@ -662,7 +613,6 @@ namespace GestionCabanas.Services
                         PromoAplicada = detalleSegmento.PromoAplicada,
                         EtiquetaPromo = detalleSegmento.EtiquetaPromo,
                         EtiquetaTarifa = detalleSegmento.EtiquetaTarifa,
-                        DescuentoFinDeSemana = detalleSegmento.DescuentoFinDeSemana,
                         Adultos = huespedes.Adultos,
                         Menores = huespedes.Menores
                     });
@@ -701,7 +651,6 @@ namespace GestionCabanas.Services
                         PromoAplicada = detalle.PromoAplicada,
                         EtiquetaPromo = detalle.EtiquetaPromo,
                         EtiquetaTarifa = detalle.EtiquetaTarifa,
-                        DescuentoFinDeSemana = detalle.DescuentoFinDeSemana,
                         Adultos = grupo.Adultos,
                         Menores = grupo.Menores
                     });

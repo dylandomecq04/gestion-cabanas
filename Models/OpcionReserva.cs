@@ -14,9 +14,6 @@ namespace GestionCabanas.Models
         public string? EtiquetaPromo { get; set; }
         public string? EtiquetaTarifa { get; set; }
 
-        /// <summary>Lo que se le restó al segmento por reservar sábado y domingo juntos (0 si no corresponde).</summary>
-        public decimal DescuentoFinDeSemana { get; set; }
-
         /// <summary>Personas que se alojan en esta cabaña (cuando el grupo se reparte en dos, sólo una parte).</summary>
         public int Adultos { get; set; }
         public int Menores { get; set; }
@@ -60,9 +57,6 @@ namespace GestionCabanas.Models
         public decimal? TotalSinPromo { get; set; }
         public bool PromoAplicada { get; set; }
         public string? EtiquetaPromo { get; set; }
-
-        /// <summary>Lo que se restó por reservar sábado y domingo juntos (0 si no corresponde).</summary>
-        public decimal DescuentoFinDeSemana { get; set; }
 
         /// <summary>Qué tarifa se usó (p. ej. "Tarifa para 4 personas"); null si aplicó una promo.</summary>
         public string? EtiquetaTarifa { get; set; }

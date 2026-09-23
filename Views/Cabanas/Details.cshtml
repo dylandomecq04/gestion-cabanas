@@ -4,7 +4,6 @@
     var cabana = (Cabana)ViewBag.Cabana;
     var reservas = (List<Reserva>)ViewBag.Reservas;
     var promos = (List<PromoEstadia>)ViewBag.PromosEstadia;
-    var descuentosFinde = (Dictionary<(int Anio, int Mes), decimal>)ViewBag.DescuentosFinDeSemana;
     var fines = (List<FinDeSemanaLargo>)ViewBag.FinesDeSemanaLargos;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
@@ -187,9 +186,6 @@
             </div>
 
             <partial name="_AvisoFinDeSemanaLargo" model="fines" />
-            <div id="aviso-promo-finde" class="mb-3 hidden rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-                🎉 <span id="aviso-promo-finde-texto"></span>
-            </div>
 
             <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
                 <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
@@ -217,7 +213,6 @@
                         var marco = FinDeSemanaLargo.ClasesMarco(fines, dia.Value);
                         var ocupado = EstaOcupado(dia.Value);
                         var enPromoDia = !ocupado && EnPromo(dia.Value);
-                        var montoFinde = ocupado || enPromoDia ? null : DescuentoFinDeSemana.MontoDelDia(descuentosFinde, dia.Value, hoy);
                         var clases = ocupado
                             ? "bg-rose-100 text-rose-600 hover:bg-rose-200"
                             : "bg-river-100 text-river-700 hover:bg-river-200";
@@ -228,9 +223,8 @@
                         }
                         <button type="button" onclick="seleccionarDiaCabana(this)" data-fecha="@dia.Value.ToString("yyyy-MM-dd")"
                                 data-clase-base="@clases"
-                                data-finde-monto="@(montoFinde.HasValue && dia.Value.DayOfWeek == DayOfWeek.Saturday ? montoFinde.Value.ToString("0") : null)"
                                 title="@titulo"
-                                class="day-cell relative flex h-14 flex-col items-center justify-center gap-0 rounded-lg text-sm font-semibold leading-none transition @clases @(enPromoDia || montoFinde.HasValue ? "promo-glow" : "")">
+                                class="day-cell relative flex h-14 flex-col items-center justify-center gap-0 rounded-lg text-sm font-semibold leading-none transition @clases @(enPromoDia ? "promo-glow" : "")">
                             @if (marco is not null)
                             {
                                 <span class="@marco"></span>
@@ -428,17 +422,6 @@
             }
         }
 
-        function mostrarAvisoPromoFinde(monto) {
-            const aviso = document.getElementById('aviso-promo-finde');
-            if (monto > 0) {
-                document.getElementById('aviso-promo-finde-texto').textContent =
-                    `Promo finde: descontamos $${Number(monto).toLocaleString('es-AR')} sobre el total.`;
-                aviso.classList.remove('hidden');
-            } else {
-                aviso.classList.add('hidden');
-            }
-        }
-
         function limpiarSeleccionCabana() {
             __inputDesde.value = '';
             __inputHasta.value = '';
@@ -501,7 +484,6 @@
             const hasta = __inputHasta.value;
             if (!desde || !hasta) {
                 __resumenTotal.classList.add('hidden');
-                mostrarAvisoPromoFinde(0);
                 return;
             }
 
@@ -515,11 +497,9 @@
 
                 if (!data.valido) {
                     __resumenTotal.classList.add('hidden');
-                    mostrarAvisoPromoFinde(0);
                     return;
                 }
 
-                mostrarAvisoPromoFinde(data.disponible && !data.aviso ? (data.descuentoFinDeSemana || 0) : 0);
                 __resumenTotal.classList.remove('hidden');
                 if (!data.disponible) {
                     __resumenTotal.className = 'rounded-2xl border-2 border-rose-200 bg-rose-50 px-5 py-4 text-center';
@@ -537,7 +517,6 @@
                             (data.totalSinPromo ? '<p class="mt-1 text-lg font-semibold text-ink-400 line-through decoration-rose-500">$' + Number(data.totalSinPromo).toLocaleString('es-AR') + '</p>' : '') +
                             '<p class="' + (data.totalSinPromo ? '' : 'mt-1 ') + 'text-3xl font-bold text-amber-800">$' + totalTexto + '</p>' +
                             '<p class="text-xs font-medium text-amber-700">' + pluralizar(data.noches, 'noche', 'noches') + '</p>' +
-                            (data.descuentoFinDeSemana > 0 ? '<p class="mt-1 text-xs font-semibold text-amber-800">Sábado y domingo juntos: −$' + Number(data.descuentoFinDeSemana).toLocaleString('es-AR') + '</p>' : '') +
                             (data.totalSinPromo ? '<p class="mt-1.5 inline-block rounded-full bg-amber-200 px-3 py-0.5 text-xs font-bold text-amber-900">Ahorrás $' + Number(data.totalSinPromo - data.total).toLocaleString('es-AR') + '</p>' : '');
                     } else {
                         __resumenTotal.className = 'rounded-2xl border-2 border-river-300 bg-river-50 px-5 py-4 text-center shadow-soft';

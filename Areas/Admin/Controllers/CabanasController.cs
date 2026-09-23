@@ -206,10 +206,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
             var primerDia = new DateTime(anio ?? hoy.Year, mes ?? hoy.Month, 1);
 
             ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Id).ToListAsync();
-            ViewBag.DescuentoFinDeSemana = await _db.DescuentosFinDeSemana
-                .Where(d => d.Anio == primerDia.Year && d.Mes == primerDia.Month)
-                .Select(d => (decimal?)d.Monto)
-                .FirstOrDefaultAsync();
             ViewBag.MinimosNoches = await _disponibilidad.ObtenerMinimosNochesAsync();
             ViewBag.PrimerDia = primerDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);
@@ -238,42 +234,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             TempData["Mensaje"] = $"Precios y disponibilidad de \"{cabana.Nombre}\" actualizados.";
             return RedirectToAction(nameof(Tarifas), new { id, anio, mes });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GuardarDescuentoFinDeSemana(int anio, int mes, decimal? monto)
-        {
-            if (mes < 1 || mes > 12 || anio < 2000 || anio > 2100 || monto < 0)
-            {
-                return RedirectToAction(nameof(Precios));
-            }
-
-            var mesTexto = new DateTime(anio, mes, 1).ToString("MMMM yyyy");
-            var existente = await _db.DescuentosFinDeSemana.FirstOrDefaultAsync(d => d.Anio == anio && d.Mes == mes);
-
-            if (!monto.HasValue || monto.Value == 0)
-            {
-                if (existente is not null)
-                {
-                    _db.DescuentosFinDeSemana.Remove(existente);
-                    await _db.SaveChangesAsync();
-                }
-                TempData["Mensaje"] = $"Sin descuento por fin de semana en {mesTexto}.";
-            }
-            else
-            {
-                if (existente is null)
-                {
-                    existente = new DescuentoFinDeSemana { Anio = anio, Mes = mes };
-                    _db.DescuentosFinDeSemana.Add(existente);
-                }
-                existente.Monto = monto.Value;
-                await _db.SaveChangesAsync();
-                TempData["Mensaje"] = $"Descuento por sábado y domingo juntos en {mesTexto}: ${monto.Value:N0}.";
-            }
-
-            return RedirectToAction(nameof(Precios), new { anio, mes });
         }
 
         [HttpPost]
