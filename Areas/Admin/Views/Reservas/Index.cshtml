@@ -77,7 +77,7 @@
         var claveWifi = r.Cabana?.Nombre is "Sidharta 1" or "Sidharta 2" or "Sidharta 3" ? "26114842" : "12122012";
 
         return $"Hola, cómo estás?\n\n" +
-            $"Tu reserva en Cabañas Sidharta quedó confirmada, a nombre de {r.NombreHuesped}, para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, para {personasTexto}.\n\n" +
+            $"Tu reserva en Cabañas Sidharta quedó confirmada, a nombre de {r.NombreHuesped}, en la Cabaña {r.Cabana?.Nombre}, para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, para {personasTexto}.\n\n" +
             $"Ingreso: 12:00 hs. Salida: 10:00 hs.\n" +
             $"Queda pendiente pagar: {pendiente}.\n\n" +
             "Cuando puedas, pasame nombre, apellido y DNI de las personas que se van a hospedar, menores incluidos.\n\n" +
