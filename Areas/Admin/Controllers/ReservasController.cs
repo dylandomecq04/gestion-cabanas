@@ -191,6 +191,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 "contacto" => query.OrderBy(r => r.Telefono),
                 "creada" => query.OrderBy(r => r.FechaCreacion),
                 "contactado" => query.OrderBy(r => r.Contactado),
+                "fechacontactado" => query.OrderBy(r => r.FechaContactado),
                 _ => query.OrderByDescending(r => r.FechaCreacion)
             };
 
@@ -465,9 +466,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
             }
 
             reserva.Contactado = contactado;
+            reserva.FechaContactado = contactado ? DateTime.Now : null;
             await _db.SaveChangesAsync();
 
-            return Json(new { ok = true, contactado = reserva.Contactado });
+            return Json(new { ok = true, contactado = reserva.Contactado, fechaContactado = reserva.FechaContactado });
         }
 
         [HttpPost]

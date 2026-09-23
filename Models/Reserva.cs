@@ -51,6 +51,9 @@ namespace GestionCabanas.Models
         [Display(Name = "Contactado")]
         public bool Contactado { get; set; }
 
+        [Display(Name = "Fecha contactado")]
+        public DateTime? FechaContactado { get; set; }
+
         [Range(0, 999999999)]
         [Display(Name = "Pagó")]
         public decimal? Pago { get; set; }
