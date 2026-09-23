@@ -14,7 +14,7 @@ namespace GestionCabanas.Models
 
         [Required(ErrorMessage = "Ingresá un teléfono de contacto")]
         [StringLength(50)]
-        [RegularExpression(ValidacionesContacto.PatronTelefono, ErrorMessage = ValidacionesContacto.MensajeTelefono)]
+        [TelefonoValido]
         [Display(Name = "Teléfono")]
         public string? Telefono { get; set; }
 

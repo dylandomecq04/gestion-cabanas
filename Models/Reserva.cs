@@ -17,6 +17,7 @@ namespace GestionCabanas.Models
         public string NombreHuesped { get; set; } = string.Empty;
 
         [StringLength(50)]
+        [TelefonoValido]
         public string? Telefono { get; set; }
 
         [EmailAddress(ErrorMessage = "Ingresá un email válido")]
