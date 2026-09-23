@@ -61,13 +61,50 @@
         }
     }
 
-    // TODO: template provisorio — falta terminar de definir el texto con el usuario.
     string LinkWhatsAppConfirmacion(Reserva r)
     {
         var digitos = DigitosWhatsApp(r);
         if (digitos == "") return "";
-        var mensaje = $"Tu reserva quedó confirmada para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, a nombre de {r.NombreHuesped}.";
-        return $"https://wa.me/{digitos}?text={Uri.EscapeDataString(mensaje)}";
+        return $"https://wa.me/{digitos}?text={Uri.EscapeDataString(MensajeConfirmacion(r))}";
+    }
+
+    string MensajeConfirmacion(Reserva r)
+    {
+        var personasTexto = $"{r.CantidadPersonas} {(r.CantidadPersonas == 1 ? "persona" : "personas")}"
+            + (r.CantidadMenores > 0 ? $" ({r.CantidadMenores} menor{(r.CantidadMenores == 1 ? "" : "es")})" : "");
+        var pendiente = r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "a confirmar";
+        // Sidharta 1, 2 y 3 comparten una clave de wifi; Sidharta 5 y Maia (ex Sidharta 4) usan la otra.
+        var claveWifi = r.Cabana?.Nombre is "Sidharta 1" or "Sidharta 2" or "Sidharta 3" ? "26114842" : "12122012";
+
+        return $"Hola, cómo estás?\n\n" +
+            $"Tu reserva en Cabañas Sidharta quedó confirmada, a nombre de {r.NombreHuesped}, para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, para {personasTexto}.\n\n" +
+            $"Ingreso: 12:00 hs. Salida: 10:00 hs.\n" +
+            $"Queda pendiente pagar: {pendiente}.\n\n" +
+            "Cuando puedas, pasame nombre, apellido y DNI de las personas que se van a hospedar, menores incluidos.\n\n" +
+            "Recordá traer: repasador, sábanas, toallones y toalla de mano.\n\n" +
+            "*WiFi*\n" +
+            $"Red: Sidharta\nClave: {claveWifi}\n\n" +
+            "*Reglamento de la pileta*\n" +
+            "- Horario: de 10 a 20 hs\n" +
+            "- Prohibido el alcohol\n" +
+            "- Prohibida la música\n" +
+            "- Prohibido zambullirse\n" +
+            "- Los menores de 12 años no pueden estar sin la supervisión de un adulto\n\n" +
+            "*Cómo llegar*\n" +
+            "Arroyo Abra Vieja 230\n\n" +
+            "*Opción 1: lancha remis*\n" +
+            "Sale desde la Guardería Poseidón (Colón 10, San Fernando) y tarda 15 minutos.\n" +
+            "Beto: +54 9 11 5618-7841\n" +
+            "Leo: +54 9 11 6382-2361\n" +
+            "En el GPS poné \"Colón 10, San Fernando\".\n\n" +
+            "*Opción 2: en auto*\n" +
+            "1. Desde el ramal Tigre, bajá en la salida de la RP 197.\n" +
+            "2. Doblá a la derecha por la 197; vas a pasar por debajo de las vías, cerca de la estación Carupá.\n" +
+            "3. Seguí por avenida Colón, cruzás otra vía (la del Tren de la Costa) y continuás derecho.\n" +
+            "4. Después de esa vía empieza un empedrado; a la izquierda vas a ver un canal. Seguilo hasta el final de la calle.\n" +
+            "5. La calle termina en una rotonda chica sobre el río Luján: a la izquierda está Prefectura, a la derecha la Guardería Poseidón y después un muelle público, donde paran las lanchas remis. Avisales que van a Cabañas Sidharta/Maia.\n\n" +
+            "Estacionamiento: podés dejar el auto en cualquier lugar, menos en la puerta de la guardería.\n\n" +
+            "Muchas gracias!";
     }
 }
 
