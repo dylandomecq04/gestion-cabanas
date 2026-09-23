@@ -109,7 +109,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return Json(new { firma, excelModificado });
         }
 
-        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes, bool? contactado)
+        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes, bool? contactado, string? orden)
         {
             var estadoEfectivo = estado ?? EstadoReserva.Confirmada;
             var esSolicitudes = estadoEfectivo == EstadoReserva.Pendiente;
@@ -155,6 +155,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.Busqueda = busqueda;
             ViewBag.CabanaIdFiltro = cabanaId;
             ViewBag.ContactadoFiltro = contactado;
+            ViewBag.Orden = orden;
             ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
             ViewBag.Anio = primerDia?.Year;
             ViewBag.Mes = primerDia?.Month;
@@ -176,8 +177,19 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 ViewBag.MesesConSolicitudes = meses.OrderBy(m => m).ToList();
             }
 
+            // En Solicitudes se puede reordenar clickeando las columnas Cabaña, Fechas o Contactado;
+            // por defecto queda la más nueva primero. En Reservas confirmadas el orden no cambia
+            // porque siguen agrupadas por cabaña en la vista.
+            var querySolicitudes = orden switch
+            {
+                "cabana" => query.OrderBy(r => r.Cabana!.Nombre),
+                "fecha" => query.OrderBy(r => r.FechaDesde),
+                "contactado" => query.OrderBy(r => r.Contactado),
+                _ => query.OrderByDescending(r => r.FechaCreacion)
+            };
+
             var reservas = esSolicitudes
-                ? await query.OrderByDescending(r => r.FechaCreacion).ToListAsync()
+                ? await querySolicitudes.ToListAsync()
                 : await query.OrderBy(r => r.FechaDesde).ThenBy(r => r.Cabana!.Nombre).ToListAsync();
             return View(reservas);
         }

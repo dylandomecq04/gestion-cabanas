@@ -7,6 +7,7 @@
     string? busqueda = ViewBag.Busqueda;
     int? cabanaIdFiltro = ViewBag.CabanaIdFiltro;
     bool? contactadoFiltro = ViewBag.ContactadoFiltro;
+    string? ordenActual = ViewBag.Orden;
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
     DateTime? primerDia = ViewBag.PrimerDia;
     DateTime? mesAnterior = ViewBag.MesAnterior;
@@ -23,12 +24,27 @@
         return char.ToUpper(texto[0]) + texto.Substring(1);
     }
 
-    // Las solicitudes se muestran todas juntas (la más nueva primero, según cuándo se cargaron),
-    // sin agrupar por cabaña. Las reservas confirmadas siguen agrupadas por cabaña y ordenadas por fecha de estadía.
+    // Las solicitudes se muestran todas juntas, en el orden que ya vino armado del controller
+    // (por defecto la más nueva primero; se puede cambiar clickeando las columnas de la tabla).
+    // Las reservas confirmadas siguen agrupadas por cabaña y ordenadas por fecha de estadía.
     var grupos = esSolicitudes
-        ? new[] { ("", Model.OrderByDescending(r => r.FechaCreacion).AsEnumerable()) }
+        ? new[] { ("", Model.AsEnumerable()) }
         : Model.GroupBy(r => r.Cabana?.Nombre ?? "Sin cabaña").OrderBy(g => g.Key)
             .Select(g => (g.Key, g.OrderBy(r => r.FechaDesde).AsEnumerable()));
+
+    string LinkOrden(string valor) => Url.Action("Index", new
+    {
+        estado = filtro,
+        busqueda,
+        cabanaId = cabanaIdFiltro,
+        anio = primerDia?.Year,
+        mes = primerDia?.Month,
+        contactado = contactadoFiltro,
+        orden = valor
+    })!;
+
+    string ClaseHeaderOrden(string valor) => "inline-flex items-center gap-1 hover:text-river-700"
+        + (ordenActual == valor ? " text-river-700" : "");
 
     string LinkWhatsApp(Reserva r)
     {
@@ -310,10 +326,19 @@ else
                         <tr>
                             @if (esSolicitudes)
                             {
-                                <th class="px-3 py-3">Cabaña</th>
+                                <th class="px-3 py-3"><a href="@LinkOrden("cabana")" class="@ClaseHeaderOrden("cabana")">Cabaña</a></th>
                             }
                             <th class="px-5 py-3">Huésped</th>
-                            <th class="px-3 py-3">Fechas</th>
+                            <th class="px-3 py-3">
+                                @if (esSolicitudes)
+                                {
+                                    <a href="@LinkOrden("fecha")" class="@ClaseHeaderOrden("fecha")">Fechas</a>
+                                }
+                                else
+                                {
+                                    @:Fechas
+                                }
+                            </th>
                             <th class="px-3 py-3 text-center">Personas</th>
                             <th class="px-3 py-3">Pagó</th>
                             <th class="px-3 py-3">Pagar</th>
@@ -321,7 +346,7 @@ else
                             @if (esSolicitudes)
                             {
                                 <th class="px-3 py-3">Solicitud creada</th>
-                                <th class="px-3 py-3 text-center">Contactado</th>
+                                <th class="px-3 py-3 text-center"><a href="@LinkOrden("contactado")" class="@ClaseHeaderOrden("contactado")">Contactado</a></th>
                             }
                             <th class="px-5 py-3 text-center">Acciones</th>
                         </tr>
