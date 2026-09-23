@@ -132,26 +132,46 @@ namespace GestionCabanas.Controllers
                 && DisponibilidadService.EsElegibleSalidaAnticipada(modelo.FechaDesde, modelo.FechaHasta)
                 && await _disponibilidad.MontoSalidaAnticipadaAsync(modelo.FechaHasta) > 0;
 
-            var reserva = new Reserva
-            {
-                CabanaId = modelo.CabanaId,
-                NombreHuesped = modelo.NombreHuesped,
-                Telefono = modelo.Telefono,
-                Email = modelo.Email,
-                FechaDesde = modelo.FechaDesde,
-                FechaHasta = modelo.FechaHasta,
-                CantidadPersonas = modelo.CantidadPersonas,
-                CantidadMenores = modelo.CantidadMenores,
-                Estado = EstadoReserva.Pendiente,
-                SalidaAnticipada = salidaAnticipada
-            };
-            _db.Reservas.Add(reserva);
-            await _db.SaveChangesAsync();
+            // Evita duplicados por doble click o reenvío del formulario: si la misma persona
+            // mandó la misma solicitud hace un ratito, reusamos esa en vez de crear otra.
+            var limiteDuplicado = DateTime.Now.AddMinutes(-5);
+            var solicitudReciente = await _db.Reservas.FirstOrDefaultAsync(r =>
+                r.CabanaId == modelo.CabanaId
+                && r.Estado == EstadoReserva.Pendiente
+                && r.FechaDesde == modelo.FechaDesde
+                && r.FechaHasta == modelo.FechaHasta
+                && r.Telefono == modelo.Telefono
+                && r.Email == modelo.Email
+                && r.FechaCreacion >= limiteDuplicado);
 
-            await _email.NotificarNuevaSolicitudAsync(cabana, reserva, $"{Request.Scheme}://{Request.Host}");
-            if (!string.IsNullOrWhiteSpace(reserva.Email))
+            Reserva reserva;
+            if (solicitudReciente is not null)
             {
-                await _email.NotificarConfirmacionHuespedAsync(cabana, reserva);
+                reserva = solicitudReciente;
+            }
+            else
+            {
+                reserva = new Reserva
+                {
+                    CabanaId = modelo.CabanaId,
+                    NombreHuesped = modelo.NombreHuesped,
+                    Telefono = modelo.Telefono,
+                    Email = modelo.Email,
+                    FechaDesde = modelo.FechaDesde,
+                    FechaHasta = modelo.FechaHasta,
+                    CantidadPersonas = modelo.CantidadPersonas,
+                    CantidadMenores = modelo.CantidadMenores,
+                    Estado = EstadoReserva.Pendiente,
+                    SalidaAnticipada = salidaAnticipada
+                };
+                _db.Reservas.Add(reserva);
+                await _db.SaveChangesAsync();
+
+                await _email.NotificarNuevaSolicitudAsync(cabana, reserva, $"{Request.Scheme}://{Request.Host}");
+                if (!string.IsNullOrWhiteSpace(reserva.Email))
+                {
+                    await _email.NotificarConfirmacionHuespedAsync(cabana, reserva);
+                }
             }
 
             TempData["SolicitudEnviada"] = $"¡Listo! Recibimos tu solicitud para {cabana.Nombre}.";
