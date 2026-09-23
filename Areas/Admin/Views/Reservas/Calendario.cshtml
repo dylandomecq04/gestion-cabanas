@@ -218,7 +218,11 @@
                                                     data-info-pago="@pagoTexto"
                                                     data-info-pagar="@pagarTexto"
                                                     title="@infoResumen (@etiquetaReserva)"
-                                                    class="day-cell @(esPendiente ? "solicitud-cell" : "") relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[11px] font-bold leading-tight sm:h-28 sm:w-28 sm:gap-1 sm:px-1.5 sm:text-sm @claseReserva">
+                                                    class="day-cell @(esPendiente ? "solicitud-cell" : "") relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[11px] font-bold leading-tight sm:h-28 sm:w-28 sm:gap-1 sm:px-1.5 sm:text-sm @claseReserva @(promoDelDia is not null ? "promo-glow" : "")">
+                                                @if (promoDelDia is not null)
+                                                {
+                                                    <span class="absolute -top-2 left-1 text-[8px] font-bold uppercase tracking-wide text-amber-600 sm:-top-2.5 sm:text-[9px]">Promo</span>
+                                                }
                                                 <span>@etiquetaReserva</span>
                                                 <span class="truncate text-[9px] font-normal opacity-90 max-w-full sm:text-xs">@reserva.NombreHuesped</span>
                                                 @if (llega is not null)
@@ -262,14 +266,6 @@
                                                 <text>@Html.Raw(InputsPrecios(indiceAlt, cabana, tarifaAlt, "class=\"solicitud-alt-input\" disabled"))</text>
                                                 indice++;
                                             }
-                                            @if (promoDelDia is not null)
-                                            {
-                                                <button type="button" onclick="event.stopPropagation(); eliminarPromoDesdeCelda(@promoDelDia.Id)"
-                                                        title="Eliminar la promoción de estos días"
-                                                        class="absolute -top-2 left-1 z-10 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow transition hover:bg-amber-600 sm:-top-2.5 sm:text-[10px]">
-                                                    Promo ✕
-                                                </button>
-                                            }
                                         </div>
                                     </td>
                                 }
@@ -287,7 +283,11 @@
                                     var indiceAltMulti = indice;
 
                                     <td class="p-0 align-top">
-                                        <div class="relative flex w-16 flex-col gap-0.5 sm:w-28">
+                                        <div class="relative flex w-16 flex-col gap-0.5 rounded-lg sm:w-28 @(promoDelDia is not null ? "promo-glow" : "")">
+                                            @if (promoDelDia is not null)
+                                            {
+                                                <span class="absolute -top-2 left-1 z-10 text-[8px] font-bold uppercase tracking-wide text-amber-600 sm:-top-2.5 sm:text-[9px]">Promo</span>
+                                            }
                                             @foreach (var reserva in reservasDia)
                                             {
                                                 var esPendiente = reserva.Estado == EstadoReserva.Pendiente;
@@ -345,14 +345,6 @@
                                             {
                                                 <span title="Sale: @sale.NombreHuesped" class="absolute bottom-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-rose-600 shadow ring-1 ring-ink-200 sm:bottom-1 sm:right-1 sm:h-6 sm:w-6 sm:text-base">↓</span>
                                             }
-                                            @if (promoDelDia is not null)
-                                            {
-                                                <button type="button" onclick="event.stopPropagation(); eliminarPromoDesdeCelda(@promoDelDia.Id)"
-                                                        title="Eliminar la promoción de estos días"
-                                                        class="absolute -top-2 left-1 z-10 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow transition hover:bg-amber-600 sm:-top-2.5 sm:text-[10px]">
-                                                    Promo ✕
-                                                </button>
-                                            }
                                         </div>
                                     </td>
                                 }
@@ -378,7 +370,7 @@
                                                 class="dia-editable day-cell relative flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px] font-bold leading-tight ring-2 ring-inset ring-transparent transition hover:ring-river-300 sm:h-28 sm:w-28 sm:gap-1 sm:text-sm @clase @(enPromoDia ? "promo-glow" : "")">
                                             @if (enPromoDia)
                                             {
-                                                <span class="absolute -top-2 left-1 text-[9px] font-bold uppercase tracking-wide text-amber-600 sm:-top-2.5 sm:text-[10px]">Promo</span>
+                                                <span class="absolute -top-2 left-1 text-[8px] font-bold uppercase tracking-wide text-amber-600 sm:-top-2.5 sm:text-[9px]">Promo</span>
                                             }
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
                                             @if (!yaPaso)
@@ -1014,19 +1006,6 @@
                 contenedor.appendChild(input);
             });
             document.getElementById('form-eliminar-promo').classList.toggle('hidden', idsPromo.length === 0);
-        }
-
-        // Permite borrar la promo de una celda que tiene una reserva encima (donde no se
-        // puede seleccionar el día para el borrado en lote porque el clic abre la reserva).
-        function eliminarPromoDesdeCelda(promoId) {
-            const inputs = document.getElementById('eliminar-promo-inputs');
-            inputs.innerHTML = '';
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'ids';
-            input.value = promoId;
-            inputs.appendChild(input);
-            mostrarConfirmacion('¿Eliminar la promoción de estos días? No se puede deshacer.', document.getElementById('form-eliminar-promo'));
         }
 
         function cancelarSeleccion() {
