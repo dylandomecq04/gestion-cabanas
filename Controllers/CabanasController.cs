@@ -159,6 +159,32 @@ namespace GestionCabanas.Controllers
             return RedirectToAction(nameof(Details), new { id = modelo.CabanaId });
         }
 
+        /// <summary>
+        /// Lo llama el botón "Escribinos por WhatsApp" del modal de solicitud enviada, para que
+        /// quede marcada como contactada sin que el admin tenga que hacerlo a mano. Sólo puede
+        /// tildar solicitudes todavía pendientes: no sirve para tocar reservas ya confirmadas.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarcarContactoWhatsApp([FromForm] List<int> ids)
+        {
+            if (ids is null || ids.Count == 0)
+            {
+                return Json(new { ok = false });
+            }
+
+            var reservas = await _db.Reservas
+                .Where(r => ids.Contains(r.Id) && r.Estado == EstadoReserva.Pendiente)
+                .ToListAsync();
+            foreach (var reserva in reservas)
+            {
+                reserva.Contactado = true;
+            }
+            await _db.SaveChangesAsync();
+
+            return Json(new { ok = true });
+        }
+
         [HttpGet]
         public async Task<IActionResult> CalcularTotal(int id, DateTime? desde, DateTime? hasta, int adultos = 2, int menores = 0, bool salidaAnticipada = false)
         {
@@ -451,7 +477,8 @@ namespace GestionCabanas.Controllers
                 nombreHuesped = reservasCreadas[0].NombreHuesped,
                 cantidadPersonas = modelo.CantidadPersonas,
                 tieneEmail = !string.IsNullOrWhiteSpace(modelo.Email),
-                salidaAnticipada = reservasCreadas.Any(r => r.SalidaAnticipada)
+                salidaAnticipada = reservasCreadas.Any(r => r.SalidaAnticipada),
+                reservaIds = reservasCreadas.Select(r => r.Id)
             });
         }
 
