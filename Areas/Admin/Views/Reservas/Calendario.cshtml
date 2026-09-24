@@ -41,8 +41,21 @@
     string AtributosPrecios(Cabana cabana, TarifaDia? t)
         => $"data-tramos=\"{string.Join(",", cabana.TramosDePrecio())}\" "
             + string.Concat(cabana.TramosDePrecio().Select(tramo => $"data-precio{tramo}=\"{Plano(t?.PrecioDelTramo(tramo))}\" "));
-    string EtiquetaPrecios(Cabana cabana, TarifaDia? t)
-        => string.Concat(cabana.TramosDePrecio().Select(tramo => $"<span data-tramo=\"{tramo}\">{Miles(t?.PrecioDelTramo(tramo))}</span>"));
+    string EtiquetaPrecios(Cabana cabana, TarifaDia? t, PromoEstadia? promo = null)
+    {
+        var precioPromo = promo?.PrecioPromedioPorNoche();
+        return string.Concat(cabana.TramosDePrecio().Select(tramo =>
+        {
+            var regular = Miles(t?.PrecioDelTramo(tramo));
+            if (!precioPromo.HasValue)
+            {
+                return $"<span data-tramo=\"{tramo}\">{regular}</span>";
+            }
+            return $"<span data-tramo=\"{tramo}\" class=\"flex items-baseline justify-center gap-0.5\">"
+                + $"<span class=\"text-[7px] font-normal text-amber-700/60 line-through decoration-rose-500\">{regular}</span>"
+                + $"<span>{Miles(precioPromo)}</span></span>";
+        }));
+    }
     string InputsPrecios(int indice, Cabana cabana, TarifaDia? t, string atributosExtra)
         => string.Concat(cabana.TramosDePrecio().Select(tramo =>
             $"<input type=\"hidden\" {atributosExtra} name=\"dias[{indice}].Precio{tramo}\" value=\"{Plano(t?.PrecioDelTramo(tramo))}\" />"));
@@ -248,7 +261,7 @@
                                                     <span class="etiqueta-estado leading-tight">@etiquetaEstadoAlt</span>
                                                     @if (!yaPasoAlt)
                                                     {
-                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(cabana, tarifaAlt))</span>
+                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(cabana, tarifaAlt, promoDelDia))</span>
                                                     }
                                                     <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                                     @if (llega is not null)
@@ -327,7 +340,7 @@
                                                     <span class="etiqueta-estado leading-tight">@etiquetaEstadoAltMulti</span>
                                                     @if (!yaPasoAltMulti)
                                                     {
-                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(cabana, tarifaAltMulti))</span>
+                                                        <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(cabana, tarifaAltMulti, promoDelDia))</span>
                                                     }
                                                     <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                                 </button>
@@ -375,7 +388,7 @@
                                             <span class="etiqueta-estado leading-tight">@etiquetaEstado</span>
                                             @if (!yaPaso)
                                             {
-                                                <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(cabana, tarifa))</span>
+                                                <span class="etiqueta-precio flex flex-col items-center text-[9px] font-normal leading-tight opacity-70 sm:text-xs">@Html.Raw(EtiquetaPrecios(cabana, tarifa, promoDelDia))</span>
                                             }
                                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-river-700 text-xs text-white shadow-soft sm:h-6 sm:w-6 sm:text-sm">✓</span>
                                             @if (llega is not null)
@@ -1052,7 +1065,15 @@
                     document.querySelector(`input[name="dias[${idx}].Precio${t}"]`).value = valor;
                     const linea = btn.querySelector(`.etiqueta-precio [data-tramo="${t}"]`);
                     if (linea) {
-                        linea.textContent = valor ? Number(valor).toLocaleString('es-AR') : '–';
+                        // En un día con promo, [data-tramo] tiene dos spans (precio regular tachado + precio
+                        // de la promo): lo que se edita acá es el precio regular, así que sólo se actualiza ese.
+                        const nuevoTexto = valor ? Number(valor).toLocaleString('es-AR') : '–';
+                        const spanViejo = linea.children.length > 1 ? linea.querySelector('span:first-child') : null;
+                        if (spanViejo) {
+                            spanViejo.textContent = nuevoTexto;
+                        } else {
+                            linea.textContent = nuevoTexto;
+                        }
                     }
                 });
             });
