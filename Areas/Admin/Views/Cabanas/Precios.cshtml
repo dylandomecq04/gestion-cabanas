@@ -159,71 +159,60 @@
         alrededor, esa fecha no bloquea la reserva. No afecta a las reservas que cargás vos desde el panel.
     </p>
 
-    <form id="form-minimo-noches" asp-action="GuardarMinimoNoches" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="mt-4 pb-32 sm:pb-24">
-        <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
-            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-        </div>
-        <div class="mt-1 grid grid-cols-7 gap-1">
-            @foreach (var dia in celdasMinimo)
-            {
-                if (dia is null)
+    <form id="form-minimo-noches" asp-action="GuardarMinimoNoches" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div>
+            <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">
+                <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+            </div>
+            <div class="mt-1 grid grid-cols-7 gap-1">
+                @foreach (var dia in celdasMinimo)
                 {
-                    <div></div>
-                }
-                else if (dia.Value.Date < hoy)
-                {
-                    <div class="flex h-10 items-center justify-center rounded-lg bg-ink-50 text-[10px] text-ink-300">@dia.Value.Day</div>
-                }
-                else
-                {
-                    var minimoActual = minimosNoches.TryGetValue(dia.Value.Date, out var m) ? m : (int?)null;
-                    var clasesMinimo = minimoActual.HasValue ? "bg-river-100 text-river-800 hover:bg-river-200" : "bg-river-50 text-river-700 hover:bg-river-100";
+                    if (dia is null)
+                    {
+                        <div></div>
+                    }
+                    else if (dia.Value.Date < hoy)
+                    {
+                        <div class="flex h-11 items-center justify-center rounded-lg bg-ink-50 text-xs text-ink-300">@dia.Value.Day</div>
+                    }
+                    else
+                    {
+                        var minimoActual = minimosNoches.TryGetValue(dia.Value.Date, out var m) ? m : (int?)null;
+                        var clasesMinimo = minimoActual.HasValue ? "bg-river-100 text-river-800 hover:bg-river-200" : "text-ink-700 hover:bg-ink-50";
 
-                    <div class="contents">
-                        <button type="button" data-index="@indiceMinimo"
-                                onclick="alternarSeleccionMinimo(this)"
-                                class="dia-minimo-editable relative flex h-10 flex-col items-center justify-center gap-0 rounded-lg font-medium leading-none ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clasesMinimo">
-                            <span class="text-[8px] opacity-70">@dia.Value.Day</span>
-                            <span class="etiqueta-minimo text-[10px] font-bold">@(minimoActual.HasValue ? minimoActual.ToString() : "–")</span>
-                            <span class="badge-seleccionado-minimo absolute -right-1 -top-1 hidden h-3 w-3 items-center justify-center rounded-full bg-river-700 text-[7px] text-white shadow-soft">✓</span>
-                        </button>
-                        <input type="hidden" name="dias[@indiceMinimo].Fecha" value="@dia.Value.ToString("yyyy-MM-dd")" />
-                        <input type="hidden" id="minimo-valor-@indiceMinimo" name="dias[@indiceMinimo].Noches" value="@(minimoActual.HasValue ? minimoActual.ToString() : "")" />
-                    </div>
-                    indiceMinimo++;
+                        <div class="contents">
+                            <button type="button" data-index="@indiceMinimo" data-clase-base="@clasesMinimo"
+                                    onclick="alternarSeleccionMinimo(this)"
+                                    class="dia-minimo-editable relative flex h-11 flex-col items-center justify-center gap-0 rounded-lg font-medium leading-none transition @clasesMinimo">
+                                <span class="text-xs opacity-80">@dia.Value.Day</span>
+                                <span class="etiqueta-minimo text-[10px] font-bold">@(minimoActual.HasValue ? minimoActual.ToString() : "–")</span>
+                            </button>
+                            <input type="hidden" name="dias[@indiceMinimo].Fecha" value="@dia.Value.ToString("yyyy-MM-dd")" />
+                            <input type="hidden" id="minimo-valor-@indiceMinimo" name="dias[@indiceMinimo].Noches" value="@(minimoActual.HasValue ? minimoActual.ToString() : "")" />
+                        </div>
+                        indiceMinimo++;
+                    }
                 }
-            }
+            </div>
         </div>
 
-        <div class="mt-4">
-            <button type="submit" class="whitespace-nowrap rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
-                Guardar cambios
+        <div class="h-fit rounded-xl border border-ink-200 bg-sand-50 p-4 lg:sticky lg:top-24">
+            <p id="texto-seleccion-minimo" class="text-sm font-semibold text-ink-800">0 días seleccionados</p>
+            <div class="mt-3">
+                <label for="bulk-minimo-noches" class="mb-1 block text-sm font-medium text-ink-700">Cantidad mínima de noches</label>
+                <input id="bulk-minimo-noches" type="number" min="1" max="30" step="1" placeholder="Ej: 2"
+                       onkeydown="if (event.key === 'Enter') { event.preventDefault(); guardarMinimoSeleccion(); }"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <button type="button" onclick="guardarMinimoSeleccion()" class="mt-3 w-full rounded-full bg-river-700 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-river-800">
+                Guardar
             </button>
-            <span class="ml-2 text-xs text-ink-400">Los cambios se guardan recién cuando tocás este botón.</span>
+            <button type="button" onclick="cancelarSeleccionMinimo()" class="mt-2 w-full text-xs font-medium text-ink-500 underline underline-offset-2 transition hover:text-ink-700">
+                Cancelar selección
+            </button>
+            <p class="mt-3 text-xs text-ink-400">Dejalo vacío y tocá Guardar para quitar el mínimo de los días elegidos.</p>
         </div>
     </form>
-
-    <div id="barra-seleccion-minimo" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lift backdrop-blur sm:p-4">
-        <div class="mx-auto flex max-w-4xl flex-wrap items-end gap-x-2 gap-y-2 sm:gap-3">
-            <div id="texto-seleccion-minimo" class="flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-river-50 px-2.5 text-xs font-semibold text-river-800 sm:h-auto sm:bg-transparent sm:px-0 sm:text-sm sm:font-medium sm:text-ink-700">0 días seleccionados</div>
-            <div class="min-w-0 flex-1 sm:min-w-[140px] sm:flex-none">
-                <label for="bulk-minimo-noches" class="mb-0.5 block whitespace-nowrap text-[11px] font-medium text-ink-600 sm:mb-1 sm:text-xs">Mínimo de noches</label>
-                <input id="bulk-minimo-noches" type="number" min="2" max="30" step="1" placeholder="2"
-                       class="h-9 w-full rounded-xl border border-ink-200 px-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 sm:h-auto sm:w-24 sm:px-3.5 sm:py-2" />
-            </div>
-            <div class="flex w-full items-center gap-2 sm:w-auto">
-                <button type="button" onclick="aplicarSeleccionMinimo(false)" class="h-9 flex-1 whitespace-nowrap rounded-full bg-river-700 px-3 text-xs font-semibold text-white shadow-soft transition hover:bg-river-800 sm:h-auto sm:flex-none sm:px-5 sm:py-2.5 sm:text-sm">
-                    Aplicar
-                </button>
-                <button type="button" onclick="aplicarSeleccionMinimo(true)" class="h-9 flex-1 whitespace-nowrap rounded-full border border-rose-200 px-3 text-xs font-medium text-rose-600 transition hover:bg-rose-50 sm:h-auto sm:flex-none sm:px-4 sm:py-2.5 sm:text-sm">
-                    Quitar mínimo
-                </button>
-                <button type="button" onclick="cancelarSeleccionMinimo()" class="h-9 flex-1 whitespace-nowrap rounded-full border border-ink-200 px-3 text-xs font-medium text-ink-600 transition hover:border-ink-300 sm:h-auto sm:flex-none sm:px-4 sm:py-2.5 sm:text-sm">
-                    Cancelar
-                </button>
-            </div>
-        </div>
-    </div>
 
     @{
         var proximosMinimos = minimosNoches.Where(kv => kv.Key.Date >= hoy).OrderBy(kv => kv.Key).ToList();
@@ -416,66 +405,58 @@
 
         const seleccionMinimo = new Set();
 
-        function alternarSeleccionMinimo(btn) {
-            const idx = btn.dataset.index;
-            const badge = btn.querySelector('.badge-seleccionado-minimo');
-            if (seleccionMinimo.has(idx)) {
-                seleccionMinimo.delete(idx);
-                btn.classList.remove('ring-river-600');
-                badge.classList.add('hidden');
-                badge.classList.remove('flex');
-            } else {
-                seleccionMinimo.add(idx);
-                btn.classList.add('ring-river-600');
-                badge.classList.remove('hidden');
-                badge.classList.add('flex');
-            }
-            actualizarBarraSeleccionMinimo();
+        // Mismo estilo de "punta seleccionada" que ya usan los calendarios públicos: círculo verde relleno.
+        function limpiarClaseSeleccionMinimo(btn) {
+            btn.classList.remove('bg-river-700', 'text-white', 'rounded-full', 'font-bold', 'ring-4', 'ring-river-200');
+            btn.classList.add('rounded-lg');
+            (btn.dataset.claseBase || '').split(' ').filter(Boolean).forEach(c => btn.classList.add(c));
         }
 
-        function actualizarBarraSeleccionMinimo() {
-            const barra = document.getElementById('barra-seleccion-minimo');
+        function aplicarClaseSeleccionMinimo(btn) {
+            (btn.dataset.claseBase || '').split(' ').filter(Boolean).forEach(c => btn.classList.remove(c));
+            btn.classList.remove('rounded-lg');
+            btn.classList.add('bg-river-700', 'text-white', 'rounded-full', 'font-bold', 'ring-4', 'ring-river-200');
+        }
+
+        function alternarSeleccionMinimo(btn) {
+            const idx = btn.dataset.index;
+            if (seleccionMinimo.has(idx)) {
+                seleccionMinimo.delete(idx);
+                limpiarClaseSeleccionMinimo(btn);
+            } else {
+                seleccionMinimo.add(idx);
+                aplicarClaseSeleccionMinimo(btn);
+            }
+            actualizarContadorSeleccionMinimo();
+        }
+
+        function actualizarContadorSeleccionMinimo() {
             const cantidad = seleccionMinimo.size;
-            document.getElementById('texto-seleccion-minimo').innerHTML =
-                cantidad + (cantidad === 1 ? ' día' : ' días') +
-                '<span class="hidden sm:inline">&nbsp;' + (cantidad === 1 ? 'seleccionado' : 'seleccionados') + '</span>';
-            barra.classList.toggle('hidden', cantidad === 0);
+            document.getElementById('texto-seleccion-minimo').textContent =
+                cantidad + (cantidad === 1 ? ' día seleccionado' : ' días seleccionados');
         }
 
         function cancelarSeleccionMinimo() {
             seleccionMinimo.forEach(idx => {
                 const btn = document.querySelector(`.dia-minimo-editable[data-index="${idx}"]`);
-                if (!btn) return;
-                btn.classList.remove('ring-river-600');
-                const badge = btn.querySelector('.badge-seleccionado-minimo');
-                badge.classList.add('hidden');
-                badge.classList.remove('flex');
+                if (btn) limpiarClaseSeleccionMinimo(btn);
             });
             seleccionMinimo.clear();
             document.getElementById('bulk-minimo-noches').value = '';
-            actualizarBarraSeleccionMinimo();
+            actualizarContadorSeleccionMinimo();
         }
 
-        // Con quitar = true se borra el mínimo de los días elegidos; si no, se les pone el valor cargado.
-        function aplicarSeleccionMinimo(quitar) {
-            const valor = quitar ? '' : document.getElementById('bulk-minimo-noches').value.replace(/\D/g, '');
-            if (!quitar && !valor) return;
+        // Deja vacío el campo y guardá para quitar el mínimo de los días elegidos.
+        function guardarMinimoSeleccion() {
+            if (seleccionMinimo.size === 0) return;
 
+            const valor = document.getElementById('bulk-minimo-noches').value.replace(/\D/g, '');
             seleccionMinimo.forEach(idx => {
-                const btn = document.querySelector(`.dia-minimo-editable[data-index="${idx}"]`);
-                if (!btn) return;
-
-                document.getElementById('minimo-valor-' + idx).value = valor;
-                btn.querySelector('.etiqueta-minimo').textContent = valor || '–';
-                btn.classList.toggle('bg-river-100', !!valor);
-                btn.classList.toggle('text-river-800', !!valor);
-                btn.classList.toggle('hover:bg-river-200', !!valor);
-                btn.classList.toggle('bg-river-50', !valor);
-                btn.classList.toggle('text-river-700', !valor);
-                btn.classList.toggle('hover:bg-river-100', !valor);
+                const input = document.getElementById('minimo-valor-' + idx);
+                if (input) input.value = valor;
             });
 
-            cancelarSeleccionMinimo();
+            document.getElementById('form-minimo-noches').requestSubmit();
         }
     </script>
 }
