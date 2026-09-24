@@ -172,7 +172,7 @@
                 }
                 else if (dia.Value.Date < hoy)
                 {
-                    <div class="flex h-14 items-center justify-center rounded-lg bg-ink-50 text-[10px] text-ink-300">@dia.Value.Day</div>
+                    <div class="flex h-10 items-center justify-center rounded-lg bg-ink-50 text-[10px] text-ink-300">@dia.Value.Day</div>
                 }
                 else
                 {
@@ -182,10 +182,10 @@
                     <div class="contents">
                         <button type="button" data-index="@indiceMinimo"
                                 onclick="alternarSeleccionMinimo(this)"
-                                class="dia-minimo-editable relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-lg font-medium ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clasesMinimo">
-                            <span class="text-[9px] opacity-70">@dia.Value.Day</span>
-                            <span class="etiqueta-minimo text-[10px] font-bold">@(minimoActual.HasValue ? $"mín {minimoActual}" : "–")</span>
-                            <span class="badge-seleccionado-minimo absolute -right-1 -top-1 hidden h-3.5 w-3.5 items-center justify-center rounded-full bg-river-700 text-[9px] text-white shadow-soft">✓</span>
+                                class="dia-minimo-editable relative flex h-10 flex-col items-center justify-center gap-0 rounded-lg font-medium leading-none ring-2 ring-inset ring-transparent transition hover:ring-river-300 @clasesMinimo">
+                            <span class="text-[8px] opacity-70">@dia.Value.Day</span>
+                            <span class="etiqueta-minimo text-[10px] font-bold">@(minimoActual.HasValue ? minimoActual.ToString() : "–")</span>
+                            <span class="badge-seleccionado-minimo absolute -right-1 -top-1 hidden h-3 w-3 items-center justify-center rounded-full bg-river-700 text-[7px] text-white shadow-soft">✓</span>
                         </button>
                         <input type="hidden" name="dias[@indiceMinimo].Fecha" value="@dia.Value.ToString("yyyy-MM-dd")" />
                         <input type="hidden" id="minimo-valor-@indiceMinimo" name="dias[@indiceMinimo].Noches" value="@(minimoActual.HasValue ? minimoActual.ToString() : "")" />
@@ -466,7 +466,7 @@
                 if (!btn) return;
 
                 document.getElementById('minimo-valor-' + idx).value = valor;
-                btn.querySelector('.etiqueta-minimo').textContent = valor ? 'mín ' + valor : '–';
+                btn.querySelector('.etiqueta-minimo').textContent = valor || '–';
                 btn.classList.toggle('bg-river-100', !!valor);
                 btn.classList.toggle('text-river-800', !!valor);
                 btn.classList.toggle('hover:bg-river-200', !!valor);
