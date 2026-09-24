@@ -101,7 +101,7 @@ namespace GestionCabanas.Controllers
             {
                 ModelState.AddModelError(string.Empty, avisoFinLargo);
             }
-            else if (await _disponibilidad.ValidarMinimoNochesAsync(modelo.FechaDesde, modelo.FechaHasta) is { } avisoMinimoNoches)
+            else if (await _disponibilidad.ValidarMinimoNochesAsync(modelo.FechaDesde, modelo.FechaHasta, modelo.CabanaId) is { } avisoMinimoNoches)
             {
                 ModelState.AddModelError(string.Empty, avisoMinimoNoches);
             }
@@ -226,7 +226,7 @@ namespace GestionCabanas.Controllers
             {
                 aviso = avisoFinLargo;
             }
-            else if (await _disponibilidad.ValidarMinimoNochesAsync(desde.Value, hasta.Value) is { } avisoMinimoNoches)
+            else if (await _disponibilidad.ValidarMinimoNochesAsync(desde.Value, hasta.Value, id) is { } avisoMinimoNoches)
             {
                 aviso = avisoMinimoNoches;
             }
@@ -438,7 +438,7 @@ namespace GestionCabanas.Controllers
                     return Json(new { exito = false, mensaje = avisoFinLargo });
                 }
 
-                if (await _disponibilidad.ValidarMinimoNochesAsync(segmento.FechaDesde, segmento.FechaHasta) is { } avisoMinimoNoches)
+                if (await _disponibilidad.ValidarMinimoNochesAsync(segmento.FechaDesde, segmento.FechaHasta, segmento.CabanaId) is { } avisoMinimoNoches)
                 {
                     return Json(new { exito = false, mensaje = avisoMinimoNoches });
                 }

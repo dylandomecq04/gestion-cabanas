@@ -66,9 +66,13 @@ namespace GestionCabanas.Services
 
         /// <summary>
         /// Aviso para el huésped si la estadía no llega al mínimo de noches que exige alguno de los días que
-        /// incluye (ej.: una sola noche de sábado con un mínimo de 2 noches cargado). Null si se puede reservar.
+        /// incluye (ej.: una sola noche de sábado con un mínimo de 2 noches cargado). No se aplica para un día
+        /// si sería imposible llegar a ese mínimo de todos modos (ej.: viernes y domingo ya reservados en la
+        /// cabaña, así que ninguna estadía que incluya el sábado puede llegar a 2 noches): se revisa la cabaña
+        /// puntual si se pasó <paramref name="cabanaId"/>, o todas las activas si no (búsqueda sin cabaña elegida
+        /// todavía). Null si se puede reservar.
         /// </summary>
-        public async Task<string?> ValidarMinimoNochesAsync(DateTime desde, DateTime hasta)
+        public async Task<string?> ValidarMinimoNochesAsync(DateTime desde, DateTime hasta, int? cabanaId = null)
         {
             if (hasta.Date <= desde.Date)
             {
@@ -82,11 +86,62 @@ namespace GestionCabanas.Services
             }
 
             var noches = (hasta.Date - desde.Date).Days;
-            DayOfWeek? diaExigente = null;
-            var maximoExigido = 0;
+            var diasExigentes = new List<(DateTime Dia, int Exigido)>();
             for (var dia = desde.Date; dia < hasta.Date; dia = dia.AddDays(1))
             {
-                if (minimos.TryGetValue(dia.DayOfWeek, out var exigido) && exigido > noches && exigido > maximoExigido)
+                if (minimos.TryGetValue(dia.DayOfWeek, out var exigido) && exigido > noches)
+                {
+                    diasExigentes.Add((dia, exigido));
+                }
+            }
+
+            if (diasExigentes.Count == 0)
+            {
+                return null;
+            }
+
+            var cabanaIds = cabanaId.HasValue
+                ? new List<int> { cabanaId.Value }
+                : await _db.Cabanas.Where(c => c.Activa).Select(c => c.Id).ToListAsync();
+
+            var maxExigido = diasExigentes.Max(d => d.Exigido);
+            var reservasPorCabana = (await ObtenerConfirmadasEnRangoAsync(desde.Date.AddDays(-maxExigido), hasta.Date.AddDays(maxExigido - 1)))
+                .Where(r => cabanaIds.Contains(r.CabanaId))
+                .GroupBy(r => r.CabanaId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            bool HayVentanaLibreEnAlgunaCabana(DateTime dia, int minimo)
+            {
+                foreach (var idCabana in cabanaIds)
+                {
+                    var reservas = reservasPorCabana.TryGetValue(idCabana, out var lista) ? lista : new List<Reserva>();
+                    bool EstaOcupada(DateTime noche) =>
+                        noche < DateTime.Today || reservas.Any(r => r.FechaDesde <= noche && noche < r.FechaHasta);
+
+                    for (var inicio = dia.AddDays(-(minimo - 1)); inicio <= dia; inicio = inicio.AddDays(1))
+                    {
+                        var libre = true;
+                        for (var n = 0; n < minimo && libre; n++)
+                        {
+                            if (EstaOcupada(inicio.AddDays(n)))
+                            {
+                                libre = false;
+                            }
+                        }
+                        if (libre)
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            DayOfWeek? diaExigente = null;
+            var maximoExigido = 0;
+            foreach (var (dia, exigido) in diasExigentes)
+            {
+                if (exigido > maximoExigido && HayVentanaLibreEnAlgunaCabana(dia, exigido))
                 {
                     maximoExigido = exigido;
                     diaExigente = dia.DayOfWeek;
