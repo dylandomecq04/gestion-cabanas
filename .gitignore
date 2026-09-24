@@ -5,4 +5,5 @@ obj/
 *.db
 *.db-shm
 *.db-wal
+*.db.bak*
 wwwroot/uploads/
