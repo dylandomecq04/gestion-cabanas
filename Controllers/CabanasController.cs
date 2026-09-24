@@ -511,10 +511,12 @@ namespace GestionCabanas.Controllers
             var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Nombre).ToListAsync();
             var reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia);
             var promos = await _disponibilidad.ObtenerPromosEnRangoTodasCabanasAsync(primerDia, ultimoDia);
+            var tarifas = await _disponibilidad.ObtenerTarifasEnRangoTodasCabanasAsync(primerDia, ultimoDia);
 
             ViewBag.Cabanas = cabanas;
             ViewBag.Reservas = reservas;
             ViewBag.Promos = promos;
+            ViewBag.Tarifas = tarifas;
             ViewBag.FinesDeSemanaLargos = await CargarFinesDeSemanaLargosAsync(primerDia, ultimoDia);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;
@@ -548,6 +550,7 @@ namespace GestionCabanas.Controllers
 
             ViewBag.Reservas = await _disponibilidad.ObtenerConfirmadasEnRangoAsync(primerDia, ultimoDia, cabanaId);
             ViewBag.PromosEstadia = await _disponibilidad.ObtenerPromosEnRangoAsync(cabanaId, primerDia, ultimoDia);
+            ViewBag.Tarifas = await _disponibilidad.ObtenerTarifasEnRangoAsync(cabanaId, primerDia, ultimoDia);
             ViewBag.FinesDeSemanaLargos = await CargarFinesDeSemanaLargosAsync(primerDia, ultimoDia);
             ViewBag.PrimerDia = primerDia;
             ViewBag.UltimoDia = ultimoDia;

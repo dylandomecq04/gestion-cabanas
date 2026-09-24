@@ -4,6 +4,7 @@
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
     var reservas = (List<Reserva>)ViewBag.Reservas;
     var promos = (List<PromoEstadia>)ViewBag.Promos;
+    var tarifas = (List<TarifaDia>)ViewBag.Tarifas;
     var fines = (List<FinDeSemanaLargo>)ViewBag.FinesDeSemanaLargos;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime ultimoDia = ViewBag.UltimoDia;
@@ -16,6 +17,26 @@
     int CabanasLibres(DateTime dia) => cabanas.Count(c => !NoDisponible(c.Id, dia));
     bool CabanaEnPromo(int cabanaId, DateTime dia) => promos.Any(p => p.CabanaId == cabanaId && p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
     bool DiaConPromoDisponible(DateTime dia) => cabanas.Any(c => !NoDisponible(c.Id, dia) && CabanaEnPromo(c.Id, dia));
+    decimal? PrecioDesdeDelDia(DateTime dia)
+    {
+        var precios = cabanas
+            .Where(c => !NoDisponible(c.Id, dia))
+            .Select(c => tarifas.FirstOrDefault(t => t.CabanaId == c.Id && t.Fecha.Date == dia.Date)?.Precio2)
+            .Where(p => p.HasValue)
+            .Select(p => p!.Value)
+            .ToList();
+        return precios.Count > 0 ? precios.Min() : (decimal?)null;
+    }
+    string FormatoCompacto(decimal precio)
+    {
+        if (precio >= 1000)
+        {
+            var miles = precio / 1000m;
+            var texto = miles == Math.Floor(miles) ? miles.ToString("0") : miles.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            return texto + "k";
+        }
+        return precio.ToString("0");
+    }
 
     int offset = ((int)primerDia.DayOfWeek + 6) % 7;
     var celdas = new List<DateTime?>();
@@ -80,10 +101,15 @@
                 var marco = FinDeSemanaLargo.ClasesMarco(fines, dia.Value);
                 var libres = CabanasLibres(dia.Value);
                 var conPromo = libres > 0 && DiaConPromoDisponible(dia.Value);
+                var precioDesde = libres > 0 ? PrecioDesdeDelDia(dia.Value) : null;
                 var clases = libres > 0
                     ? "bg-river-100 text-river-700 hover:bg-river-200"
                     : "bg-rose-100 text-rose-600 hover:bg-rose-200";
                 var titulo = conPromo ? "Disponible · con promoción" : (libres > 0 ? "Disponible" : "No disponible");
+                if (precioDesde.HasValue)
+                {
+                    titulo += $" · Desde ${precioDesde.Value:N0} estándar para 2 personas";
+                }
                 if (marco is not null)
                 {
                     titulo += " · Fin de semana largo: se reserva completo";
@@ -101,6 +127,10 @@
                         <span class="absolute -top-2 right-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
                     }
                     @dia.Value.Day
+                    @if (precioDesde.HasValue)
+                    {
+                        <span class="text-[8px] font-bold leading-none opacity-80">$@FormatoCompacto(precioDesde.Value)</span>
+                    }
                 </button>
             }
         }
@@ -109,11 +139,13 @@
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-river-100"></span> Disponible</span>
         <span class="flex items-center gap-1.5"><span class="promo-glow h-3 w-3 rounded-full bg-river-100"></span> Con promoción 🎉</span>
         <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-full bg-rose-100"></span> No disponible</span>
+        <span class="flex items-center gap-1.5"><span class="font-bold text-ink-700">$</span> Precio para 2 personas</span>
         @if (fines.Count > 0)
         {
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm border-2 border-amber-500"></span> Fin de semana largo (se reserva completo)</span>
         }
     </div>
+    <p class="mt-2 text-xs text-ink-400">El precio que ves en cada día es la tarifa estándar para 2 personas, por noche, de la cabaña más económica disponible esa fecha. Si son más personas o repartís en otra cabaña, el total puede variar: lo vas a ver al elegir las fechas y completar tus datos más abajo.</p>
 
     <div id="resumen-seleccion" class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-river-100 bg-river-50 px-4 py-3">
         <div class="flex items-center gap-2 text-sm font-medium text-river-800">
