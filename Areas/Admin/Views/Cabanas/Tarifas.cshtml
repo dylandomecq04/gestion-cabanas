@@ -3,6 +3,9 @@
     var cabana = (Cabana)ViewBag.Cabana;
     var dias = (List<DiaTarifaVista>)ViewBag.Dias;
     var promos = (List<PromoEstadia>)ViewBag.PromosEstadia;
+    var comparacionesPromo = (Dictionary<int, List<ComparacionPromoNoches>>)ViewBag.ComparacionesPromo;
+
+    string TextoNoches(int noches) => noches == 1 ? "1 noche" : $"{noches} noches";
     var fines = (List<FinDeSemanaLargo>)ViewBag.FinesDeSemanaLargos;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
@@ -106,12 +109,27 @@
                                 <span class="absolute -top-1.5 left-0.5 text-[7px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
                             }
                             <span class="text-[9px] opacity-70">@dia.Fecha.Day</span>
-                            <span class="etiqueta-precio flex flex-col items-center text-[9px] font-bold leading-tight">
-                                @foreach (var tramo in tramos)
-                                {
-                                    <span data-tramo="@tramo">@Miles(dia.PrecioDelTramo(tramo))</span>
-                                }
-                            </span>
+                            @if (dia.EnPromo && dia.PromoPrecioPorNoche.HasValue)
+                            {
+                                <span class="etiqueta-precio flex flex-col items-center text-[9px] font-bold leading-tight">
+                                    @foreach (var tramo in tramos)
+                                    {
+                                        <span data-tramo="@tramo" class="flex items-baseline gap-0.5">
+                                            <span class="text-[6px] font-normal text-amber-700/60 line-through decoration-rose-500">@Miles(dia.PrecioDelTramo(tramo))</span>
+                                            <span>@Miles(dia.PromoPrecioPorNoche)</span>
+                                        </span>
+                                    }
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="etiqueta-precio flex flex-col items-center text-[9px] font-bold leading-tight">
+                                    @foreach (var tramo in tramos)
+                                    {
+                                        <span data-tramo="@tramo">@Miles(dia.PrecioDelTramo(tramo))</span>
+                                    }
+                                </span>
+                            }
                             <span class="badge-seleccionado absolute -right-1 -top-1 hidden h-3.5 w-3.5 items-center justify-center rounded-full bg-river-700 text-[9px] text-white shadow-soft">✓</span>
                         </button>
                         <input type="hidden" name="dias[@indice].Fecha" value="@dia.Fecha.ToString("yyyy-MM-dd")" />
@@ -165,15 +183,37 @@
                         {
                             <p class="mt-0.5 text-xs text-ink-500">@promo.Descripcion</p>
                         }
-                        <p class="mt-0.5 text-xs text-ink-500">
-                            @(promo.Precio1Noche.HasValue ? "1 noche: $" + promo.Precio1Noche.Value.ToString("N0") : "1 noche: -")
-                            &middot; @(promo.Precio2Noches.HasValue ? "2 noches: $" + promo.Precio2Noches.Value.ToString("N0") : "2 noches: -")
-                            &middot; @(promo.Precio3Noches.HasValue ? "3 noches: $" + promo.Precio3Noches.Value.ToString("N0") : "3 noches: -")
+                        <div class="mt-1.5 space-y-1">
+                            @foreach (var comp in comparacionesPromo.GetValueOrDefault(promo.Id, new List<ComparacionPromoNoches>()))
+                            {
+                                <p class="flex flex-wrap items-center gap-x-1.5 text-xs text-ink-500">
+                                    <span class="font-medium text-ink-700">@(TextoNoches(comp.Noches)):</span>
+                                    @foreach (var (tramoComp, regular) in comp.PreciosRegulares)
+                                    {
+                                        <span>
+                                            @tramoComp p
+                                            @if (regular.HasValue)
+                                            {
+                                                <span class="text-ink-400 line-through decoration-rose-500">$@regular.Value.ToString("N0")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-ink-400">-</span>
+                                            }
+                                        </span>
+                                    }
+                                    <span class="font-semibold text-amber-700">&rarr; $@comp.PrecioPromo.ToString("N0")</span>
+                                </p>
+                            }
+                            @if (!promo.Precio1Noche.HasValue && !promo.Precio2Noches.HasValue && !promo.Precio3Noches.HasValue)
+                            {
+                                <p class="text-xs text-ink-400">Sin precios cargados.</p>
+                            }
                             @if (!promo.Activa)
                             {
-                                <span class="font-semibold text-ink-400"> · Inactiva</span>
+                                <p class="text-xs font-semibold text-ink-400">Inactiva</p>
                             }
-                        </p>
+                        </div>
                     </div>
                     <div class="flex shrink-0 gap-2">
                         <form asp-action="AlternarPromoEstadia" asp-route-id="@promo.Id" asp-route-cabanaId="@cabana.Id" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post">
@@ -289,7 +329,15 @@
                     document.querySelector(`input[name="dias[${idx}].Precio${t}"]`).value = valor;
                     const linea = btn.querySelector(`.etiqueta-precio [data-tramo="${t}"]`);
                     if (linea) {
-                        linea.textContent = valor ? Number(valor).toLocaleString('es-AR') : '–';
+                        // En un día con promo, [data-tramo] tiene dos spans (precio regular tachado + precio
+                        // de la promo): lo que se edita acá es el precio regular, así que sólo se actualiza ese.
+                        const nuevoTexto = valor ? Number(valor).toLocaleString('es-AR') : '–';
+                        const spanViejo = linea.children.length > 1 ? linea.querySelector('span:first-child') : null;
+                        if (spanViejo) {
+                            spanViejo.textContent = nuevoTexto;
+                        } else {
+                            linea.textContent = nuevoTexto;
+                        }
                     }
                 });
             });

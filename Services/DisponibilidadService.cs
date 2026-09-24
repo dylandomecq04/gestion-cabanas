@@ -130,6 +130,27 @@ namespace GestionCabanas.Services
                 .ToListAsync();
         }
 
+        /// <summary>Suma de precios regulares (sin promo) para un tramo, durante N noches consecutivas desde una
+        /// fecha. Null si falta el precio de alguna noche. Se usa para mostrar, en el panel de promociones, cuánto
+        /// costaría esa misma estadía a tarifa normal y así poder tacharlo junto al precio de la promo.</summary>
+        public async Task<decimal?> PrecioRegularEstadiaAsync(int cabanaId, DateTime desde, int noches, int tramo)
+        {
+            var tarifas = await ObtenerTarifasEnRangoAsync(cabanaId, desde, desde.AddDays(noches - 1));
+            decimal total = 0;
+
+            for (var dia = desde; dia < desde.AddDays(noches); dia = dia.AddDays(1))
+            {
+                var precio = tarifas.FirstOrDefault(t => t.Fecha.Date == dia.Date)?.PrecioDelTramo(tramo);
+                if (!precio.HasValue)
+                {
+                    return null;
+                }
+                total += precio.Value;
+            }
+
+            return total;
+        }
+
         public async Task<List<TarifaDia>> ObtenerTarifasEnRangoTodasCabanasAsync(DateTime desde, DateTime hasta)
         {
             return await _db.TarifasDias

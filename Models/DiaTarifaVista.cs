@@ -17,5 +17,6 @@ namespace GestionCabanas.Models
         };
         public bool EnPromo { get; set; }
         public string? EtiquetaPromo { get; set; }
+        public decimal? PromoPrecioPorNoche { get; set; }
     }
 }

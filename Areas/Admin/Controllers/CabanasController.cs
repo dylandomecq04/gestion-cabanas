@@ -181,16 +181,50 @@ namespace GestionCabanas.Areas.Admin.Controllers
                     Precio4 = tarifa?.Precio4,
                     Precio6 = tarifa?.Precio6,
                     EnPromo = promoDelDia is not null,
-                    EtiquetaPromo = promoDelDia?.Nombre
+                    EtiquetaPromo = promoDelDia?.Nombre,
+                    PromoPrecioPorNoche = promoDelDia?.PrecioPromedioPorNoche()
                 });
+            }
+
+            var promosLista = await _db.PromosEstadia
+                .Where(p => p.CabanaId == id)
+                .OrderByDescending(p => p.FechaDesde)
+                .ToListAsync();
+
+            var tramosCabana = cabana.TramosDePrecio().ToList();
+            var comparaciones = new Dictionary<int, List<ComparacionPromoNoches>>();
+            foreach (var promo in promosLista)
+            {
+                var comparacionesPromo = new List<ComparacionPromoNoches>();
+                foreach (var noches in new[] { 1, 2, 3 })
+                {
+                    var precioPromo = promo.PrecioPorNoches(noches);
+                    if (!precioPromo.HasValue)
+                    {
+                        continue;
+                    }
+
+                    var preciosRegulares = new List<(int Tramo, decimal? PrecioRegular)>();
+                    foreach (var tramo in tramosCabana)
+                    {
+                        var regular = await _disponibilidad.PrecioRegularEstadiaAsync(promo.CabanaId, promo.FechaDesde, noches, tramo);
+                        preciosRegulares.Add((tramo, regular));
+                    }
+
+                    comparacionesPromo.Add(new ComparacionPromoNoches
+                    {
+                        Noches = noches,
+                        PrecioPromo = precioPromo.Value,
+                        PreciosRegulares = preciosRegulares
+                    });
+                }
+                comparaciones[promo.Id] = comparacionesPromo;
             }
 
             ViewBag.Cabana = cabana;
             ViewBag.Dias = dias;
-            ViewBag.PromosEstadia = await _db.PromosEstadia
-                .Where(p => p.CabanaId == id)
-                .OrderByDescending(p => p.FechaDesde)
-                .ToListAsync();
+            ViewBag.PromosEstadia = promosLista;
+            ViewBag.ComparacionesPromo = comparaciones;
             ViewBag.FinesDeSemanaLargos = await _disponibilidad.ObtenerFinesDeSemanaLargosExigidosAsync(primerDia, ultimoDia.AddDays(1));
             ViewBag.PrimerDia = primerDia;
             ViewBag.MesAnterior = primerDia.AddMonths(-1);

@@ -39,5 +39,23 @@ namespace GestionCabanas.Models
 
         [Display(Name = "Activa")]
         public bool Activa { get; set; } = true;
+
+        public decimal? PrecioPorNoches(int noches) => noches switch
+        {
+            1 => Precio1Noche,
+            2 => Precio2Noches,
+            3 => Precio3Noches,
+            _ => null
+        };
+
+        /// <summary>Precio de referencia por noche para el calendario: usa el paquete más corto cargado
+        /// (1 noche si está, si no promedia el de 2 o el de 3).</summary>
+        public decimal? PrecioPromedioPorNoche()
+        {
+            if (Precio1Noche.HasValue) return Precio1Noche;
+            if (Precio2Noches.HasValue) return Math.Round(Precio2Noches.Value / 2, MidpointRounding.AwayFromZero);
+            if (Precio3Noches.HasValue) return Math.Round(Precio3Noches.Value / 3, MidpointRounding.AwayFromZero);
+            return null;
+        }
     }
 }
