@@ -146,8 +146,8 @@
     string MensajeCancelacion(Reserva r)
     {
         return $"Hola, cómo estás?\n\n" +
-            $"Te escribimos para comentarte que tu solicitud de reserva a nombre de {r.NombreHuesped}, para la Cabaña {r.Cabana?.Nombre}, para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, quedó eliminada de nuestro sistema y no fue confirmada.\n\n" +
-            "Si todavía te interesa reservar, o si surge algún inconveniente, quedamos a disposición para coordinar una nueva fecha.\n\n" +
+            $"Te escribimos para comentarte que tu solicitud de reserva a nombre de {r.NombreHuesped}, para la Cabaña {r.Cabana?.Nombre}, para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, quedó Cancelada x falta de pago o disponibilidad.\n\n" +
+            "Si todavía te interesa reservar, quedamos a disposición para coordinar una nueva fecha.\n\n" +
             "Muchas gracias!";
     }
 }
