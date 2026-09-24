@@ -9,6 +9,7 @@
     decimal? descuentoSalidaAnticipada = ViewBag.DescuentoSalidaAnticipada;
     var minimosNoches = (Dictionary<DateTime, int>)ViewBag.MinimosNoches;
     var promos = (List<PromoEstadia>)ViewBag.PromosEstadia;
+    var preciosPrecargadosJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.PreciosPrecargados);
     var mesTitulo = primerDia.ToString("MMMM yyyy");
     mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
 
@@ -62,7 +63,7 @@
                 {
                     <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-700 transition hover:border-river-300">
                         <input type="checkbox" name="cabanaIds" value="@cabana.Id" data-capacidad="@cabana.Capacidad"
-                               onchange="actualizarTramosDisponibles()"
+                               onchange="actualizarTramosDisponibles(); actualizarPreciosPrecargados();"
                                class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
                         @cabana.Nombre
                     </label>
@@ -94,7 +95,7 @@
                                 var idReal = $"precio-{clave}-{tramo}-real";
                                 <td class="px-1 py-1.5 sm:px-2">
                                     <input type="text" inputmode="numeric" placeholder="$"
-                                           data-tramo="@tramo" data-real="@idReal"
+                                           data-clave="@clave" data-tramo="@tramo" data-real="@idReal"
                                            oninput="formatearMilesConReal(this, '@idReal')"
                                            class="w-full min-w-0 rounded-xl border border-ink-200 px-1.5 py-2.5 text-sm text-ink-900 shadow-sm transition placeholder:text-xs focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100 disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-300 sm:px-3.5 sm:placeholder:text-sm" />
                                     <input type="hidden" id="@idReal" name="precio@(clave)@(tramo)" />
@@ -399,6 +400,38 @@
                 const encabezado = document.querySelector(`th[data-columna-tramo="${tramo}"]`);
                 if (encabezado) {
                     encabezado.classList.toggle('opacity-40', !habilitado);
+                }
+            });
+        }
+
+        // Precio ya cargado para cada cabaña/día/tramo, solo cuando es el mismo en todo el mes (ver Precios()).
+        const preciosPrecargados = @Html.Raw(preciosPrecargadosJson);
+
+        // Al tildar cabañas, muestra el precio que ya tienen cargado para ese día/tramo, pero solo si
+        // todas las cabañas tildadas comparten el mismo precio (si no, queda vacío para no confundir).
+        function actualizarPreciosPrecargados() {
+            const marcadas = [...document.querySelectorAll('input[name="cabanaIds"]:checked')].map(c => c.value);
+            if (marcadas.length === 0) {
+                return;
+            }
+
+            document.querySelectorAll('input[data-clave][data-tramo]').forEach(input => {
+                if (input.disabled) {
+                    return;
+                }
+
+                const clave = input.dataset.clave;
+                const tramo = input.dataset.tramo;
+                const valores = marcadas.map(id => preciosPrecargados[id]?.[clave]?.[tramo] ?? null);
+                const valorComun = valores.every(v => v === valores[0]) ? valores[0] : null;
+
+                const idReal = input.dataset.real;
+                if (valorComun === null) {
+                    input.value = '';
+                    document.getElementById(idReal).value = '';
+                } else {
+                    input.value = Number(valorComun).toLocaleString('es-AR');
+                    document.getElementById(idReal).value = String(Math.trunc(valorComun));
                 }
             });
         }

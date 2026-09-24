@@ -238,8 +238,42 @@ namespace GestionCabanas.Areas.Admin.Controllers
         {
             var hoy = DateTime.Today;
             var primerDia = new DateTime(anio ?? hoy.Year, mes ?? hoy.Month, 1);
+            var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
 
-            ViewBag.Cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Id).ToListAsync();
+            var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Id).ToListAsync();
+            ViewBag.Cabanas = cabanas;
+
+            var tarifasDelMes = await _db.TarifasDias
+                .Where(t => t.Fecha >= primerDia && t.Fecha <= ultimoDia)
+                .ToListAsync();
+
+            static string TipoDia(DateTime fecha) => fecha.DayOfWeek switch
+            {
+                DayOfWeek.Saturday => "Sabado",
+                DayOfWeek.Sunday => "Domingo",
+                _ => "Semana"
+            };
+
+            static decimal? ValorUniforme(IEnumerable<decimal?> valores)
+            {
+                var distintos = valores.Where(v => v.HasValue).Select(v => v!.Value).Distinct().ToList();
+                return distintos.Count == 1 ? distintos[0] : (decimal?)null;
+            }
+
+            // Precio ya cargado para cada cabaña/tipo de día/tramo, solo cuando es el mismo en todo el mes
+            // (así el formulario puede precargarlo sin arriesgarse a mostrar un valor que no representa a todo el mes).
+            ViewBag.PreciosPrecargados = cabanas.ToDictionary(
+                c => c.Id,
+                c => new[] { "Semana", "Sabado", "Domingo" }.ToDictionary(
+                    tipo => tipo,
+                    tipo =>
+                    {
+                        var tarifasCabanaTipo = tarifasDelMes.Where(t => t.CabanaId == c.Id && TipoDia(t.Fecha) == tipo).ToList();
+                        return Cabana.TodosLosTramos.ToDictionary(
+                            tramo => tramo,
+                            tramo => ValorUniforme(tarifasCabanaTipo.Select(t => t.PrecioDelTramo(tramo))));
+                    }));
+
             ViewBag.MinimosNoches = await _disponibilidad.ObtenerMinimosNochesAsync();
             ViewBag.PromosEstadia = await _db.PromosEstadia
                 .Include(p => p.Cabana)
