@@ -153,12 +153,7 @@
 
 <div class="mt-6 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
     <h2 class="font-display text-lg font-semibold text-ink-900">Mínimo de noches</h2>
-    <p class="mt-1 text-sm text-ink-500">
-        Tocá una o varias fechas del mes para seleccionarlas y ponerles un mínimo de noches: si la estadía
-        incluye alguna de esas noches, tiene que durar al menos esa cantidad (ej.: sábado 4/10 con mínimo 2
-        no deja reservar una sola noche). Si igual fuera imposible llegar al mínimo por reservas ya cargadas
-        alrededor, esa fecha no bloquea la reserva. No afecta a las reservas que cargás vos desde el panel.
-    </p>
+    <p class="mt-1 text-sm text-ink-500">Tocá una o varias fechas del mes para seleccionarlas y ponerles un mínimo de noches.</p>
 
     <form id="form-minimo-noches" asp-action="GuardarMinimoNoches" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post" class="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div>
