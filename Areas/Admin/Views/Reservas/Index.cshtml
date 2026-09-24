@@ -7,6 +7,9 @@
     string? busqueda = ViewBag.Busqueda;
     int? cabanaIdFiltro = ViewBag.CabanaIdFiltro;
     bool? contactadoFiltro = ViewBag.ContactadoFiltro;
+    string? colorContactoFiltro = ViewBag.ColorContactoFiltro;
+    int horasAmarillo = ViewBag.HorasAmarillo;
+    int horasRojo = ViewBag.HorasRojo;
     string? ordenActual = ViewBag.Orden;
     bool ordenDescActual = ViewBag.OrdenDesc ?? false;
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
@@ -44,9 +47,29 @@
             anio = primerDia?.Year,
             mes = primerDia?.Month,
             contactado = contactadoFiltro,
+            colorContacto = colorContactoFiltro,
             orden = valor,
             desc = siguienteDesc
         })!;
+    }
+
+    // Colores pastel según hace cuánto se contactó la solicitud: si todavía no se contactó, sin color.
+    (string Tarjeta, string Fila) ClasesColorContacto(Reserva r)
+    {
+        if (!esSolicitudes || !r.FechaContactado.HasValue)
+        {
+            return ("bg-white ring-ink-100", "hover:bg-sand-50/60");
+        }
+        var horas = (DateTime.Now - r.FechaContactado.Value).TotalHours;
+        if (horas >= horasRojo)
+        {
+            return ("bg-rose-50 ring-rose-100", "bg-rose-50/70 hover:bg-rose-100/70");
+        }
+        if (horas >= horasAmarillo)
+        {
+            return ("bg-amber-50 ring-amber-100", "bg-amber-50/70 hover:bg-amber-100/70");
+        }
+        return ("bg-white ring-ink-100", "hover:bg-sand-50/60");
     }
 
     string ClaseHeaderOrden(string valor) => "inline-flex items-center gap-1 whitespace-nowrap hover:text-river-700"
@@ -232,8 +255,17 @@
                 <option value="true" selected="@(contactadoFiltro == true)">Contactadas</option>
             </select>
         </div>
+        <div class="w-full sm:w-auto sm:min-w-[180px]">
+            <label class="mb-1 block text-xs font-medium text-ink-600">Color</label>
+            <select name="colorContacto" onchange="document.getElementById('form-filtros').requestSubmit()"
+                    class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100">
+                <option value="" selected="@(string.IsNullOrEmpty(colorContactoFiltro))">Todas</option>
+                <option value="amarillo" selected="@(colorContactoFiltro == "amarillo")">Amarillo (+@(horasAmarillo)h desde que se contactó)</option>
+                <option value="rojo" selected="@(colorContactoFiltro == "rojo")">Rojo (+@(horasRojo)h desde que se contactó)</option>
+            </select>
+        </div>
     }
-    @if (!string.IsNullOrWhiteSpace(busqueda) || cabanaIdFiltro.HasValue || (esSolicitudes && primerDia.HasValue) || contactadoFiltro.HasValue)
+    @if (!string.IsNullOrWhiteSpace(busqueda) || cabanaIdFiltro.HasValue || (esSolicitudes && primerDia.HasValue) || contactadoFiltro.HasValue || !string.IsNullOrWhiteSpace(colorContactoFiltro))
     {
         <a asp-action="Index" asp-route-estado="@filtro" class="rounded-full border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:border-ink-300">Limpiar filtros</a>
     }
@@ -264,7 +296,8 @@ else
                 {
                     var personasTexto = $"{r.CantidadPersonas} {(r.CantidadPersonas == 1 ? "persona" : "personas")}"
                         + (r.CantidadMenores > 0 ? $" ({r.CantidadMenores} menor{(r.CantidadMenores == 1 ? "" : "es")})" : "");
-                    <div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100">
+                    var clasesColor = ClasesColorContacto(r);
+                    <div class="rounded-2.5xl @clasesColor.Tarjeta p-4 shadow-soft ring-1">
                         @if (esSolicitudes)
                         {
                             <p class="text-xs text-ink-400">Creada el @r.FechaCreacion.ToString("dd/MM/yyyy")</p>
@@ -438,7 +471,8 @@ else
                     <tbody class="divide-y divide-ink-100">
                         @foreach (var r in grupo.Item2)
                         {
-                            <tr class="transition hover:bg-sand-50/60">
+                            var clasesColorFila = ClasesColorContacto(r);
+                            <tr class="transition @clasesColorFila.Fila">
                                 @if (esSolicitudes)
                                 {
                                     <td class="whitespace-nowrap px-3 py-3 text-ink-600">@(r.Cabana?.Nombre ?? "Sin cabaña")</td>
@@ -520,6 +554,41 @@ else
             </div>
         </div>
     }
+}
+
+@if (esSolicitudes)
+{
+    <div class="mt-8 rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-5">
+        <h2 class="mb-1 font-display text-sm font-semibold text-ink-800">Colores según tiempo sin avanzar tras el contacto</h2>
+        <p class="mb-3 text-xs text-ink-400">A modo de ejemplo: configurá después de cuántas horas desde que se contactó una solicitud se resalta en amarillo y en rojo.</p>
+        <form asp-action="GuardarConfiguracionSolicitudes" method="post" class="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="busqueda" value="@busqueda" />
+            <input type="hidden" name="cabanaId" value="@cabanaIdFiltro" />
+            <input type="hidden" name="anio" value="@primerDia?.Year" />
+            <input type="hidden" name="mes" value="@primerDia?.Month" />
+            <input type="hidden" name="contactado" value="@contactadoFiltro" />
+            <input type="hidden" name="colorContacto" value="@colorContactoFiltro" />
+            <input type="hidden" name="orden" value="@ordenActual" />
+            <input type="hidden" name="desc" value="@ordenDescActual" />
+            <div class="w-32">
+                <label class="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink-600">
+                    <span class="h-2.5 w-2.5 rounded-full bg-amber-300"></span>
+                    Horas para amarillo
+                </label>
+                <input type="number" name="horasAmarillo" min="1" value="@horasAmarillo"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <div class="w-32">
+                <label class="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink-600">
+                    <span class="h-2.5 w-2.5 rounded-full bg-rose-300"></span>
+                    Horas para rojo
+                </label>
+                <input type="number" name="horasRojo" min="1" value="@horasRojo"
+                       class="w-full rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100" />
+            </div>
+            <button type="submit" class="h-[38px] rounded-full bg-river-700 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">Guardar</button>
+        </form>
+    </div>
 }
 
 <partial name="_ModalConflictos" />

@@ -25,6 +25,7 @@ namespace GestionCabanas.Data
         public DbSet<FinDeSemanaLargo> FinesDeSemanaLargos => Set<FinDeSemanaLargo>();
         public DbSet<MinimoNoches> MinimosNoches => Set<MinimoNoches>();
         public DbSet<DescuentoSalidaAnticipada> DescuentosSalidaAnticipada => Set<DescuentoSalidaAnticipada>();
+        public DbSet<ConfiguracionSolicitudes> ConfiguracionesSolicitudes => Set<ConfiguracionSolicitudes>();
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {

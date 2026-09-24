@@ -109,10 +109,22 @@ namespace GestionCabanas.Areas.Admin.Controllers
             return Json(new { firma, excelModificado });
         }
 
-        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes, bool? contactado, string? orden, bool desc = false)
+        public async Task<IActionResult> Index(EstadoReserva? estado, string? busqueda, int? cabanaId, int? anio, int? mes, bool? contactado, string? colorContacto, string? orden, bool desc = false)
         {
             var estadoEfectivo = estado ?? EstadoReserva.Confirmada;
             var esSolicitudes = estadoEfectivo == EstadoReserva.Pendiente;
+
+            ConfiguracionSolicitudes? configSolicitudes = null;
+            if (esSolicitudes)
+            {
+                configSolicitudes = await _db.ConfiguracionesSolicitudes.FirstOrDefaultAsync();
+                if (configSolicitudes is null)
+                {
+                    configSolicitudes = new ConfiguracionSolicitudes();
+                    _db.ConfiguracionesSolicitudes.Add(configSolicitudes);
+                    await _db.SaveChangesAsync();
+                }
+            }
 
             var query = _db.Reservas.Include(r => r.Cabana)
                 .Where(r => r.Estado == estadoEfectivo)
@@ -128,6 +140,18 @@ namespace GestionCabanas.Areas.Admin.Controllers
             if (esSolicitudes && contactado.HasValue)
             {
                 query = query.Where(r => r.Contactado == contactado.Value);
+            }
+            if (esSolicitudes && !string.IsNullOrWhiteSpace(colorContacto) && configSolicitudes is not null)
+            {
+                var ahora = DateTime.Now;
+                var corteAmarillo = ahora.AddHours(-configSolicitudes.HorasAmarillo);
+                var corteRojo = ahora.AddHours(-configSolicitudes.HorasRojo);
+                query = colorContacto switch
+                {
+                    "amarillo" => query.Where(r => r.FechaContactado.HasValue && r.FechaContactado.Value <= corteAmarillo && r.FechaContactado.Value > corteRojo),
+                    "rojo" => query.Where(r => r.FechaContactado.HasValue && r.FechaContactado.Value <= corteRojo),
+                    _ => query
+                };
             }
 
             // Las solicitudes se listan todas por defecto (más vieja primero); el mes es un filtro
@@ -155,6 +179,9 @@ namespace GestionCabanas.Areas.Admin.Controllers
             ViewBag.Busqueda = busqueda;
             ViewBag.CabanaIdFiltro = cabanaId;
             ViewBag.ContactadoFiltro = contactado;
+            ViewBag.ColorContactoFiltro = colorContacto;
+            ViewBag.HorasAmarillo = configSolicitudes?.HorasAmarillo ?? 24;
+            ViewBag.HorasRojo = configSolicitudes?.HorasRojo ?? 48;
             ViewBag.Orden = orden;
             ViewBag.OrdenDesc = desc;
             ViewBag.Cabanas = await _db.Cabanas.OrderBy(c => c.Nombre).ToListAsync();
@@ -471,6 +498,27 @@ namespace GestionCabanas.Areas.Admin.Controllers
             await _db.SaveChangesAsync();
 
             return Json(new { ok = true, contactado = reserva.Contactado, fechaContactado = reserva.FechaContactado });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GuardarConfiguracionSolicitudes(int horasAmarillo, int horasRojo, string? busqueda, int? cabanaId, int? anio, int? mes, bool? contactado, string? colorContacto, string? orden, bool desc = false)
+        {
+            if (horasAmarillo < 1) horasAmarillo = 1;
+            if (horasRojo < 1) horasRojo = 1;
+
+            var config = await _db.ConfiguracionesSolicitudes.FirstOrDefaultAsync();
+            if (config is null)
+            {
+                config = new ConfiguracionSolicitudes();
+                _db.ConfiguracionesSolicitudes.Add(config);
+            }
+            config.HorasAmarillo = horasAmarillo;
+            config.HorasRojo = horasRojo;
+            await _db.SaveChangesAsync();
+
+            TempData["Mensaje"] = "Configuración de colores actualizada.";
+            return RedirectToAction(nameof(Index), new { estado = EstadoReserva.Pendiente, busqueda, cabanaId, anio, mes, contactado, colorContacto, orden, desc });
         }
 
         [HttpPost]
