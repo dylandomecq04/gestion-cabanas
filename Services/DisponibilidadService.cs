@@ -58,10 +58,52 @@ namespace GestionCabanas.Services
             return fines.FirstOrDefault(f => f.EstadiaIncompleta(desde, hasta))?.MensajeReservaCompleta();
         }
 
-        /// <summary>Mínimo de noches configurado por día de la semana. Sin entrada para un día = sin restricción.</summary>
-        public async Task<Dictionary<DayOfWeek, int>> ObtenerMinimosNochesAsync()
+        /// <summary>Mínimo de noches configurado por fecha puntual. Sin entrada para una fecha = sin restricción.</summary>
+        public async Task<Dictionary<DateTime, int>> ObtenerMinimosNochesAsync()
         {
-            return await _db.MinimosNoches.ToDictionaryAsync(m => m.DiaSemana, m => m.Noches);
+            return await _db.MinimosNoches.ToDictionaryAsync(m => m.Fecha.Date, m => m.Noches);
+        }
+
+        /// <summary>
+        /// Guarda el mínimo de noches de cada fecha marcada (una fecha sin mínimo, o con 1 o menos, borra su
+        /// restricción). Se usa desde el calendario de precios, que manda todos los días del mes visible.
+        /// </summary>
+        public async Task GuardarMinimosNochesAsync(IEnumerable<MinimoNocheInput> dias)
+        {
+            var listaDias = dias.ToList();
+            if (listaDias.Count == 0)
+            {
+                return;
+            }
+
+            var fechas = listaDias.Select(d => d.Fecha.Date).ToList();
+            var existentes = await _db.MinimosNoches
+                .Where(m => fechas.Contains(m.Fecha))
+                .ToDictionaryAsync(m => m.Fecha);
+
+            foreach (var dia in listaDias)
+            {
+                var fecha = dia.Fecha.Date;
+                existentes.TryGetValue(fecha, out var existente);
+
+                if (!dia.Noches.HasValue || dia.Noches.Value <= 1)
+                {
+                    if (existente is not null)
+                    {
+                        _db.MinimosNoches.Remove(existente);
+                    }
+                    continue;
+                }
+
+                if (existente is null)
+                {
+                    existente = new MinimoNoches { Fecha = fecha };
+                    _db.MinimosNoches.Add(existente);
+                }
+                existente.Noches = Math.Min(dia.Noches.Value, 30);
+            }
+
+            await _db.SaveChangesAsync();
         }
 
         /// <summary>
@@ -89,7 +131,7 @@ namespace GestionCabanas.Services
             var diasExigentes = new List<(DateTime Dia, int Exigido)>();
             for (var dia = desde.Date; dia < hasta.Date; dia = dia.AddDays(1))
             {
-                if (minimos.TryGetValue(dia.DayOfWeek, out var exigido) && exigido > noches)
+                if (minimos.TryGetValue(dia, out var exigido) && exigido > noches)
                 {
                     diasExigentes.Add((dia, exigido));
                 }
@@ -137,20 +179,20 @@ namespace GestionCabanas.Services
                 return false;
             }
 
-            DayOfWeek? diaExigente = null;
+            DateTime? diaExigente = null;
             var maximoExigido = 0;
             foreach (var (dia, exigido) in diasExigentes)
             {
                 if (exigido > maximoExigido && HayVentanaLibreEnAlgunaCabana(dia, exigido))
                 {
                     maximoExigido = exigido;
-                    diaExigente = dia.DayOfWeek;
+                    diaExigente = dia;
                 }
             }
 
             return diaExigente is null
                 ? null
-                : $"El mínimo de noches reservando el {MinimoNoches.NombreDia(diaExigente.Value)} es de {maximoExigido} noches.";
+                : $"El mínimo de noches reservando el {diaExigente:dddd d/M} es de {maximoExigido} noches.";
         }
 
         public async Task<List<Reserva>> ObtenerConfirmadasAsync(int cabanaId, DateTime? desde = null)

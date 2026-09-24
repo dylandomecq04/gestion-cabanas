@@ -93,7 +93,7 @@ namespace GestionCabanas.Data
                 .HasIndex(f => new { f.FechaDesde, f.FechaHasta });
 
             modelBuilder.Entity<MinimoNoches>()
-                .HasIndex(m => m.DiaSemana)
+                .HasIndex(m => m.Fecha)
                 .IsUnique();
 
             modelBuilder.Entity<DescuentoSalidaAnticipada>()
