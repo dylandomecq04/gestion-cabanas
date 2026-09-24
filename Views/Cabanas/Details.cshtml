@@ -15,7 +15,7 @@
     ViewData["Title"] = cabana.Nombre;
 
     bool EstaOcupado(DateTime dia) => reservas.Any(r => r.FechaDesde <= dia && dia < r.FechaHasta);
-    bool EnPromo(DateTime dia) => promos.Any(p => p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
+    PromoEstadia? PromoDelDia(DateTime dia) => promos.FirstOrDefault(p => p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
     decimal? PrecioDelDia(DateTime dia) => tarifas.FirstOrDefault(t => t.Fecha.Date == dia.Date)?.Precio2;
     string FormatoCompacto(decimal precio)
     {
@@ -229,13 +229,21 @@
                     {
                         var marco = FinDeSemanaLargo.ClasesMarco(fines, dia.Value);
                         var ocupado = EstaOcupado(dia.Value);
-                        var enPromoDia = !ocupado && EnPromo(dia.Value);
+                        var promoDia = ocupado ? null : PromoDelDia(dia.Value);
+                        var enPromoDia = promoDia is not null;
                         var precioDia = ocupado ? null : PrecioDelDia(dia.Value);
+                        var precioPromoDia = promoDia?.PrecioPromedioPorNoche();
                         var clases = ocupado
                             ? "bg-rose-100 text-rose-600 hover:bg-rose-200"
                             : "bg-river-100 text-river-700 hover:bg-river-200";
                         var titulo = ocupado ? "Ocupada" : (enPromoDia ? "Disponible · con promoción" : "Disponible");
-                        if (precioDia.HasValue)
+                        if (precioPromoDia.HasValue)
+                        {
+                            titulo += precioDia.HasValue
+                                ? $" · ${precioPromoDia.Value:N0} con promo (antes ${precioDia.Value:N0})"
+                                : $" · ${precioPromoDia.Value:N0} con promo";
+                        }
+                        else if (precioDia.HasValue)
                         {
                             titulo += $" · ${precioDia.Value:N0} estándar para 2 personas";
                         }
@@ -256,7 +264,14 @@
                                 <span class="absolute -top-2 right-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
                             }
                             @dia.Value.Day
-                            @if (precioDia.HasValue)
+                            @if (precioPromoDia.HasValue && precioDia.HasValue)
+                            {
+                                <span class="flex items-center gap-0.5 leading-none">
+                                    <span class="text-[7px] font-semibold text-ink-400 line-through decoration-rose-500">$@FormatoCompacto(precioDia.Value)</span>
+                                    <span class="text-[8px] font-bold text-amber-700">$@FormatoCompacto(precioPromoDia.Value)</span>
+                                </span>
+                            }
+                            else if (precioDia.HasValue)
                             {
                                 <span class="text-[8px] font-bold leading-none opacity-80">$@FormatoCompacto(precioDia.Value)</span>
                             }

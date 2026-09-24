@@ -15,17 +15,31 @@
 
     bool NoDisponible(int cabanaId, DateTime dia) => reservas.Any(r => r.CabanaId == cabanaId && r.FechaDesde <= dia && dia < r.FechaHasta);
     int CabanasLibres(DateTime dia) => cabanas.Count(c => !NoDisponible(c.Id, dia));
-    bool CabanaEnPromo(int cabanaId, DateTime dia) => promos.Any(p => p.CabanaId == cabanaId && p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
-    bool DiaConPromoDisponible(DateTime dia) => cabanas.Any(c => !NoDisponible(c.Id, dia) && CabanaEnPromo(c.Id, dia));
-    decimal? PrecioDesdeDelDia(DateTime dia)
+    PromoEstadia? PromoDeLaCabanaEnElDia(int cabanaId, DateTime dia) => promos.FirstOrDefault(p => p.CabanaId == cabanaId && p.FechaDesde.Date <= dia.Date && p.FechaHasta.Date >= dia.Date);
+
+    // El mejor precio disponible ese día, entre todas las cabañas libres: si alguna tiene promo,
+    // compite con su precio de promo en vez del regular. Devuelve también el precio regular de esa
+    // misma cabaña, para poder tacharlo junto al de la promo.
+    (decimal? Regular, decimal? Promo) MejorPrecioDelDia(DateTime dia)
     {
-        var precios = cabanas
+        var candidatos = cabanas
             .Where(c => !NoDisponible(c.Id, dia))
-            .Select(c => tarifas.FirstOrDefault(t => t.CabanaId == c.Id && t.Fecha.Date == dia.Date)?.Precio2)
-            .Where(p => p.HasValue)
-            .Select(p => p!.Value)
+            .Select(c =>
+            {
+                var regular = tarifas.FirstOrDefault(t => t.CabanaId == c.Id && t.Fecha.Date == dia.Date)?.Precio2;
+                var promo = PromoDeLaCabanaEnElDia(c.Id, dia)?.PrecioPromedioPorNoche();
+                return (Regular: regular, Promo: promo, Efectivo: promo ?? regular);
+            })
+            .Where(x => x.Efectivo.HasValue)
             .ToList();
-        return precios.Count > 0 ? precios.Min() : (decimal?)null;
+
+        if (candidatos.Count == 0)
+        {
+            return (null, null);
+        }
+
+        var mejor = candidatos.OrderBy(x => x.Efectivo!.Value).First();
+        return (mejor.Regular, mejor.Promo);
     }
     string FormatoCompacto(decimal precio)
     {
@@ -100,15 +114,21 @@
             {
                 var marco = FinDeSemanaLargo.ClasesMarco(fines, dia.Value);
                 var libres = CabanasLibres(dia.Value);
-                var conPromo = libres > 0 && DiaConPromoDisponible(dia.Value);
-                var precioDesde = libres > 0 ? PrecioDesdeDelDia(dia.Value) : null;
+                var (precioRegularDesde, precioPromoDesde) = libres > 0 ? MejorPrecioDelDia(dia.Value) : (null, null);
+                var conPromo = precioPromoDesde.HasValue;
                 var clases = libres > 0
                     ? "bg-river-100 text-river-700 hover:bg-river-200"
                     : "bg-rose-100 text-rose-600 hover:bg-rose-200";
                 var titulo = conPromo ? "Disponible · con promoción" : (libres > 0 ? "Disponible" : "No disponible");
-                if (precioDesde.HasValue)
+                if (precioPromoDesde.HasValue)
                 {
-                    titulo += $" · Desde ${precioDesde.Value:N0} estándar para 2 personas";
+                    titulo += precioRegularDesde.HasValue
+                        ? $" · Desde ${precioPromoDesde.Value:N0} con promo (antes ${precioRegularDesde.Value:N0})"
+                        : $" · Desde ${precioPromoDesde.Value:N0} con promo";
+                }
+                else if (precioRegularDesde.HasValue)
+                {
+                    titulo += $" · Desde ${precioRegularDesde.Value:N0} estándar para 2 personas";
                 }
                 if (marco is not null)
                 {
@@ -127,9 +147,16 @@
                         <span class="absolute -top-2 right-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-600">Promo</span>
                     }
                     @dia.Value.Day
-                    @if (precioDesde.HasValue)
+                    @if (precioPromoDesde.HasValue && precioRegularDesde.HasValue)
                     {
-                        <span class="text-[8px] font-bold leading-none opacity-80">$@FormatoCompacto(precioDesde.Value)</span>
+                        <span class="flex items-center gap-0.5 leading-none">
+                            <span class="text-[7px] font-semibold text-ink-400 line-through decoration-rose-500">$@FormatoCompacto(precioRegularDesde.Value)</span>
+                            <span class="text-[8px] font-bold text-amber-700">$@FormatoCompacto(precioPromoDesde.Value)</span>
+                        </span>
+                    }
+                    else if (precioRegularDesde.HasValue)
+                    {
+                        <span class="text-[8px] font-bold leading-none opacity-80">$@FormatoCompacto(precioRegularDesde.Value)</span>
                     }
                 </button>
             }
