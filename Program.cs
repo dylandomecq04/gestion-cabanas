@@ -31,6 +31,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IPasswordHasher<AdminUsuario>, PasswordHasher<AdminUsuario>>();
 builder.Services.Configure<PoliticaPrecios>(builder.Configuration.GetSection("Precios"));
 builder.Services.AddScoped<GestionCabanas.Services.DisponibilidadService>();
+builder.Services.AddScoped<GestionCabanas.Services.MensajesWhatsAppService>();
 builder.Services.AddSingleton<GestionCabanas.Services.AlmacenamientoFotosService>();
 builder.Services.AddScoped<GestionCabanas.Services.INotificacionEmailService, GestionCabanas.Services.EmailNotificacionService>();
 

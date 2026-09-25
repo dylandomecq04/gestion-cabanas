@@ -26,6 +26,7 @@ namespace GestionCabanas.Data
         public DbSet<MinimoNoches> MinimosNoches => Set<MinimoNoches>();
         public DbSet<DescuentoSalidaAnticipada> DescuentosSalidaAnticipada => Set<DescuentoSalidaAnticipada>();
         public DbSet<ConfiguracionSolicitudes> ConfiguracionesSolicitudes => Set<ConfiguracionSolicitudes>();
+        public DbSet<MensajeWhatsApp> MensajesWhatsApp => Set<MensajeWhatsApp>();
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {
@@ -94,6 +95,10 @@ namespace GestionCabanas.Data
 
             modelBuilder.Entity<MinimoNoches>()
                 .HasIndex(m => m.Fecha)
+                .IsUnique();
+
+            modelBuilder.Entity<MensajeWhatsApp>()
+                .HasIndex(m => m.Clave)
                 .IsUnique();
 
             modelBuilder.Entity<DescuentoSalidaAnticipada>()

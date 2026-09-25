@@ -47,11 +47,7 @@
     string mensajeWhatsApp;
     if (reservaConfirmada != null)
     {
-        var textoValor = valorTotal.HasValue ? $" Valor total aproximado: ${valorTotal.Value:N0}." : "";
-        var textoSalidaAnticipada = reservaConfirmada.SalidaAnticipada ? " Salgo el domingo a la noche." : "";
-        mensajeWhatsApp = Uri.EscapeDataString(
-            $"Hola! Soy {reservaConfirmada.NombreHuesped}. Quiero coordinar mi solicitud de reserva en {cabana.Nombre} " +
-            $"del {reservaConfirmada.FechaDesde:dd/MM/yyyy} al {reservaConfirmada.FechaHasta:dd/MM/yyyy} para {reservaConfirmada.CantidadPersonas} personas." + textoValor + textoSalidaAnticipada);
+        mensajeWhatsApp = Uri.EscapeDataString((string)ViewBag.MensajeWhatsApp);
     }
     else
     {

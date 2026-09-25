@@ -20,9 +20,11 @@ namespace GestionCabanas.Areas.Admin.Controllers
         private readonly ExcelEscrituraService _excelEscritura;
         private readonly IConfiguration _config;
         private readonly INotificacionEmailService _email;
+        private readonly MensajesWhatsAppService _mensajesWhatsApp;
 
-        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad, GraphOneDriveService oneDrive, ExcelEscrituraService excelEscritura, IConfiguration config, INotificacionEmailService email)
+        public ReservasController(ApplicationDbContext db, DisponibilidadService disponibilidad, GraphOneDriveService oneDrive, ExcelEscrituraService excelEscritura, IConfiguration config, INotificacionEmailService email, MensajesWhatsAppService mensajesWhatsApp)
         {
+            _mensajesWhatsApp = mensajesWhatsApp;
             _db = db;
             _disponibilidad = disponibilidad;
             _oneDrive = oneDrive;
@@ -226,6 +228,7 @@ namespace GestionCabanas.Areas.Admin.Controllers
             var reservas = esSolicitudes
                 ? await querySolicitudes.ToListAsync()
                 : await query.OrderBy(r => r.FechaDesde).ThenBy(r => r.Cabana!.Nombre).ToListAsync();
+            ViewBag.TextosWhatsApp = await _mensajesWhatsApp.ObtenerTextosAsync();
             return View(reservas);
         }
 
@@ -494,7 +497,8 @@ namespace GestionCabanas.Areas.Admin.Controllers
             }
 
             reserva.Contactado = contactado;
-            reserva.FechaContactado = contactado ? DateTime.Now : null;
+            // Se conserva la fecha del primer contacto: solo se pisa al destildar.
+            reserva.FechaContactado = contactado ? reserva.FechaContactado ?? DateTime.Now : null;
             await _db.SaveChangesAsync();
 
             return Json(new { ok = true, contactado = reserva.Contactado, fechaContactado = reserva.FechaContactado });

@@ -11,6 +11,7 @@ namespace GestionCabanas.Controllers
         private readonly ApplicationDbContext _db;
         private readonly DisponibilidadService _disponibilidad;
         private readonly INotificacionEmailService _email;
+        private readonly MensajesWhatsAppService _mensajesWhatsApp;
 
         private static readonly string MensajeMaximoPersonas =
             $"Podemos recibir hasta {PoliticaPrecios.MaxPersonasPorReserva} personas por reserva (contando a los menores).";
@@ -18,8 +19,9 @@ namespace GestionCabanas.Controllers
         private const string MensajeGrupoGrande =
             "Para un grupo más grande, usá «Reservar» en el menú: te ofrecemos una cabaña más grande o repartirse en dos cabañas.";
 
-        public CabanasController(ApplicationDbContext db, DisponibilidadService disponibilidad, INotificacionEmailService email)
+        public CabanasController(ApplicationDbContext db, DisponibilidadService disponibilidad, INotificacionEmailService email, MensajesWhatsAppService mensajesWhatsApp)
         {
+            _mensajesWhatsApp = mensajesWhatsApp;
             _db = db;
             _disponibilidad = disponibilidad;
             _email = email;
@@ -65,6 +67,10 @@ namespace GestionCabanas.Controllers
                         id, reservaConfirmada.FechaDesde, reservaConfirmada.FechaHasta,
                         new Huespedes(reservaConfirmada.CantidadAdultos, reservaConfirmada.CantidadMenores),
                         reservaConfirmada.SalidaAnticipada);
+                    ViewBag.MensajeWhatsApp = MensajesWhatsAppService.ArmarSolicitudDelHuesped(
+                        await _mensajesWhatsApp.ObtenerTextoAsync(MensajesWhatsAppService.SolicitudDelHuesped),
+                        reservaConfirmada.NombreHuesped, cabana.Nombre, reservaConfirmada.FechaDesde, reservaConfirmada.FechaHasta,
+                        reservaConfirmada.CantidadPersonas, (decimal?)ViewBag.ValorTotalReserva, reservaConfirmada.SalidaAnticipada);
                 }
             }
 
@@ -487,9 +493,16 @@ namespace GestionCabanas.Controllers
                 total = total.HasValue && reserva.Valor.HasValue ? total + reserva.Valor : null;
             }
 
+            var mensajeWhatsApp = MensajesWhatsAppService.ArmarSolicitudDelHuesped(
+                await _mensajesWhatsApp.ObtenerTextoAsync(MensajesWhatsAppService.SolicitudDelHuesped),
+                reservasCreadas[0].NombreHuesped, string.Join(" y ", cabanas.Select(c => c.Nombre)),
+                modelo.Segmentos.Min(s => s.FechaDesde), modelo.Segmentos.Max(s => s.FechaHasta),
+                modelo.CantidadPersonas, total, reservasCreadas.Any(r => r.SalidaAnticipada));
+
             return Json(new
             {
                 exito = true,
+                mensajeWhatsApp,
                 total,
                 cabanas = cabanas.Select(c => c.Nombre),
                 desde = modelo.Segmentos.Min(s => s.FechaDesde).ToString("dd/MM/yyyy"),

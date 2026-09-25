@@ -1,0 +1,47 @@
+@using GestionCabanas.Services
+@model IReadOnlyList<DefinicionMensajeWhatsApp>
+@{
+    ViewData["Title"] = "Mensajes WhatsApp";
+    var textos = (Dictionary<string, string>)ViewBag.Textos;
+    var campo = "w-full rounded-xl border border-ink-200 px-3.5 py-2.5 font-mono text-[13px] leading-relaxed text-ink-900 shadow-sm transition focus:border-river-400 focus:outline-none focus:ring-4 focus:ring-river-100";
+}
+
+<h1 class="font-display text-2xl font-semibold text-ink-900">Mensajes WhatsApp</h1>
+<p class="mt-2 max-w-2xl text-sm text-ink-500">
+    Acá podés cambiar el texto de los cuatro mensajes que se arman para WhatsApp. Las palabras entre llaves, como
+    <code class="rounded bg-ink-100 px-1">{nombre}</code>, se reemplazan solas con los datos de cada reserva: dejalas tal cual
+    donde quieras que aparezcan. Los cambios se aplican en el próximo mensaje que se arme.
+</p>
+
+<div class="mt-6 space-y-6">
+    @foreach (var d in Model)
+    {
+        <section id="@d.Clave" class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
+            <h2 class="font-display text-lg font-semibold text-ink-900">@d.Titulo</h2>
+            <p class="mt-1 text-sm text-ink-500">@d.Descripcion</p>
+
+            <form asp-action="Guardar" method="post" class="mt-4 space-y-3">
+                <input type="hidden" name="clave" value="@d.Clave" />
+                <textarea name="texto" rows="@Math.Clamp(textos[d.Clave].Count(c => c == '\n') + 2, 6, 22)" class="@campo">@textos[d.Clave]</textarea>
+
+                <details class="rounded-xl bg-sand-50 px-4 py-3 text-sm text-ink-600">
+                    <summary class="cursor-pointer font-medium text-ink-700">Variables que podés usar</summary>
+                    <ul class="mt-2 space-y-1">
+                        @foreach (var (variable, explicacion) in d.Variables)
+                        {
+                            <li><code class="rounded bg-white px-1 font-semibold text-river-700">@variable</code> — @explicacion</li>
+                        }
+                    </ul>
+                </details>
+
+                <button type="submit" class="rounded-full bg-river-700 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-river-800">Guardar</button>
+            </form>
+
+            <form asp-action="Restaurar" method="post" class="mt-2">
+                <input type="hidden" name="clave" value="@d.Clave" />
+                <button type="submit" onclick="return confirmarAccion(event, 'Se pierde lo que escribiste y vuelve el texto original de este mensaje. ¿Seguís?')"
+                        class="rounded-full border border-ink-200 px-5 py-2.5 text-sm font-medium text-ink-600 transition hover:border-ink-300">Restaurar original</button>
+            </form>
+        </section>
+    }
+</div>
