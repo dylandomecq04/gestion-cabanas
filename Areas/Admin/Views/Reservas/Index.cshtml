@@ -134,7 +134,9 @@
     {
         var personasTexto = $"{r.CantidadPersonas} {(r.CantidadPersonas == 1 ? "persona" : "personas")}"
             + (r.CantidadMenores > 0 ? $" ({r.CantidadMenores} menor{(r.CantidadMenores == 1 ? "" : "es")})" : "");
+        var sinSaldoPendiente = r.Valor.HasValue && r.Valor.Value == 0;
         var pendiente = r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "a confirmar";
+        var lineaSaldoPendiente = sinSaldoPendiente ? "" : $"💰 *Saldo pendiente:* {pendiente}.\n\n";
 
         return $"Hola, ¿cómo estás?\n\n" +
             "🏡 *TU RESERVA EN CABAÑAS SIDHARTA ESTÁ CONFIRMADA*\n\n" +
@@ -146,7 +148,7 @@
             "🕐 *Horarios*\n" +
             "Ingreso: 12:00 hs\n" +
             "Salida: 10:00 hs\n\n" +
-            $"💰 *Saldo pendiente:* {pendiente}.\n\n" +
+            lineaSaldoPendiente +
             "📋 *Datos de los huéspedes*\n" +
             "Cuando puedas, por favor pasanos nombre, apellido y DNI de todas las personas que se van a hospedar, incluidos los menores.\n\n" +
             "🧳 *Qué deben traer*\n" +
