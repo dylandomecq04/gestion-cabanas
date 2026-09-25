@@ -628,9 +628,17 @@
             const personasTexto = `${data.cantidadPersonas} ${data.cantidadPersonas === 1 ? 'persona' : 'personas'}`;
 
             const mensajeWhatsApp = encodeURIComponent(
-                `Hola! Soy ${data.nombreHuesped}. Quiero coordinar mi solicitud de reserva en ${cabanasTexto} ` +
-                `del ${data.desde} al ${data.hasta} para ${data.cantidadPersonas} personas. Valor total aproximado: ${totalTexto}.` +
-                (data.salidaAnticipada ? ' Salgo el domingo a la noche.' : '')
+                `Hola, ¿cómo están? 😊\n\n` +
+                `Soy ${data.nombreHuesped} y quería coordinar mi reserva en *Cabañas Sidharta*.\n\n` +
+                `🏡 *Cabaña:* ${cabanasTexto}\n` +
+                `👥 *Huéspedes:* ${personasTexto}\n` +
+                `📅 *Ingreso:* ${data.desde}\n` +
+                `📅 *Salida:* ${data.hasta}\n` +
+                `💰 *Valor total de la reserva:* ${totalTexto}\n\n` +
+                `La cabaña asignada sería *${cabanasTexto}*.` +
+                (data.salidaAnticipada ? '\nSalgo el domingo a la noche.' : '') +
+                `\n\nQuedo atento/a para confirmar la disponibilidad y avanzar con la reserva.\n\n` +
+                `¡Muchas gracias! 😊`
             );
 
             const notaFinal = data.tieneEmail
