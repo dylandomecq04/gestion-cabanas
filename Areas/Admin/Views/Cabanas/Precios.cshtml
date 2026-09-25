@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Precios";
     var cabanas = (List<Cabana>)ViewBag.Cabanas;
+    var gruposCabanas = (List<IGrouping<string, Cabana>>)ViewBag.GruposCabanas;
     DateTime primerDia = ViewBag.PrimerDia;
     DateTime mesAnterior = ViewBag.MesAnterior;
     DateTime mesSiguiente = ViewBag.MesSiguiente;
@@ -12,6 +13,8 @@
     var preciosPrecargadosJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.PreciosPrecargados);
     var mesTitulo = primerDia.ToString("MMMM yyyy");
     mesTitulo = char.ToUpper(mesTitulo[0]) + mesTitulo.Substring(1);
+    var mesSiguienteTitulo = mesSiguiente.ToString("MMMM yyyy");
+    mesSiguienteTitulo = char.ToUpper(mesSiguienteTitulo[0]) + mesSiguienteTitulo.Substring(1);
 
     // En el celu no hay lugar para "Lunes a viernes", así que se abrevia.
     string etiquetaCorta(string clave) => clave switch { "Semana" => "Lun a vie", _ => clave == "Sabado" ? "Sábado" : "Domingo" };
@@ -51,21 +54,30 @@
         }
         <a asp-action="Precios" asp-route-anio="@mesSiguiente.Year" asp-route-mes="@mesSiguiente.Month"
            class="whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:border-river-300 hover:text-river-700 sm:px-4 sm:py-2 sm:text-sm">Mes siguiente &rarr;</a>
+        <form asp-action="CopiarPreciosMesSiguiente" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post"
+              onsubmit="return confirm('¿Copiar los precios de @mesTitulo a @mesSiguienteTitulo? Se van a sobrescribir los precios ya cargados para los días de @mesSiguienteTitulo que no estén pasados ni reservados.');">
+            <button type="submit" class="whitespace-nowrap rounded-full border border-river-200 bg-river-50 px-3 py-1.5 text-xs font-medium text-river-700 transition hover:border-river-300 hover:bg-river-100 sm:px-4 sm:py-2 sm:text-sm">
+                Copiar a @mesSiguienteTitulo
+            </button>
+        </form>
     </div>
 </div>
 
 <div class="rounded-2.5xl bg-white p-4 shadow-soft ring-1 ring-ink-100 sm:p-6">
-    <form asp-action="AplicarPreciosPorDiaSemana" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post">
+    <form id="form-precios-dia-semana" asp-action="AplicarPreciosPorDiaSemana" asp-route-anio="@primerDia.Year" asp-route-mes="@primerDia.Month" method="post">
+        <div id="cabanaIds-hidden"></div>
         <div class="mb-5">
             <label class="mb-2 block text-sm font-medium text-ink-700">Cabañas</label>
             <div class="flex flex-wrap gap-2">
-                @foreach (var cabana in cabanas)
+                @foreach (var grupo in gruposCabanas)
                 {
+                    var ids = string.Join(",", grupo.Select(c => c.Id));
+                    var capacidadMaxima = grupo.Max(c => c.Capacidad);
                     <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-ink-200 px-3.5 py-2 text-sm text-ink-700 transition hover:border-river-300">
-                        <input type="checkbox" name="cabanaIds" value="@cabana.Id" data-capacidad="@cabana.Capacidad"
-                               onchange="actualizarTramosDisponibles(); actualizarPreciosPrecargados();"
-                               class="h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400" />
-                        @cabana.Nombre
+                        <input type="checkbox" class="grupo-cabana-checkbox h-4 w-4 rounded border-ink-300 text-river-700 focus:ring-river-400"
+                               data-ids="@ids" data-capacidad="@capacidadMaxima"
+                               onchange="actualizarTramosDisponibles(); actualizarPreciosPrecargados();" />
+                        @grupo.Key
                     </label>
                 }
             </div>
@@ -371,14 +383,26 @@
             document.getElementById(idCampoReal).value = soloDigitos;
         }
 
+        // Ids de cabaña de los grupos (Sidharta, Maia, ...) tildados.
+        function idsCabanasSeleccionadas() {
+            return [...document.querySelectorAll('.grupo-cabana-checkbox:checked')]
+                .flatMap(c => c.dataset.ids.split(',').map(Number));
+        }
+
+        // Antes de enviar el formulario, los grupos tildados se traducen a los cabanaIds reales.
+        document.getElementById('form-precios-dia-semana').addEventListener('submit', function () {
+            document.getElementById('cabanaIds-hidden').innerHTML = idsCabanasSeleccionadas()
+                .map(id => `<input type="hidden" name="cabanaIds" value="${id}">`).join('');
+        });
+
         // Un tramo (ej. "para 6") solo tiene sentido en cabañas con lugar para tantas personas. Si
-        // entre las cabañas tildadas ninguna lo admite, esa columna se deshabilita y se vacía.
+        // entre los grupos tildados ninguno lo admite, esa columna se deshabilita y se vacía.
         function tramoAdmitido(tramo, capacidad) {
             return tramo <= 2 || capacidad > tramo - 2;
         }
 
         function actualizarTramosDisponibles() {
-            const marcadas = [...document.querySelectorAll('input[name="cabanaIds"]:checked')];
+            const marcadas = [...document.querySelectorAll('.grupo-cabana-checkbox:checked')];
 
             [4, 6].forEach(tramo => {
                 const habilitado = marcadas.length === 0
@@ -405,7 +429,7 @@
         // Al tildar cabañas, muestra el precio que ya tienen cargado para ese día/tramo, pero solo si
         // todas las cabañas tildadas comparten el mismo precio (si no, queda vacío para no confundir).
         function actualizarPreciosPrecargados() {
-            const marcadas = [...document.querySelectorAll('input[name="cabanaIds"]:checked')].map(c => c.value);
+            const marcadas = idsCabanasSeleccionadas();
             if (marcadas.length === 0) {
                 return;
             }

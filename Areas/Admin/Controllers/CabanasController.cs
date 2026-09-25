@@ -242,6 +242,10 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             var cabanas = await _db.Cabanas.Where(c => c.Activa).OrderBy(c => c.Id).ToListAsync();
             ViewBag.Cabanas = cabanas;
+            ViewBag.GruposCabanas = cabanas
+                .GroupBy(c => c.Grupo)
+                .OrderBy(g => g.Min(c => c.Orden))
+                .ToList();
 
             var tarifasDelMes = await _db.TarifasDias
                 .Where(t => t.Fecha >= primerDia && t.Fecha <= ultimoDia)
@@ -482,6 +486,64 @@ namespace GestionCabanas.Areas.Admin.Controllers
 
             TempData["Mensaje"] = mensaje;
             return RedirectToAction(nameof(Precios), new { anio, mes });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CopiarPreciosMesSiguiente(int anio, int mes)
+        {
+            var primerDia = new DateTime(anio, mes, 1);
+            var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
+            var primerDiaSiguiente = primerDia.AddMonths(1);
+            var ultimoDiaSiguiente = primerDiaSiguiente.AddMonths(1).AddDays(-1);
+            var diasEnMesSiguiente = ultimoDiaSiguiente.Day;
+            var hoy = DateTime.Today;
+
+            var tarifasOrigen = await _db.TarifasDias
+                .Where(t => t.Fecha >= primerDia && t.Fecha <= ultimoDia)
+                .ToListAsync();
+
+            if (tarifasOrigen.Count == 0)
+            {
+                TempData["Mensaje"] = $"No hay precios cargados en {primerDia:MMMM yyyy} para copiar.";
+                return RedirectToAction(nameof(Precios), new { anio, mes });
+            }
+
+            var reservasDestino = await _db.Reservas
+                .Where(r => r.Estado == EstadoReserva.Confirmada && r.FechaDesde <= ultimoDiaSiguiente && r.FechaHasta >= primerDiaSiguiente)
+                .ToListAsync();
+
+            // Se pisan los precios ya cargados del mes siguiente, salvo los días pasados o ya reservados.
+            var dias = new List<TarifaDiaInput>();
+            foreach (var tarifa in tarifasOrigen)
+            {
+                if (tarifa.Fecha.Day > diasEnMesSiguiente)
+                {
+                    continue;
+                }
+
+                var fechaDestino = new DateTime(primerDiaSiguiente.Year, primerDiaSiguiente.Month, tarifa.Fecha.Day);
+                if (fechaDestino < hoy || reservasDestino.Any(r => r.CabanaId == tarifa.CabanaId && r.FechaDesde <= fechaDestino && fechaDestino < r.FechaHasta))
+                {
+                    continue;
+                }
+
+                dias.Add(new TarifaDiaInput
+                {
+                    CabanaId = tarifa.CabanaId,
+                    Fecha = fechaDestino,
+                    Precio2 = tarifa.Precio2,
+                    Precio4 = tarifa.Precio4,
+                    Precio6 = tarifa.Precio6
+                });
+            }
+
+            await _disponibilidad.GuardarTarifasAsync(dias);
+
+            TempData["Mensaje"] = dias.Count > 0
+                ? $"Precios de {primerDia:MMMM yyyy} copiados a {primerDiaSiguiente:MMMM yyyy}."
+                : $"No se copió ningún precio: los días de {primerDiaSiguiente:MMMM yyyy} ya pasaron o están reservados.";
+            return RedirectToAction(nameof(Precios), new { anio = primerDiaSiguiente.Year, mes = primerDiaSiguiente.Month });
         }
 
         [HttpPost]
