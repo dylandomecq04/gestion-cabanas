@@ -135,40 +135,80 @@
         var personasTexto = $"{r.CantidadPersonas} {(r.CantidadPersonas == 1 ? "persona" : "personas")}"
             + (r.CantidadMenores > 0 ? $" ({r.CantidadMenores} menor{(r.CantidadMenores == 1 ? "" : "es")})" : "");
         var pendiente = r.Valor.HasValue ? "$" + r.Valor.Value.ToString("N0") : "a confirmar";
-        // Sidharta 1, 2 y 3 comparten una clave de wifi; Sidharta 5 y Maia (ex Sidharta 4) usan la otra.
-        var claveWifi = r.Cabana?.Nombre is "Sidharta 1" or "Sidharta 2" or "Sidharta 3" ? "26114842" : "12122012";
 
-        return $"Hola, cómo estás?\n\n" +
-            $"Tu reserva en Cabañas Sidharta quedó confirmada, a nombre de {r.NombreHuesped}, en la Cabaña {r.Cabana?.Nombre}, para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, para {personasTexto}.\n\n" +
-            $"Ingreso: 12:00 hs. Salida: 10:00 hs.\n" +
-            $"Queda pendiente pagar: {pendiente}.\n\n" +
-            "Cuando puedas, pasame nombre, apellido y DNI de las personas que se van a hospedar, menores incluidos.\n\n" +
-            "Recordá traer: repasador, sábanas, toallones y toalla de mano.\n\n" +
-            "*WiFi*\n" +
-            $"Red: Sidharta\nClave: {claveWifi}\n\n" +
-            "*Reglamento de la pileta*\n" +
-            "- Horario: de 10 a 20 hs\n" +
-            "- Prohibido el alcohol\n" +
-            "- Prohibida la música\n" +
-            "- Prohibido zambullirse\n" +
-            "- Los menores de 12 años no pueden estar sin la supervisión de un adulto\n\n" +
-            "*Cómo llegar*\n" +
-            "Arroyo Abra Vieja 230\n\n" +
-            "*Opción 1: lancha remis*\n" +
-            "Sale desde la Guardería Poseidón (Colón 10, San Fernando) y tarda 15 minutos.\n" +
-            "Leo: +54 9 11 3133-1665\n" +
-            "Estela: +54 9 11 3430-4574\n" +
-            "Juan: +54 9 11 5575-1756\n" +
-            "Beto: +54 9 11 5618-7841\n" +
-            "En el GPS poné \"Colón 10, San Fernando\".\n\n" +
-            "*Opción 2: en auto*\n" +
-            "1. Desde el ramal Tigre, bajá en la salida de la RP 197.\n" +
-            "2. Doblá a la derecha por la 197; vas a pasar por debajo de las vías, cerca de la estación Carupá.\n" +
-            "3. Seguí por avenida Colón, cruzás otra vía (la del Tren de la Costa) y continuás derecho.\n" +
-            "4. Después de esa vía empieza un empedrado; a la izquierda vas a ver un canal. Seguilo hasta el final de la calle.\n" +
-            "5. La calle termina en una rotonda chica sobre el río Luján: a la izquierda está Prefectura, a la derecha la Guardería Poseidón y después un muelle público, donde paran las lanchas remis. Avisales que van a Cabañas Sidharta/Maia.\n\n" +
-            "Estacionamiento: podés dejar el auto en cualquier lugar, menos en la puerta de la guardería.\n\n" +
-            "Muchas gracias!";
+        return $"Hola, ¿cómo estás?\n\n" +
+            "🏡 *TU RESERVA EN CABAÑAS SIDHARTA ESTÁ CONFIRMADA*\n\n" +
+            $"*Titular:* {r.NombreHuesped}\n" +
+            $"*Cabaña:* {r.Cabana?.Nombre}\n" +
+            $"*Fecha de ingreso:* {r.FechaDesde:dd/MM/yyyy}\n" +
+            $"*Fecha de salida:* {r.FechaHasta:dd/MM/yyyy}\n" +
+            $"*Cantidad de huéspedes:* {personasTexto}\n\n" +
+            "🕐 *Horarios*\n" +
+            "Ingreso: 12:00 hs\n" +
+            "Salida: 10:00 hs\n\n" +
+            $"💰 *Saldo pendiente:* {pendiente}.\n\n" +
+            "📋 *Datos de los huéspedes*\n" +
+            "Cuando puedas, por favor pasanos nombre, apellido y DNI de todas las personas que se van a hospedar, incluidos los menores.\n\n" +
+            "🧳 *Qué deben traer*\n" +
+            "Recordá traer:\n" +
+            "- Sábanas\n" +
+            "- Toallones\n" +
+            "- Toalla de mano\n" +
+            "- Repasador\n\n" +
+            "Las cabañas cuentan con acolchados y almohadas.\n\n" +
+            "🚤 *CÓMO LLEGAR*\n" +
+            "Estamos en la isla y se llega únicamente en lancha.\n\n" +
+            "*Lancha remis*\n" +
+            "La lancha sale desde:\n" +
+            "Guardería Poseidón\n" +
+            "📍 Colón 10, San Fernando\n" +
+            "El viaje tiene una duración aproximada de 15 minutos.\n\n" +
+            "📞 *Contactos de lancheros:*\n" +
+            "- Leo: +54 9 11 3133-1665\n" +
+            "- Estela: +54 9 11 3430-4574\n" +
+            "- Juan: +54 9 11 5575-1756\n" +
+            "- Beto: +54 9 11 5618-7841\n\n" +
+            "📍 Para llegar a la guardería, colocá en el GPS: \"Colón 10, San Fernando\".\n\n" +
+            "🚗 *Estacionamiento*\n" +
+            "Podés dejar el auto en cualquier lugar habilitado, excepto en la puerta de la guardería.\n\n" +
+            "🏡 *INFORMACIÓN DEL COMPLEJO*\n" +
+            "- El complejo cuenta con 9 cabañas.\n" +
+            "- La pileta y el muelle son espacios compartidos.\n" +
+            "- Cada cabaña cuenta con: aire acondicionado frío/calor, agua caliente, TV, vajilla, heladera, anafe, horno eléctrico, luz de emergencia en la cocina, parrilla privada y Wi-Fi.\n" +
+            "- Hay una proveeduría a 100 metros.\n" +
+            "- El agua no es potable.\n" +
+            "- No se proporciona ropa de cama ni toallas. Los huéspedes deben traerlas.\n" +
+            "- Se proporcionan acolchados y almohadas.\n\n" +
+            "🏊 *REGLAMENTO DE LA PILETA*\n" +
+            "Horario: 10:00 a 20:00 hs\n" +
+            "Está prohibido:\n" +
+            "🚫 Consumir alcohol.\n" +
+            "🚫 Escuchar música.\n" +
+            "🚫 Zambullirse.\n\n" +
+            "👨‍👩‍👧 Los menores de 12 años no pueden permanecer en la pileta sin la supervisión de un adulto.\n\n" +
+            "📜 *REGLAMENTO Y TÉRMINOS Y CONDICIONES*\n" +
+            "Por favor, leé atentamente los siguientes términos y condiciones:\n" +
+            "- El horario de ingreso es a las 12:00 hs y el horario de salida es a las 10:00 hs, salvo que se haya acordado otro horario previamente.\n" +
+            "- Una vez entregada la cabaña, no se puede permanecer en las instalaciones después del horario de salida.\n" +
+            "- El horario de la pileta es de 10:00 a 20:00 hs.\n" +
+            "- A partir de las 22:00 hs no se pueden realizar ruidos molestos.\n" +
+            "- Los menores de 12 años no pueden permanecer en la pileta sin la supervisión de un adulto.\n" +
+            "- Está prohibido fumar dentro de las cabañas.\n" +
+            "- No se aceptan visitas.\n" +
+            "- La reserva no es reembolsable.\n" +
+            "- No se permite cambiar la fecha de la reserva.\n" +
+            "- Al ingresar se deberá completar el pago del 100% de la reserva en efectivo.\n" +
+            "- No se puede acortar la estadía una vez realizado el ingreso.\n" +
+            "- La reserva no puede cancelarse por lluvias ni por agua alta (sudestada).\n" +
+            "- En caso de no presentarse el día del ingreso hasta las 22:00 hs, se pierde la reserva y la cabaña queda disponible para ser alquilada.\n" +
+            "- Está prohibido alimentar a los perros y permitirles el acceso a las cabañas o galerías.\n" +
+            "- Los perros que se encuentran en la zona no pertenecen al complejo. No nos hacemos responsables por ninguna situación que pueda ocurrir con ellos.\n" +
+            "- No se devuelve el dinero de la estadía por cortes de luz ni por sudestada.\n" +
+            "- Cada huésped debe llevar su propio botiquín y todo aquello que considere necesario durante su estadía.\n\n" +
+            "⚠️ *IMPORTANTE*\n" +
+            "La reserva implica la aceptación de todos estos términos y condiciones.\n\n" +
+            "Muchas gracias por elegir Cabañas Sidharta.\n" +
+            "¡Los esperamos! 🌿🏡";
     }
 
     string LinkWhatsAppCancelacion(Reserva r)
