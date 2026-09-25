@@ -9,48 +9,49 @@
 </head>
 <body class="min-h-screen bg-sand-50 text-ink-900 antialiased">
     <header class="sticky top-0 z-40 border-b border-ink-100 bg-ink-950 text-white">
-        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-            <a asp-area="Admin" asp-controller="Reservas" asp-action="Calendario" class="flex items-center gap-2 font-display text-base font-semibold">
+        <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <a asp-area="Admin" asp-controller="Reservas" asp-action="Calendario" class="flex shrink-0 items-center gap-2 font-display text-base font-semibold">
                 <img src="~/images/logo-sidharta.png" alt="Cabañas Sidharta" class="h-9 w-9 rounded-xl" />
-                <span class="hidden sm:inline">Cabañas Sidharta &middot; Admin</span>
-                <span class="sm:hidden">Admin</span>
+                <span class="hidden whitespace-nowrap 2xl:inline">Cabañas Sidharta &middot; Admin</span>
+                <span class="2xl:hidden">Admin</span>
             </a>
 
-            <nav class="hidden items-center gap-1 md:flex">
+            <nav class="hidden min-w-0 items-center gap-0.5 xl:flex">
                 <a asp-area="Admin" asp-controller="Reservas" asp-action="Index"
-                   class="relative flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">
+                   class="relative flex whitespace-nowrap items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">
                     Reservas
                     @await Component.InvokeAsync("PendientesBadge")
                 </a>
                 <a asp-area="Admin" asp-controller="Reservas" asp-action="Calendario"
-                   class="rounded-full px-4 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Calendario</a>
+                   class="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Calendario</a>
                 <a asp-area="Admin" asp-controller="Cabanas" asp-action="Precios"
-                   class="rounded-full px-4 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Precios</a>
+                   class="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Precios</a>
                 <a asp-area="Admin" asp-controller="FinesDeSemanaLargos" asp-action="Index"
-                   class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Finde largo</a>
+                   class="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Finde largo</a>
                 <a asp-area="Admin" asp-controller="Cabanas" asp-action="Index"
-                   class="rounded-full px-4 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Cabañas</a>
+                   class="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Cabañas</a>
                 <a asp-area="Admin" asp-controller="Inicio" asp-action="Index"
-                   class="rounded-full px-4 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Inicio</a>
+                   class="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Inicio</a>
                 <a asp-area="Admin" asp-controller="Galeria" asp-action="Index"
-                   class="rounded-full px-4 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Galería</a>
+                   class="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Galería</a>
                 <a asp-area="Admin" asp-controller="Informacion" asp-action="Index"
-                   class="rounded-full px-4 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Información</a>
+                   class="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Información</a>
                 <a asp-area="Admin" asp-controller="MensajesWhatsApp" asp-action="Index"
-                   class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Mensajes WhatsApp</a>
-                <a asp-area="" asp-controller="Home" asp-action="Index" target="_blank"
-                   class="ml-1 rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-ink-200 transition hover:border-white/40 hover:text-white">Ver sitio público</a>
+                   class="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-200 transition hover:bg-white/10 hover:text-white">Mensajes WhatsApp</a>
+                <a asp-area="" asp-controller="Home" asp-action="Index" target="_blank" title="Ver sitio público"
+                   class="ml-2 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/20 px-3 py-2 text-sm font-medium text-ink-200 transition hover:border-white/40 hover:text-white">Ver sitio
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3h6v6M17 3l-8 8M8 5H4.5A1.5 1.5 0 0 0 3 6.5v9A1.5 1.5 0 0 0 4.5 17h9a1.5 1.5 0 0 0 1.5-1.5V12"/></svg></a>
             </nav>
 
             @if (User.Identity?.IsAuthenticated == true)
             {
-                <form asp-area="Admin" asp-controller="Account" asp-action="Logout" method="post" class="flex items-center gap-3" data-skip-loading>
-                    <span class="hidden text-sm text-ink-300 sm:inline">@User.Identity!.Name</span>
-                    <button type="submit" class="rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">Salir</button>
+                <form asp-area="Admin" asp-controller="Account" asp-action="Logout" method="post" class="flex shrink-0 items-center gap-3" data-skip-loading>
+                    <span class="hidden whitespace-nowrap text-sm text-ink-300 2xl:inline">@User.Identity!.Name</span>
+                    <button type="submit" class="whitespace-nowrap rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">Salir</button>
                 </form>
             }
         </div>
-        <nav class="flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 border-t border-white/10 px-3 py-1.5 md:hidden">
+        <nav class="flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 border-t border-white/10 px-3 py-1.5 xl:hidden">
             <a asp-area="Admin" asp-controller="Reservas" asp-action="Index" class="whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium text-ink-200 hover:bg-white/10 hover:text-white">Reservas</a>
             <a asp-area="Admin" asp-controller="Reservas" asp-action="Calendario" class="whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium text-ink-200 hover:bg-white/10 hover:text-white">Calendario</a>
             <a asp-area="Admin" asp-controller="Cabanas" asp-action="Precios" class="whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium text-ink-200 hover:bg-white/10 hover:text-white">Precios</a>
