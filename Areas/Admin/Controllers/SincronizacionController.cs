@@ -98,31 +98,6 @@ namespace GestionCabanas.Areas.Admin.Controllers
                 var resultado = await _sync.SincronizarAsync(() => _oneDrive.DescargarArchivoCompartidoAsync(urlArchivo), anio);
                 await _oneDrive.MarcarSincronizadoAsync(modificado);
 
-                TempData["ResultadoCreadas"] = resultado.Creadas;
-                TempData["ResultadoActualizadas"] = resultado.Actualizadas;
-                TempData["ResultadoOmitidas"] = resultado.Omitidas;
-                TempData["ResultadoDetalleCreadas"] = resultado.DetalleCreadas.Count > 0
-                    ? string.Join(" | ", resultado.DetalleCreadas)
-                    : null;
-                TempData["ResultadoDetalleActualizadas"] = resultado.DetalleActualizadas.Count > 0
-                    ? string.Join(" | ", resultado.DetalleActualizadas)
-                    : null;
-                TempData["ResultadoDetalleOmitidas"] = resultado.DetalleOmitidas.Count > 0
-                    ? string.Join(" | ", resultado.DetalleOmitidas)
-                    : null;
-                TempData["ResultadoEliminadas"] = resultado.Eliminadas;
-                TempData["ResultadoDetalleEliminadas"] = resultado.DetalleEliminadas.Count > 0
-                    ? string.Join(" | ", resultado.DetalleEliminadas)
-                    : null;
-                TempData["ResultadoNoInterpretadas"] = resultado.NoInterpretadas.Count > 0
-                    ? string.Join(" | ", resultado.NoInterpretadas)
-                    : null;
-                TempData["ResultadoCabanasNoEncontradas"] = resultado.CabanasNoEncontradas.Count > 0
-                    ? string.Join(", ", resultado.CabanasNoEncontradas)
-                    : null;
-                TempData["ResultadoSuperposiciones"] = resultado.Superposiciones.Count > 0
-                    ? string.Join(" | ", resultado.Superposiciones)
-                    : null;
                 TempData["Mensaje"] = $"Sincronización terminada: {Plural(resultado.Creadas, "reserva nueva", "reservas nuevas")}, " +
                     $"{Plural(resultado.Actualizadas, "actualizada", "actualizadas")}, {Plural(resultado.Omitidas, "sin cambios", "sin cambios")}, " +
                     $"{Plural(resultado.Eliminadas, "eliminada", "eliminadas")}.";
