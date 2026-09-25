@@ -220,10 +220,15 @@
 
     string MensajeCancelacion(Reserva r)
     {
-        return $"Hola, cómo estás?\n\n" +
-            $"Te escribimos para comentarte que tu solicitud de reserva a nombre de {r.NombreHuesped}, para la Cabaña {r.Cabana?.Nombre}, para el período del {r.FechaDesde:dd/MM/yyyy} al {r.FechaHasta:dd/MM/yyyy}, quedó Cancelada x falta de pago o disponibilidad.\n\n" +
+        return $"Hola, ¿cómo estás?\n\n" +
+            "❌ *TU SOLICITUD DE RESERVA FUE CANCELADA*\n\n" +
+            $"*Titular:* {r.NombreHuesped}\n" +
+            $"*Cabaña:* {r.Cabana?.Nombre}\n" +
+            $"*Fecha de ingreso:* {r.FechaDesde:dd/MM/yyyy}\n" +
+            $"*Fecha de salida:* {r.FechaHasta:dd/MM/yyyy}\n\n" +
+            "Lamentablemente, quedó cancelada por falta de pago o disponibilidad.\n\n" +
             "Si todavía te interesa reservar, quedamos a disposición para coordinar una nueva fecha.\n\n" +
-            "Muchas gracias!";
+            "¡Muchas gracias!";
     }
 }
 
