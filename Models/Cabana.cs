@@ -40,6 +40,13 @@ namespace GestionCabanas.Models
         /// <summary>Los tramos de precio que se cargan en esta cabaña.</summary>
         public IEnumerable<int> TramosDePrecio() => TodosLosTramos.Where(AdmiteTramo);
 
+        /// <summary>
+        /// Grupo de precios al que pertenece (ej: "Sidharta 1", "Sidharta 2" y "Sidharta 5" son del
+        /// grupo "Sidharta"; "Maia" es su propio grupo). Se usa para cargar precios por grupo en vez
+        /// de cabaña por cabaña.
+        /// </summary>
+        public string Grupo => System.Text.RegularExpressions.Regex.Replace(Nombre, @"\s+\d+$", "").Trim();
+
         public List<FotoCabana> Fotos { get; set; } = new();
         public List<Reserva> Reservas { get; set; } = new();
         public List<TarifaDia> TarifasDias { get; set; } = new();
